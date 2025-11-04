@@ -25,8 +25,6 @@ Proje `http://localhost:3000` adresinde çalışacaktır.
 
 - React 17
 - React Router DOM
-- Redux Toolkit
 - Bootstrap 5
-- SweetAlert2
 - Font Awesome
 

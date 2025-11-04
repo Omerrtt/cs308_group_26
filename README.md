@@ -4,8 +4,16 @@ Bu proje, login ve register sayfalarını içeren basit bir authentication siste
 
 ## Kurulum
 
+1. Bağımlılıkları yükleyin:
+
 ```bash
 npm install
+```
+
+2. `.env` dosyası oluşturun ve preflight check'i atlayın:
+
+```bash
+echo "SKIP_PREFLIGHT_CHECK=true" > .env
 ```
 
 ## Çalıştırma

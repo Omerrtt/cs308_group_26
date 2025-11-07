@@ -10,11 +10,6 @@ Bu proje, login ve register sayfalarını içeren basit bir authentication siste
 npm install
 ```
 
-2. `.env` dosyası oluşturun ve preflight check'i atlayın:
-
-```bash
-echo "SKIP_PREFLIGHT_CHECK=true" > .env
-```
 
 **Not:** Firebase yapılandırması `src/firebaseConfig.js` dosyasında zaten mevcut olduğu için ekstra bir yapılandırma gerekmez.
 

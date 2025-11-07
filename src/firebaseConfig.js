@@ -11,7 +11,51 @@ const firebaseConfig = {
   appId: process.env.REACT_APP_FIREBASE_APP_ID
 };
 
-const app = initializeApp(firebaseConfig);
+// Firebase config kontrolü
+const isFirebaseConfigValid = () => {
+  return firebaseConfig.apiKey && 
+         firebaseConfig.authDomain && 
+         firebaseConfig.projectId;
+};
 
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+let app;
+let auth;
+let db;
+
+try {
+  if (!isFirebaseConfigValid()) {
+    console.warn('Firebase environment variables eksik! Lütfen .env dosyasına Firebase config değerlerini ekleyin.');
+    // Firebase config eksikse, uygulama çalışmaya devam edebilir ama Firebase özellikleri çalışmayacak
+    // Geçici olarak dummy değerlerle initialize ediyoruz (sadece uygulamanın çökmesini önlemek için)
+    app = initializeApp({
+      apiKey: "dummy-api-key",
+      authDomain: "dummy-project.firebaseapp.com",
+      projectId: "dummy-project",
+      storageBucket: "dummy-project.appspot.com",
+      messagingSenderId: "123456789",
+      appId: "1:123456789:web:abcdef"
+    });
+    auth = getAuth(app);
+    db = getFirestore(app);
+    console.warn('Firebase dummy config ile başlatıldı. Firebase özellikleri çalışmayacak!');
+  } else {
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getFirestore(app);
+  }
+} catch (error) {
+  console.error('Firebase initialization hatası:', error);
+  // Hata durumunda bile uygulamanın çalışması için dummy değerler
+  app = initializeApp({
+    apiKey: "dummy-api-key",
+    authDomain: "dummy-project.firebaseapp.com",
+    projectId: "dummy-project",
+    storageBucket: "dummy-project.appspot.com",
+    messagingSenderId: "123456789",
+    appId: "1:123456789:web:abcdef"
+  });
+  auth = getAuth(app);
+  db = getFirestore(app);
+}
+
+export { auth, db };

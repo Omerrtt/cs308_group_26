@@ -60,7 +60,7 @@ const LoginArea = () => {
                 let nameToUse = 'Customer'
                 const firestoreStart = performance.now()
                 
-                // Firestore read'i timeout ile sınırlandır (max 2 saniye)
+                // Firestore read'i timeout ile sınırlandır (max 1 saniye)
                 const firestorePromise = (async () => {
                     try {
                         const docRef = doc(db, 'users', uid)
@@ -81,9 +81,9 @@ const LoginArea = () => {
                 // Timeout wrapper
                 const timeoutPromise = new Promise((resolve) => {
                     setTimeout(() => {
-                        console.warn('[PERFORMANCE] Firestore read timeout (2s), using fallback')
+                        console.warn('[PERFORMANCE] Firestore read timeout (1s), using fallback')
                         resolve('Customer')
-                    }, 2000) // 2 saniye timeout
+                    }, 1000) // 1 saniye timeout
                 })
                 
                 try {

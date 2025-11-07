@@ -1,14 +1,13 @@
 import React, {useState} from 'react'
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import Swal from 'sweetalert2';
 import { useHistory } from "react-router-dom"
 import { auth, db } from '../../firebaseConfig'
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
+import { createUserWithEmailAndPassword, updateProfile, signOut } from 'firebase/auth'
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
-import { register as setUser } from '../../app/slices/user'
+// import { register as setUser } from '../../app/slices/user' // Kaldırıldı - register'da otomatik login yapılmasın
 
 const RegisterArea = () => {
-    let dispatch = useDispatch();
     const history = useHistory()
     const [user, setUserName] = useState('')
     const [email, setEmail] = useState('')
@@ -62,9 +61,9 @@ const RegisterArea = () => {
                 const profilePromise = updateProfile(userCredential.user, { displayName: user })
                 const profileTimeout = new Promise((resolve) => {
                     setTimeout(() => {
-                        console.warn('[PERFORMANCE] Update Profile timeout (1s), skipping')
+                        console.warn('[PERFORMANCE] Update Profile timeout (500ms), skipping')
                         resolve(null)
-                    }, 1000) // 1 saniye timeout
+                    }, 500) // 500ms timeout
                 })
                 
                 try {
@@ -95,9 +94,9 @@ const RegisterArea = () => {
                 
                 const firestoreTimeout = new Promise((resolve) => {
                     setTimeout(() => {
-                        console.warn('[PERFORMANCE] Firestore write timeout (2s), skipping')
+                        console.warn('[PERFORMANCE] Firestore write timeout (1s), skipping')
                         resolve(false)
-                    }, 2000) // 2 saniye timeout
+                    }, 1000) // 1 saniye timeout
                 })
                 
                 try {
@@ -113,14 +112,16 @@ const RegisterArea = () => {
                     // non-fatal, user is still created in auth
                 }
 
-                // update redux state (use aliased action to avoid name collision)
-                const reduxStart = performance.now()
+                // Register'da Redux state'e kaydetme - kullanıcı login sayfasına gidip manuel giriş yapmalı
+                // dispatch(setUser({ user: user, email: email, pass: pass })) // Kaldırıldı - otomatik login yapılmasın
+
+                // Firebase Auth'dan çıkış yap - createUserWithEmailAndPassword otomatik login yapıyor
+                // Kullanıcının login sayfasına gidip manuel giriş yapması için logout yapıyoruz
                 try {
-                    dispatch(setUser({ user: user, email: email, pass: pass }))
-                    const reduxEnd = performance.now()
-                    console.log(`[PERFORMANCE] Redux dispatch: ${(reduxEnd - reduxStart).toFixed(2)}ms`)
+                    await signOut(auth)
+                    console.log('[PERFORMANCE] Firebase Auth signOut after register')
                 } catch(e) {
-                    console.warn('Redux dispatch failed:', e)
+                    console.warn('Firebase signOut failed:', e)
                     // non-fatal
                 }
 

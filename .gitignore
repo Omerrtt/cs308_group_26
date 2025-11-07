@@ -21,3 +21,4 @@ yarn-error.log*
 # Build (Derleme) çıktıları
 /build
 /dist
+node_modules

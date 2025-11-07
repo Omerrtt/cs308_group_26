@@ -16,6 +16,8 @@ npm install
 echo "SKIP_PREFLIGHT_CHECK=true" > .env
 ```
 
+**Not:** Firebase yapılandırması `src/firebaseConfig.js` dosyasında zaten mevcut olduğu için ekstra bir yapılandırma gerekmez.
+
 ## Çalıştırma
 
 ```bash

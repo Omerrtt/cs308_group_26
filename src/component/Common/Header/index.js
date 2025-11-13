@@ -1,8 +1,11 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import logo from '../../../assets/img/malikane-electronics-logo-removebg-preview.png'
+import { useSelector } from "react-redux";
 
 const Header = () => {
+    const status = useSelector((state) => state.user.status);
+
     return (
         <>
             <header className="header-section">
@@ -10,12 +13,20 @@ const Header = () => {
                     <div className="header-bottom header-bottom-color--golden section-fluid sticky-header sticky-color--golden">
                         <div className="container">
                             <div className="row">
-                                <div className="col-12 d-flex align-items-center justify-content-center">
+                                <div className="col-12 d-flex align-items-center justify-content-center position-relative">
                                     <div className="header-logo">
                                         <div className="logo">
                                             <Link to="/login"><img src={logo} alt="logo" style={{maxHeight: '80px'}} /></Link>
                                         </div>
                                     </div>
+                                    {status && (
+                                        <div style={{position: 'absolute', right: '0', top: '50%', transform: 'translateY(-50%)'}}>
+                                            <Link to="/profile" className="d-flex align-items-center text-decoration-none">
+                                                <i className="fa fa-user-circle" style={{fontSize: '28px', color: '#333', marginRight: '8px'}}></i>
+                                                <span style={{fontSize: '16px', color: '#333', fontWeight: '500'}}>Profile</span>
+                                            </Link>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

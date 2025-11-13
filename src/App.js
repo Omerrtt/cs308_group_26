@@ -5,6 +5,7 @@ import ScrollToTop from './component/Common/ScrollToTop';
 import Login from './page/login';
 import Register from './page/register';
 import Homepage from './page/homepage';
+import Profile from './page/profile';
 
 const App = () => {
   useEffect(() => {
@@ -42,6 +43,7 @@ const App = () => {
             <Route path='/login' exact component={Login} />
             <Route path='/register' exact component={Register} />
             <Route path='/homepage' exact component={Homepage} />
+            <Route path='/profile' exact component={Profile} />
             <Route component={Login} />
           </Switch>
         </ScrollToTop>

@@ -14,6 +14,14 @@ const Header = () => {
                         <div className="container">
                             <div className="row">
                                 <div className="col-12 d-flex align-items-center justify-content-center position-relative">
+                                    {status && (
+                                        <div style={{position: 'absolute', left: '0', top: '50%', transform: 'translateY(-50%)'}}>
+                                            <Link to="/profile" className="d-flex align-items-center text-decoration-none">
+                                                <i className="fa fa-user-circle" style={{fontSize: '28px', color: '#333', marginRight: '8px'}}></i>
+                                                <span style={{fontSize: '16px', color: '#333', fontWeight: '500'}}>Profile</span>
+                                            </Link>
+                                        </div>
+                                    )}
                                     <div className="header-logo">
                                         <div className="logo">
                                             <Link to="/login"><img src={logo} alt="logo" style={{maxHeight: '80px'}} /></Link>
@@ -21,9 +29,9 @@ const Header = () => {
                                     </div>
                                     {status && (
                                         <div style={{position: 'absolute', right: '0', top: '50%', transform: 'translateY(-50%)'}}>
-                                            <Link to="/profile" className="d-flex align-items-center text-decoration-none">
-                                                <i className="fa fa-user-circle" style={{fontSize: '28px', color: '#333', marginRight: '8px'}}></i>
-                                                <span style={{fontSize: '16px', color: '#333', fontWeight: '500'}}>Profile</span>
+                                            <Link to="/cart" className="d-flex align-items-center text-decoration-none">
+                                                <i className="fa fa-shopping-cart" style={{fontSize: '28px', color: '#333', marginRight: '8px'}}></i>
+                                                <span style={{fontSize: '16px', color: '#333', fontWeight: '500'}}>Cart</span>
                                             </Link>
                                         </div>
                                     )}

@@ -6,6 +6,8 @@ import Login from './page/login';
 import Register from './page/register';
 import Homepage from './page/homepage';
 import Profile from './page/profile';
+import Cart from './page/cart';
+import Checkout from './page/checkout';
 
 const App = () => {
   useEffect(() => {
@@ -44,6 +46,8 @@ const App = () => {
             <Route path='/register' exact component={Register} />
             <Route path='/homepage' exact component={Homepage} />
             <Route path='/profile' exact component={Profile} />
+            <Route path='/cart' exact component={Cart} />
+            <Route path='/checkout' exact component={Checkout} />
             <Route component={Login} />
           </Switch>
         </ScrollToTop>

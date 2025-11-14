@@ -13,4 +13,3 @@ const ScrollToTop = (props) => {
 };
 
 export default ScrollToTop;
-

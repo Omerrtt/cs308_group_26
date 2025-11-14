@@ -1,19 +1,39 @@
 {
-  "name": "cs308-auth",
+  "name": "my-app",
   "version": "0.1.0",
   "private": true,
   "homepage": ".",
   "dependencies": {
+    "@fortawesome/fontawesome-svg-core": "^1.2.35",
+    "@fortawesome/free-solid-svg-icons": "^5.15.3",
+    "@fortawesome/react-fontawesome": "^0.1.14",
+    "@react-google-maps/api": "^2.2.0",
     "@reduxjs/toolkit": "^1.6.1",
+    "@testing-library/jest-dom": "^5.11.4",
+    "@testing-library/react": "^11.1.0",
+    "@testing-library/user-event": "^12.1.10",
     "bootstrap": "^5.1.1",
-    "firebase": "^12.5.0",
+    "chart.js": "^3.5.1",
+    "csv-parser": "^3.2.0",
+    "firebase": "^8.10.1",
     "font-awesome": "^4.7.0",
+    "google-map-react": "^2.1.10",
+    "p-min-delay": "^4.0.1",
+    "rating-star": "^1.1.0",
     "react": "^17.0.2",
+    "react-bootstrap": "^2.0.0-rc.0",
+    "react-chartjs-2": "^3.0.4",
     "react-dom": "^17.0.2",
     "react-helmet": "^6.1.0",
+    "react-icons": "^4.2.0",
+    "react-messenger-customer-chat": "^0.8.0",
     "react-redux": "^7.2.5",
     "react-router-dom": "^5.2.0",
-    "react-scripts": "^5.0.1",
+    "react-scripts": "4.0.3",
+    "react-share": "^4.4.0",
+    "react-skillbars": "^1.6.1",
+    "react-slick": "^0.28.1",
+    "slick-carousel": "^1.8.1",
     "sweetalert2": "^11.1.6",
     "web-vitals": "^1.0.1"
   },
@@ -22,6 +42,12 @@
     "build": "NODE_OPTIONS=--openssl-legacy-provider react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
   },
   "browserslist": {
     "production": [

@@ -1,11 +1,9 @@
 import React, {useState} from 'react'
+import { Link, useHistory } from 'react-router-dom'
 import { useSelector } from "react-redux";
 import Swal from 'sweetalert2';
-import { useHistory } from "react-router-dom"
+import firebase from 'firebase/app'
 import { auth, db } from '../../firebaseConfig'
-import { createUserWithEmailAndPassword, updateProfile, signOut } from 'firebase/auth'
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
-// import { register as setUser } from '../../app/slices/user' // Kaldırıldı - register'da otomatik login yapılmasın
 
 const RegisterArea = () => {
     const history = useHistory()
@@ -22,17 +20,13 @@ const RegisterArea = () => {
         if(status){
             Swal.fire({
                 icon: 'question',
-                title: 'Mr. '+userData.name,
+                title: 'Sayın ' + userData.name,
                 html:
-                    'You are already Registered <br />' +
-                    'You can go to <b>' +
-                    'Dashboard</b> ' +
-                    'or our <b>Shop</b> page',
+                    'Zaten kayıtlısınız <br />' +
+                    '<b>Hesabım</b> sayfasına gidebilir veya <b>Alışveriş</b> yapabilirsiniz',
             }).then((result) => {
                 if(result.isConfirmed) {
                   history.push('/my-account')
-                } else {
-                  // not clicked
                 }
               });
         }else{
@@ -46,122 +40,71 @@ const RegisterArea = () => {
             }
 
             setLoading(true)
-            const startTime = performance.now()
             try{
-                // create firebase auth user
-                const authStart = performance.now()
-                const userCredential = await createUserWithEmailAndPassword(auth, email, pass)
-                const authEnd = performance.now()
-                console.log(`[PERFORMANCE] Firebase Auth createUser: ${(authEnd - authStart).toFixed(2)}ms`)
-                
+                // Firebase auth kullanıcı oluştur
+                const userCredential = await auth.createUserWithEmailAndPassword(email, pass)
                 const uid = userCredential.user.uid
 
-                // optional: update displayName in auth profile with timeout
-                const profileStart = performance.now()
-                const profilePromise = updateProfile(userCredential.user, { displayName: user })
-                const profileTimeout = new Promise((resolve) => {
-                    setTimeout(() => {
-                        console.warn('[PERFORMANCE] Update Profile timeout (500ms), skipping')
-                        resolve(null)
-                    }, 500) // 500ms timeout
-                })
-                
+                // Display name güncelle
                 try {
-                    await Promise.race([profilePromise, profileTimeout])
-                    const profileEnd = performance.now()
-                    console.log(`[PERFORMANCE] Update Profile: ${(profileEnd - profileStart).toFixed(2)}ms`)
+                    await userCredential.user.updateProfile({ displayName: user })
                 } catch(e) {
                     console.warn('Display name update failed:', e)
-                    // non-fatal
                 }
 
-                // store user profile in Firestore with timeout
-                const firestoreStart = performance.now()
-                const firestorePromise = (async () => {
-                    try {
-                        await setDoc(doc(db, 'users', uid), {
-                            name: user,
-                            email: email,
-                            createdAt: serverTimestamp(),
-                            uid: uid
-                        })
-                        return true
-                    } catch(e) {
-                        console.warn('Firestore write failed:', e)
-                        return false
-                    }
-                })()
-                
-                const firestoreTimeout = new Promise((resolve) => {
-                    setTimeout(() => {
-                        console.warn('[PERFORMANCE] Firestore write timeout (1s), skipping')
-                        resolve(false)
-                    }, 1000) // 1 saniye timeout
-                })
-                
+                // Firestore'a kullanıcı profili kaydet
                 try {
-                    const firestoreResult = await Promise.race([firestorePromise, firestoreTimeout])
-                    const firestoreEnd = performance.now()
-                    if (firestoreResult) {
-                        console.log(`[PERFORMANCE] Firestore write: ${(firestoreEnd - firestoreStart).toFixed(2)}ms`)
-                    } else {
-                        console.log(`[PERFORMANCE] Firestore write: skipped (timeout or error)`)
-                    }
+                    await db.collection('users').doc(uid).set({
+                        name: user,
+                        email: email,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        uid: uid
+                    })
                 } catch(e) {
-                    console.warn('Firestore write error:', e)
-                    // non-fatal, user is still created in auth
+                    console.warn('Firestore write failed:', e)
                 }
 
-                // Register'da Redux state'e kaydetme - kullanıcı login sayfasına gidip manuel giriş yapmalı
-                // dispatch(setUser({ user: user, email: email, pass: pass })) // Kaldırıldı - otomatik login yapılmasın
-
-                // Firebase Auth'dan çıkış yap - createUserWithEmailAndPassword otomatik login yapıyor
-                // Kullanıcının login sayfasına gidip manuel giriş yapması için logout yapıyoruz
+                // Firebase Auth'dan çıkış yap - kullanıcı login sayfasına gidip manuel giriş yapmalı
                 try {
-                    await signOut(auth)
-                    console.log('[PERFORMANCE] Firebase Auth signOut after register')
+                    await auth.signOut()
                 } catch(e) {
                     console.warn('Firebase signOut failed:', e)
-                    // non-fatal
                 }
 
-                const totalTime = performance.now() - startTime
-                console.log(`[PERFORMANCE] Total Register Time: ${totalTime.toFixed(2)}ms`)
                 setLoading(false)
-                
-                // Başarı mesajını göster (await etmeden)
-                const swalStart = performance.now()
-                Swal.fire({
-                    icon: 'success',
+            
+            Swal.fire({
+                icon: 'success',
                     title: 'Kayıt Başarılı!',
                     text: 'Hesabınız oluşturuldu. Giriş sayfasına yönlendiriliyorsunuz...',
                     timer: 1500,
                     showConfirmButton: false
                 })
-                const swalEnd = performance.now()
-                console.log(`[PERFORMANCE] Swal.fire render: ${(swalEnd - swalStart).toFixed(2)}ms`)
                 
-                // Hemen yönlendir (Swal.fire'ı beklemeyin)
-                const redirectStart = performance.now()
                 setTimeout(() => {
                     history.push("/login");
-                    const redirectEnd = performance.now()
-                    console.log(`[PERFORMANCE] History.push redirect: ${(redirectEnd - redirectStart).toFixed(2)}ms`)
                 }, 100)
                 
             } catch(error){
                 console.error('Registration error:', error)
                 setLoading(false)
                 
-                try {
-                    await Swal.fire({
-                        icon: 'error',
-                        title: 'Kayıt Başarısız',
-                        text: error.message || 'Bir hata oluştu. Lütfen tekrar deneyin.'
-                    })
-                } catch(e) {
-                    console.error('Swal.fire error failed:', e)
+                let errorMessage = 'Bir hata oluştu. Lütfen tekrar deneyin.'
+                if(error.code === 'auth/email-already-in-use'){
+                    errorMessage = 'Bu email adresi zaten kullanılıyor.'
+                } else if(error.code === 'auth/weak-password'){
+                    errorMessage = 'Şifre çok zayıf. En az 6 karakter olmalıdır.'
+                } else if(error.code === 'auth/invalid-email'){
+                    errorMessage = 'Geçersiz email adresi.'
+                } else if(error.message){
+                    errorMessage = error.message
                 }
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Kayıt Başarısız',
+                    text: errorMessage
+                })
             }
         }
     }
@@ -172,10 +115,10 @@ const RegisterArea = () => {
                     <div className="row">
                         <div className="col-lg-6 offset-lg-3 col-md-12 col-sm-12 col-12">
                             <div className="account_form">
-                                <h3>Register</h3>
+                                <h3>Kayıt Ol</h3>
                                 <form onSubmit={(e)=>{e.preventDefault();register()}}>
                                     <div className="default-form-box">
-                                        <label>Username<span className="text-danger">*</span></label>
+                                        <label>Kullanıcı Adı<span className="text-danger">*</span></label>
                                         <input type="text" className="form-control" value={user} onChange={e => setUserName(e.currentTarget.value)} required/>
                                     </div>
                                     <div className="default-form-box">
@@ -183,8 +126,8 @@ const RegisterArea = () => {
                                         <input type="email" className="form-control" value={email} onChange={e => setEmail(e.currentTarget.value)} required/>
                                     </div>
                                     <div className="default-form-box">
-                                        <label>Password<span className="text-danger">*</span></label>
-                                        <input type="password" className="form-control" value={pass} onChange={e => setPass(e.currentTarget.value)} required minLength="8"/>
+                                        <label>Şifre<span className="text-danger">*</span></label>
+                                        <input type="password" className="form-control" value={pass} onChange={e => setPass(e.currentTarget.value)} required minLength="6"/>
                                     </div>
                                     <div className="login_submit">
                                         <button 
@@ -192,9 +135,10 @@ const RegisterArea = () => {
                                             type="submit"
                                             disabled={loading}
                                         >
-                                            {loading ? 'Kaydediliyor...' : 'Register'}
+                                            {loading ? 'Kaydediliyor...' : 'Kayıt Ol'}
                                         </button>
                                     </div>
+                                    <Link to="/login" className="active">Zaten hesabınız var mı? Giriş Yap</Link>
                                 </form>
                             </div>
                         </div>

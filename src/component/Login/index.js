@@ -1,11 +1,8 @@
 import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useHistory } from 'react-router-dom'
 import { useSelector, useDispatch } from "react-redux";
 import Swal from 'sweetalert2';
-import { useHistory } from "react-router-dom"
 import { auth, db } from '../../firebaseConfig'
-import { signInWithEmailAndPassword } from 'firebase/auth'
-import { doc, getDoc } from 'firebase/firestore'
 import { register } from '../../app/slices/user'
 
 const LoginArea = () => {
@@ -23,17 +20,13 @@ const LoginArea = () => {
         if(status){
             Swal.fire({
                 icon: 'question',
-                title: 'Mr. '+storedUser.name,
+                title: 'Sayın ' + storedUser.name,
                 html:
-                    'You are already loged in <br />' +
-                    'You can go to <b>' +
-                    'Dashboard</b> ' +
-                    'or our <b>Shop</b> page',
+                    'Zaten giriş yapmışsınız <br />' +
+                    '<b>Hesabım</b> sayfasına gidebilir veya <b>Alışveriş</b> yapabilirsiniz',
             }).then((result) => {
                 if(result.isConfirmed) {
                   history.push('/my-account')
-                } else {
-                  // not clicked
                 }
               });
         }else{
@@ -47,67 +40,30 @@ const LoginArea = () => {
             }
 
             setLoading(true)
-            const startTime = performance.now()
             try{
-                const authStart = performance.now()
-                const userCredential = await signInWithEmailAndPassword(auth, email, pass)
-                const authEnd = performance.now()
-                console.log(`[PERFORMANCE] Firebase Auth signIn: ${(authEnd - authStart).toFixed(2)}ms`)
-                
+                const userCredential = await auth.signInWithEmailAndPassword(email, pass)
                 const uid = userCredential.user.uid
 
-                // try to read profile from Firestore with timeout
-                let nameToUse = 'Customer'
-                const firestoreStart = performance.now()
-                
-                // Firestore read'i timeout ile sınırlandır (max 1 saniye)
-                const firestorePromise = (async () => {
-                    try {
-                        const docRef = doc(db, 'users', uid)
-                        const docSnap = await getDoc(docRef)
-                        if(docSnap.exists()){
-                            const data = docSnap.data()
-                            return data.name || 'Customer'
-                        } else {
-                            // fallback: try displayName
-                            return userCredential.user.displayName || 'Customer'
-                        }
-                    } catch(e) {
-                        console.warn('Firestore read failed:', e)
-                        return userCredential.user.displayName || 'Customer'
-                    }
-                })()
-                
-                // Timeout wrapper
-                const timeoutPromise = new Promise((resolve) => {
-                    setTimeout(() => {
-                        console.warn('[PERFORMANCE] Firestore read timeout (1s), using fallback')
-                        resolve('Customer')
-                    }, 1000) // 1 saniye timeout
-                })
-                
+                // Firestore'dan kullanıcı bilgilerini al
+                let nameToUse = 'Müşteri'
                 try {
-                    // Race: Firestore read veya timeout, hangisi önce biterse onu kullan
-                    nameToUse = await Promise.race([firestorePromise, timeoutPromise])
-                    const firestoreEnd = performance.now()
-                    console.log(`[PERFORMANCE] Firestore read: ${(firestoreEnd - firestoreStart).toFixed(2)}ms`)
+                    const docRef = db.collection('users').doc(uid)
+                    const docSnap = await docRef.get()
+                    if(docSnap.exists){
+                        const data = docSnap.data()
+                        nameToUse = data.name || userCredential.user.displayName || 'Müşteri'
+                    } else {
+                        nameToUse = userCredential.user.displayName || 'Müşteri'
+                    }
                 } catch(e) {
-                    console.warn('Firestore read error:', e)
-                    nameToUse = userCredential.user.displayName || 'Customer'
+                    console.warn('Firestore read failed:', e)
+                    nameToUse = userCredential.user.displayName || 'Müşteri'
                 }
 
-                // update redux with logged in user
-                const reduxStart = performance.now()
+                // Redux store'u güncelle
                 dispatch(register({ user: nameToUse, email: email, pass: pass }))
-                const reduxEnd = performance.now()
-                console.log(`[PERFORMANCE] Redux dispatch: ${(reduxEnd - reduxStart).toFixed(2)}ms`)
-
-                const totalTime = performance.now() - startTime
-                console.log(`[PERFORMANCE] Total Login Time: ${totalTime.toFixed(2)}ms`)
                 setLoading(false)
 
-                // Başarı mesajını göster (await etmeden)
-                const swalStart = performance.now()
                 Swal.fire({
                     icon: 'success',
                     title: 'Giriş Başarılı!',
@@ -115,15 +71,9 @@ const LoginArea = () => {
                     timer: 1500,
                     showConfirmButton: false
                 })
-                const swalEnd = performance.now()
-                console.log(`[PERFORMANCE] Swal.fire render: ${(swalEnd - swalStart).toFixed(2)}ms`)
                 
-                // Hemen yönlendir (Swal.fire'ı beklemeyin)
-                const redirectStart = performance.now()
                 setTimeout(() => {
-                    history.push("/homepage");
-                    const redirectEnd = performance.now()
-                    console.log(`[PERFORMANCE] History.push redirect: ${(redirectEnd - redirectStart).toFixed(2)}ms`)
+                    history.push("/");
                 }, 100)
             } catch(error){
                 setLoading(false)
@@ -156,15 +106,15 @@ const LoginArea = () => {
                     <div className="row">
                         <div className="col-lg-6 offset-lg-3 col-md-12 col-sm-12 col-12">
                             <div className="account_form">
-                                <h3>Login</h3>
+                                <h3>Giriş Yap</h3>
                                 <form onSubmit={(e)=>{e.preventDefault();login()}}>
                                     <div className="default-form-box">
                                         <label>Email<span className="text-danger">*</span></label>
-                                        <input type="text" className="form-control" required value={email} onChange={e => setEmail(e.currentTarget.value)} />
+                                        <input type="email" className="form-control" required value={email} onChange={e => setEmail(e.currentTarget.value)} />
                                     </div>
                                     <div className="default-form-box">
-                                        <label>Password<span className="text-danger">*</span></label>
-                                        <input type="password" className="form-control" required value={pass} onChange={e => setPass(e.currentTarget.value)} minLength="8"/>
+                                        <label>Şifre<span className="text-danger">*</span></label>
+                                        <input type="password" className="form-control" required value={pass} onChange={e => setPass(e.currentTarget.value)} minLength="6"/>
                                     </div>
                                     <div className="login_submit">
                                         <button 
@@ -172,16 +122,16 @@ const LoginArea = () => {
                                             type="submit"
                                             disabled={loading}
                                         >
-                                            {loading ? 'Giriş yapılıyor...' : 'Login'}
+                                            {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
                                         </button>
                                     </div>
                                     <div className="remember_area">
                                         <div className="form-check">
                                             <input type="checkbox" className="form-check-input" id="materialUnchecked"/>
-                                            <label className="form-check-label" htmlFor="materialUnchecked">Remember me</label>
+                                            <label className="form-check-label" htmlFor="materialUnchecked">Beni Hatırla</label>
                                         </div>
                                     </div>
-                                    <Link to="/register" className="active">Create Your Account?</Link>
+                                    <Link to="/register" className="active">Hesabınız yok mu? Kayıt Ol</Link>
                                 </form>
                             </div>
                         </div>

@@ -169,6 +169,14 @@ const Header = () => {
                                                 <img src={svgsearch} alt="img" />
                                             </a>
                                         </li>
+                                        <li>
+                                            <Link to="/cart" className="cart-link" title="Sepetim">
+                                                <i className="fa fa-shopping-cart"></i>
+                                                {carts.length > 0 && (
+                                                    <span className="cart-count">{carts.length}</span>
+                                                )}
+                                            </Link>
+                                        </li>
                                         {userStatus ? (
                                             <li className="user-profile-dropdown">
                                                 <a 
@@ -185,10 +193,17 @@ const Header = () => {
                                                 {show === 'user-menu' && (
                                                     <div className="user-dropdown-menu">
                                                         <Link 
-                                                            to="/my-account"
+                                                            to="/profile"
                                                             onClick={() => setShow('')}
                                                         >
                                                             <i className="fa fa-user"></i>
+                                                            Profilim
+                                                        </Link>
+                                                        <Link 
+                                                            to="/my-account"
+                                                            onClick={() => setShow('')}
+                                                        >
+                                                            <i className="fa fa-cog"></i>
                                                             Hesabım
                                                         </Link>
                                                         <a 
@@ -259,6 +274,16 @@ const Header = () => {
                             <button type="button" className="search-btn" onClick={handleSearch}>
                                 <i className="fa fa-search"></i>
                             </button>
+                            <Link 
+                                to="/cart" 
+                                className="cart-btn-mobile"
+                                title="Sepetim"
+                            >
+                                <i className="fa fa-shopping-cart"></i>
+                                {carts.length > 0 && (
+                                    <span className="mobile-cart-badge">{carts.length}</span>
+                                )}
+                            </Link>
                             <a 
                                 href="https://wa.me/905393973949?text=Merhaba, Malikane Electronics ürünleriniz hakkında bilgi almak istiyorum." 
                                 target="_blank" 
@@ -367,13 +392,29 @@ const Header = () => {
                                 <li>
                                     <Link to="/contact"><span>İletişim</span></Link>
                                 </li>
+                                {/* Sepet ve Profil Linkleri */}
+                                <li>
+                                    <Link to="/cart" className="mobile-cart-link">
+                                        <i className="fa fa-shopping-cart"></i>
+                                        <span>Sepetim</span>
+                                        {carts.length > 0 && (
+                                            <span className="mobile-cart-count">({carts.length})</span>
+                                        )}
+                                    </Link>
+                                </li>
                                 {/* Kullanıcı Durumu */}
                                 {userStatus ? (
                                     <>
                                         <li className="mobile-user-section">
-                                            <Link to="/my-account" className="mobile-user-link">
+                                            <Link to="/profile" className="mobile-user-link">
                                                 <i className="fa fa-user-circle"></i>
-                                                <span>{userData.name || 'Kullanıcı'}</span>
+                                                <span>Profilim</span>
+                                            </Link>
+                                        </li>
+                                        <li>
+                                            <Link to="/my-account" className="mobile-user-link">
+                                                <i className="fa fa-cog"></i>
+                                                <span>Hesabım</span>
                                             </Link>
                                         </li>
                                         <li>
@@ -555,10 +596,10 @@ const Header = () => {
                     </div>
                     <ul className="offcanvas-cart-action-button">
                         <li>
-                            <Link to="/cart" className="theme-btn-one btn-black-overlay btn_md">View Cart</Link>
+                            <Link to="/cart" className="theme-btn-one btn-black-overlay btn_md">Sepete Git</Link>
                         </li>
                         <li>
-                            <Link to="/checkout-one" className="theme-btn-one btn-black-overlay btn_md">Checkout</Link>
+                            <Link to="/checkout" className="theme-btn-one btn-black-overlay btn_md">Ödemeye Geç</Link>
                         </li>
                     </ul>
                 </div>

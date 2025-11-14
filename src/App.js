@@ -21,11 +21,14 @@ const ShopLeftSideBar = loadable(() => pMinDelay(import('./page/shop/shop-left-s
 const ShopRightSideBar = loadable(() => pMinDelay(import('./page/shop/shop-right-sidebar'), 250), { fallback: <Loading /> });
 const ProductDetails = loadable(() => pMinDelay(import('./page/product/index'), 250), { fallback: <Loading /> });
 const ProductDetailsTwos = loadable(() => pMinDelay(import('./page/product/product-details-two'), 250), { fallback: <Loading /> });
-const Cart = loadable(() => pMinDelay(import('./page/cart/index'), 250), { fallback: <Loading /> });
+const Cart = loadable(() => pMinDelay(import('./page/cart'), 250), { fallback: <Loading /> });
+const CartOld = loadable(() => pMinDelay(import('./page/cart/index'), 250), { fallback: <Loading /> });
 const CartTwo = loadable(() => pMinDelay(import('./page/cart/cart-two'), 250), { fallback: <Loading /> });
 const CartThree = loadable(() => pMinDelay(import('./page/cart/cart-three'), 250), { fallback: <Loading /> });
 const EmptyCarts = loadable(() => pMinDelay(import('./page/cart/empty-cart'), 250), { fallback: <Loading /> });
+const Checkout = loadable(() => pMinDelay(import('./page/checkout'), 250), { fallback: <Loading /> });
 const CheckoutOne = loadable(() => pMinDelay(import('./page/checkout/index'), 250), { fallback: <Loading /> });
+const Profile = loadable(() => pMinDelay(import('./page/profile'), 250), { fallback: <Loading /> });
 const CheckoutTwos = loadable(() => pMinDelay(import('./page/checkout/checkout-two'), 250), { fallback: <Loading /> });
 const WishLists = loadable(() => pMinDelay(import('./page/shop/wishList'), 250), { fallback: <Loading /> });
 const Compares = loadable(() => pMinDelay(import('./page/shop/compares'), 250), { fallback: <Loading /> });
@@ -97,11 +100,14 @@ const App = () => {
             <Route path='/product-details-one/:id' exact component={ProductDetails} />
             <Route path='/product-details-two/:id' exact component={ProductDetailsTwos} />
             <Route path='/cart' exact component={Cart} />
+            <Route path='/cart-old' exact component={CartOld} />
             <Route path='/cartTwo' exact component={CartTwo} />
             <Route path='/cartThree' exact component={CartThree} />
             <Route path='/empty-cart' exact component={EmptyCarts} />
+            <Route path='/checkout' exact component={Checkout} />
             <Route path='/checkout-one' exact component={CheckoutOne} />
             <Route path='/checkout-two' exact component={CheckoutTwos} />
+            <Route path='/profile' exact component={Profile} />
             <Route path='/wishlist' exact component={WishLists} />
             <Route path='/compare' exact component={Compares} />
             <Route path='/order-complete' exact component={OrderComplete} />

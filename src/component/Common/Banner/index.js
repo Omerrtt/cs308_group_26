@@ -10,7 +10,7 @@ const Banner = (props) => {
                             <div className="common_banner_text">
                                 <h2>{props.title}</h2>
                                 <ul>
-                                    <li><Link to="/login">Home</Link></li>
+                                    <li><Link to="/">Home</Link></li>
                                     <li className="slash">/</li>
                                     <li className="active">{props.title}</li>
                                 </ul>
@@ -24,4 +24,3 @@ const Banner = (props) => {
 }
 
 export default Banner
-

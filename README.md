@@ -23,18 +23,19 @@ Malikane Electronics için geliştirilmiş modern React tabanlı e-ticaret web u
 
 ```bash
 git clone <repository-url>
-cd malikanelectronics
+cd cs308_group_26
 ```
 
 ### 2. Bağımlılıkları Yükleyin
 
+**Önemli:** Bu proje React 17 kullanmaktadır ve bazı paketler React 16 gerektirdiği için `--legacy-peer-deps` flag'i ile yükleme yapmanız gerekmektedir.
+
 ```bash
-npm install
+npm install --legacy-peer-deps
 ```
 
-**Not:** Eğer peer dependency hataları alırsanız, proje `.npmrc` dosyasında `legacy-peer-deps=true` ayarı ile yapılandırılmıştır. Bu ayar otomatik olarak uygulanır.
 
-### 3. Firebase Yapılandırması
+### 4. Firebase Yapılandırması
 
 Firebase yapılandırmanız `src/firebaseConfig.js` dosyasında mevcut. Eğer farklı bir Firebase projesi kullanmak istiyorsanız, bu dosyayı düzenleyin:
 
@@ -47,7 +48,7 @@ const firebaseConfig = {
 };
 ```
 
-### 4. Uygulamayı Çalıştırın
+### 5. Uygulamayı Çalıştırın
 
 Geliştirme modunda çalıştırmak için:
 
@@ -56,6 +57,21 @@ npm start
 ```
 
 Uygulama [http://localhost:3000](http://localhost:3000) adresinde açılacaktır.
+
+## ⚡ İlk Çalıştırma Özeti
+
+İlk kez çalıştırmak için şu adımları takip edin:
+
+```bash
+# 1. Bağımlılıkları yükle
+npm install --legacy-peer-deps
+
+# 2. .env dosyası oluştur
+echo "SKIP_PREFLIGHT_CHECK=true" > .env
+
+# 3. Uygulamayı başlat
+npm start
+```
 
 ## 📜 Mevcut Komutlar
 
@@ -144,12 +160,18 @@ Eğer peer dependency hataları alırsanız:
 
 ```bash
 rm -rf node_modules package-lock.json
-npm install
+npm install --legacy-peer-deps
 ```
+
+**Önemli:** Bu projede React 17 kullanıldığı için bazı paketler (react-messenger-customer-chat gibi) React 16 gerektirir. Bu nedenle `--legacy-peer-deps` flag'i kullanılmalıdır.
 
 ### Build Hataları
 
 OpenSSL legacy provider hatası alırsanız, `package.json`'daki script'ler zaten `NODE_OPTIONS=--openssl-legacy-provider` ile yapılandırılmıştır.
+
+### babel-jest Versiyon Uyarısı
+
+Eğer `babel-jest` versiyon uyarısı alırsanız, `.env` dosyasında `SKIP_PREFLIGHT_CHECK=true` olduğundan emin olun. Bu uyarı uygulamanın çalışmasını engellemez.
 
 ### Firebase Bağlantı Hataları
 
@@ -161,7 +183,8 @@ OpenSSL legacy provider hatası alırsanız, `package.json`'daki script'ler zate
 
 - Proje React 17 ve Firebase 8.x kullanmaktadır
 - `react-scripts` 4.0.3 versiyonu kullanılmaktadır
-- Legacy peer dependencies için `.npmrc` dosyası yapılandırılmıştır
+- Legacy peer dependencies için `--legacy-peer-deps` flag'i ile yükleme yapılmalıdır
+- `.env` dosyası manuel olarak oluşturulmalıdır (`SKIP_PREFLIGHT_CHECK=true`)
 
 ## 👥 Katkıda Bulunma
 
@@ -181,4 +204,4 @@ Sorularınız için lütfen iletişime geçin.
 
 ---
 
-**Not:** İlk kurulumdan sonra `npm start` komutu ile uygulamayı çalıştırabilirsiniz. Tüm bağımlılıklar otomatik olarak yüklenecektir.
+**Önemli Hatırlatma:** İlk kurulumda mutlaka `npm install --legacy-peer-deps` komutunu kullanın ve `.env` dosyasını oluşturmayı unutmayın!

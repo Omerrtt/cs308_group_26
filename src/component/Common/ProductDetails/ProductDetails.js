@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react'
 import RelatedProduct from './RelatedProduct'
 import { Link } from 'react-router-dom'
-import { useSelector, useDispatch } from "react-redux";
+import { useDispatch } from "react-redux";
 import { useParams } from 'react-router-dom';
 import { RatingStar } from "rating-star";
 import Swal from 'sweetalert2';
 import { getProductById } from '../../../app/data/productsData';
 import { incrementWhatsAppClick, getProductWhatsAppClicks } from '../../../utils/whatsappTracker';
+import ProductReviews from '../../../page/product/ProductReviews'; // ⭐ YORUM & RATING COMPONENT'İ
 
-const ProductDetailsOne = () => {
+const ProductDetails = () => {
     let dispatch = useDispatch();
     let { id } = useParams();
     
@@ -32,6 +33,9 @@ const ProductDetailsOne = () => {
         setLoading(false);
     }, [id, dispatch]);
     
+    // Ana görsel state'i
+    const [img, setImg] = useState(null);
+
     // Product yüklendiğinde ana görseli ata - image attribute'unu öncelikli kullan
     useEffect(() => {
         if (product?.image) {
@@ -72,11 +76,8 @@ const ProductDetailsOne = () => {
         }));
     }
 
-    // Color swatch fonksiyonu kaldırıldı - sadece ana görsel kullanıyoruz
-
     const [count, setCount] = useState(1)
 
-    const [img, setImg] = useState(null)
     const [hoveredImage, setHoveredImage] = useState(null)
     const [isHovering, setIsHovering] = useState(false)
     
@@ -135,6 +136,7 @@ const ProductDetailsOne = () => {
             setCount(1)
         }
     }
+
     if (loading) {
         return (
             <section id="product_single_one" className="ptb-100">
@@ -240,78 +242,87 @@ const ProductDetailsOne = () => {
                                             <small className="text-muted">EAN: <strong>{product.ean}</strong></small>
                                         </div>
                                     )}
-                                <div className="reviews_rating">
-                                    <RatingStar maxScore={5} rating={product.rating} id="rating-star-common" />
-                                    <span>({product.reviewCount} Müşteri Değerlendirmesi)</span>
-                                </div>
-                                
-                                {/* WhatsApp İlgi Sayısı - Sadece 3 ve üzeri olduğunda göster */}
-                                {(product.whatsappClicks || 0) >= 3 && (
-                                    <div className="whatsapp-interest">
-                                        <span className="interest-count">
-                                            <i className="fab fa-whatsapp" style={{color: '#25D366', marginRight: '5px'}}></i>
-                                            {product.whatsappClicks >= 10 ? `${product.whatsappClicks}+` : product.whatsappClicks} kişi bu ürünle ilgilendi
-                                        </span>
+
+                                    {/* VAR OLAN ORTALAMA RATING GÖRÜNÜMÜ */}
+                                    <div className="reviews_rating">
+                                        <RatingStar maxScore={5} rating={product.rating} id="rating-star-common" />
+                                        <span>({product.reviewCount} Müşteri Değerlendirmesi)</span>
                                     </div>
-                                )}
-                                <div className="price-section">
-                                    <h4 className="current-price">₺{product.price.toLocaleString()}</h4>
-                                    {product.originalPrice && product.originalPrice !== product.price && (
-                                        <span className="original-price">Orijinal: ₺{product.originalPrice.toLocaleString()}</span>
+
+                                    {/* ⭐ YENİ: KULLANICI YORUM + 1–5 YILDIZ SİSTEMİ */}
+                                    <div style={{ marginTop: "24px" }}>
+                                        <ProductReviews />
+                                    </div>
+                                
+                                    {/* WhatsApp İlgi Sayısı - Sadece 3 ve üzeri olduğunda göster */}
+                                    {(product.whatsappClicks || 0) >= 3 && (
+                                        <div className="whatsapp-interest">
+                                            <span className="interest-count">
+                                                <i className="fab fa-whatsapp" style={{color: '#25D366', marginRight: '5px'}}></i>
+                                                {product.whatsappClicks >= 10 ? `${product.whatsappClicks}+` : product.whatsappClicks} kişi bu ürünle ilgilendi
+                                            </span>
+                                        </div>
                                     )}
-                                    <div className="price-info mt-2">
-                                        <small className="text-muted">
-                                            <i className="fa fa-info-circle" style={{marginRight: '5px'}}></i>
-                                            Fiyatlarımıza KDV dahildir ve ürünlerimiz faturalıdır
-                                        </small>
-                                        <div className="delivery-payment-info mt-2">
-                                            <div className="delivery-info mb-3">
-                                                <div className="alert alert-success py-2 px-3 mb-0" style={{fontSize: '0.9rem'}}>
-                                                    <i className="fa fa-truck" style={{marginRight: '8px', fontSize: '1.1rem'}}></i>
-                                                    <strong>Tahmini Teslim Tarihi:</strong> {new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('tr-TR', { 
-                                                        day: '2-digit', 
-                                                        month: '2-digit', 
-                                                        year: 'numeric' 
-                                                    })}
+
+                                    <div className="price-section">
+                                        <h4 className="current-price">₺{product.price.toLocaleString()}</h4>
+                                        {product.originalPrice && product.originalPrice !== product.price && (
+                                            <span className="original-price">Orijinal: ₺{product.originalPrice.toLocaleString()}</span>
+                                        )}
+                                        <div className="price-info mt-2">
+                                            <small className="text-muted">
+                                                <i className="fa fa-info-circle" style={{marginRight: '5px'}}></i>
+                                                Fiyatlarımıza KDV dahildir ve ürünlerimiz faturalıdır
+                                            </small>
+                                            <div className="delivery-payment-info mt-2">
+                                                <div className="delivery-info mb-3">
+                                                    <div className="alert alert-success py-2 px-3 mb-0" style={{fontSize: '0.9rem'}}>
+                                                        <i className="fa fa-truck" style={{marginRight: '8px', fontSize: '1.1rem'}}></i>
+                                                        <strong>Tahmini Teslim Tarihi:</strong> {new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('tr-TR', { 
+                                                            day: '2-digit', 
+                                                            month: '2-digit', 
+                                                            year: 'numeric' 
+                                                        })}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div className="payment-info mb-3">
-                                                <div className="alert alert-info py-2 px-3 mb-0" style={{fontSize: '0.9rem'}}>
-                                                    <i className="fa fa-credit-card" style={{marginRight: '8px', fontSize: '1.1rem'}}></i>
-                                                    <strong>Ödeme:</strong> Ürün tesliminde ödemenizi tüm kredi/banka kartlarıyla ya da nakit yapabilirsiniz.
+                                                <div className="payment-info mb-3">
+                                                    <div className="alert alert-info py-2 px-3 mb-0" style={{fontSize: '0.9rem'}}>
+                                                        <i className="fa fa-credit-card" style={{marginRight: '8px', fontSize: '1.1rem'}}></i>
+                                                        <strong>Ödeme:</strong> Ürün tesliminde ödemenizi tüm kredi/banka kartlarıyla ya da nakit yapabilirsiniz.
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div className="return-info">
-                                                <small className="text-muted" style={{fontSize: '0.8rem'}}>
-                                                    <i className="fa fa-undo" style={{marginRight: '5px'}}></i>
-                                                    İade Süresi: 30 gün
-                                                </small>
+                                                <div className="return-info">
+                                                    <small className="text-muted" style={{fontSize: '0.8rem'}}>
+                                                        <i className="fa fa-undo" style={{marginRight: '5px'}}></i>
+                                                        İade Süresi: 30 gün
+                                                    </small>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
                                 
-                                {/* WhatsApp ve Telefon İletişim Butonları - Fiyatın hemen altında */}
-                                <div className="contact-buttons-price">
-                                    <a 
-                                        href={`https://wa.me/905393973949?text=Merhaba, ${product.title} ürünü hakkında bilgi almak istiyorum. Ürün Kodu: ${product.productCode} - Fiyat: ₺${product.price.toLocaleString()}`} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="whatsapp-btn-price"
-                                        onClick={() => handleWhatsAppClick(product.id)}
-                                    >
-                                        <i className="fab fa-whatsapp" style={{fontSize: '18px', marginRight: '8px'}}></i>
-                                        WhatsApp ile İletişim
-                                    </a>
-                                    <a 
-                                        href="tel:+905393973949" 
-                                        className="phone-btn-price"
-                                    >
-                                        <i className="fa fa-phone"></i>
-                                        Telefon Et
-                                    </a>
-                                </div>
-                                    {/* Color seçimi kaldırıldı - sadece ana görsel kullanıyoruz */}
+                                    {/* WhatsApp ve Telefon İletişim Butonları - Fiyatın hemen altında */}
+                                    <div className="contact-buttons-price">
+                                        <a 
+                                            href={`https://wa.me/905393973949?text=Merhaba, ${product.title} ürünü hakkında bilgi almak istiyorum. Ürün Kodu: ${product.productCode} - Fiyat: ₺${product.price.toLocaleString()}`} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="whatsapp-btn-price"
+                                            onClick={() => handleWhatsAppClick(product.id)}
+                                        >
+                                            <i className="fab fa-whatsapp" style={{fontSize: '18px', marginRight: '8px'}}></i>
+                                            WhatsApp ile İletişim
+                                        </a>
+                                        <a 
+                                            href="tel:+905393973949" 
+                                            className="phone-btn-price"
+                                        >
+                                            <i className="fa fa-phone"></i>
+                                            Telefon Et
+                                        </a>
+                                    </div>
+
+                                    {/* Adet seçimi */}
                                     <form id="product_count_form_two">
                                         <div className="product_count_one">
                                             <div className="plus-minus-input">
@@ -330,7 +341,7 @@ const ProductDetailsOne = () => {
                                         </div>
                                     </form>
                                     
-                                    {/* Ürün Açıklaması - Color bilgisinin altında */}
+                                    {/* Ürün Açıklaması */}
                                     <div className="product-description-section mt-4">
                                         <h5 className="description-title">Ürün Açıklaması</h5>
                                         <div className="description-content">
@@ -348,8 +359,7 @@ const ProductDetailsOne = () => {
                                     </div>
                                     
                                     <div className="links_Product_areas">
-                                        
-                                        {/* WhatsApp ve Telefon İletişim Butonları */}
+                                        {/* WhatsApp ve Telefon İletişim Butonları (altta da dursun diye bıraktım) */}
                                         <div className="contact-buttons">
                                             <a 
                                                 href={`https://wa.me/905393973949?text=Merhaba, ${product.title} ürünü hakkında bilgi almak istiyorum. Ürün Kodu: ${product.productCode} - Fiyat: ₺${product.price.toLocaleString()}`} 
@@ -382,4 +392,4 @@ const ProductDetailsOne = () => {
     )
 }
 
-export default ProductDetailsOne
+export default ProductDetails

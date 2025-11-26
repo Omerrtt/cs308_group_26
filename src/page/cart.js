@@ -25,7 +25,6 @@ const Cart = () => {
     return (
         <>
             <Header />
-            <Banner title="Shopping Cart" />
             <section className="ptb-100">
                 <div className="container">
                     <div className="row">

@@ -259,6 +259,14 @@ const ProductDetailsOne = () => {
                                     {product.originalPrice && product.originalPrice !== product.price && (
                                         <span className="original-price">Orijinal: ₺{product.originalPrice.toLocaleString()}</span>
                                     )}
+                                    <div className="stock-status mt-2">
+                                        <small 
+                                            className={`badge ${product.stock > 3 ? 'bg-success' : 'bg-warning text-dark'}`}
+                                            title="Stok durumu"
+                                        >
+                                            {product.stock ? `Stokta ${product.stock} adet var` : 'Stok bilgisi yakında'}
+                                        </small>
+                                    </div>
                                     <div className="price-info mt-2">
                                         <small className="text-muted">
                                             <i className="fa fa-info-circle" style={{marginRight: '5px'}}></i>

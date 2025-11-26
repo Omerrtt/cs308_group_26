@@ -22,7 +22,7 @@ const Shop = () => {
         
         switch (sortType) {
             case 'popularity':
-                return sortedProducts.sort((a, b) => (b.rating * b.reviewCount) - (a.rating * a.reviewCount))
+                return sortedProducts.sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0))
             case 'newness':
                 return sortedProducts.sort((a, b) => b.id - a.id)
             case 'price-low':
@@ -42,9 +42,9 @@ const Shop = () => {
     const filterProducts = (products, filterType) => {
         switch (filterType) {
             case 'most-popular':
-                return sortProducts(products, 'popularity')
+                return sortProducts(products, 'popularity') // reviewCount'a göre sıralar
             case 'best-seller':
-                return sortProducts(products, 'popularity')
+                return sortProducts(products, 'popularity') // reviewCount'a göre sıralar
             case 'trending':
                 return sortProducts(products, 'newness')
             case 'featured':

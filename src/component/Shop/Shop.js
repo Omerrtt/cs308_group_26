@@ -1,15 +1,20 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
+import { useLocation } from 'react-router-dom'
 import ProductCard from '../Common/Product/ProductCard'
 import Filter from './Filter'
-import { useSelector } from "react-redux";
 import { getProductsData } from '../../app/data/productsData';
 import BabyHeading from '../BabyToys/Heading';
+import { filterProductsBySearch } from '../../utils/productSearch'
 const Shop = () => {
+    const location = useLocation()
     const [allProducts, setAllProducts] = useState([])
     const [filteredProducts, setFilteredProducts] = useState([])
     const [loading, setLoading] = useState(true)
     const [sortBy, setSortBy] = useState('popularity')
     const [filterBy, setFilterBy] = useState('most-popular')
+    const [searchQuery, setSearchQuery] = useState('')
+    const [currentPage, setCurrentPage] = useState(1)
+    const itemsPerPage = 50
 
     // Sıralama fonksiyonları
     const sortProducts = (products, sortType) => {
@@ -52,15 +57,11 @@ const Shop = () => {
     // Sıralama değiştiğinde
     const handleSortChange = (sortType) => {
         setSortBy(sortType)
-        const sorted = sortProducts(allProducts, sortType)
-        setFilteredProducts(sorted)
     }
 
     // Filtre değiştiğinde
     const handleFilterChange = (filterType) => {
         setFilterBy(filterType)
-        const filtered = filterProducts(allProducts, filterType)
-        setFilteredProducts(filtered)
     }
 
     useEffect(() => {
@@ -80,6 +81,81 @@ const Shop = () => {
 
         fetchProducts()
     }, [])
+
+    useEffect(() => {
+        if (!allProducts.length) return
+        const params = new URLSearchParams(location.search)
+        const query = params.get('search') || ''
+        setSearchQuery(query)
+
+        let nextProducts = [...allProducts]
+
+        if (query) {
+            nextProducts = filterProductsBySearch(nextProducts, query)
+        }
+
+        nextProducts = filterProducts(nextProducts, filterBy)
+        nextProducts = sortProducts(nextProducts, sortBy)
+
+        setFilteredProducts(nextProducts)
+        setCurrentPage(1)
+    }, [location.search, allProducts, sortBy, filterBy])
+
+    const totalPages = useMemo(() => {
+        if (!filteredProducts.length) return 1
+        return Math.ceil(filteredProducts.length / itemsPerPage)
+    }, [filteredProducts.length])
+
+    const paginatedProducts = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage
+        const endIndex = startIndex + itemsPerPage
+        return filteredProducts.slice(startIndex, endIndex)
+    }, [filteredProducts, currentPage])
+
+    const handlePageChange = (pageNumber) => {
+        if (pageNumber < 1 || pageNumber > totalPages) return
+        setCurrentPage(pageNumber)
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+
+    const renderPagination = () => {
+        if (totalPages <= 1) return null
+
+        const pagesToShow = []
+        const maxVisible = 5
+        let start = Math.max(1, currentPage - 2)
+        let end = Math.min(totalPages, start + maxVisible - 1)
+
+        if (end - start < maxVisible - 1) {
+            start = Math.max(1, end - maxVisible + 1)
+        }
+
+        for (let i = start; i <= end; i++) {
+            pagesToShow.push(i)
+        }
+
+        return (
+            <ul className="pagination justify-content-center">
+                <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                    <button className="page-link" onClick={() => handlePageChange(currentPage - 1)}>
+                        «
+                    </button>
+                </li>
+                {pagesToShow.map((page) => (
+                    <li key={page} className={`page-item ${currentPage === page ? 'active' : ''}`}>
+                        <button className="page-link" onClick={() => handlePageChange(page)}>
+                            {page}
+                        </button>
+                    </li>
+                ))}
+                <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                    <button className="page-link" onClick={() => handlePageChange(currentPage + 1)}>
+                        »
+                    </button>
+                </li>
+            </ul>
+        )
+    }
 
     if (loading) {
         return (
@@ -101,7 +177,7 @@ const Shop = () => {
             <section id="shop_main_area" className="ptb-100">
                 <div className="container">
                     {/* Başlık */}
-                    <BabyHeading heading="Tüm Ürünler" />
+                    <BabyHeading heading={searchQuery ? `"${searchQuery}" Arama Sonuçları` : "Tüm Ürünler"} />
                     
                     {/* Filter Bileşeni */}
                     <div className="row mb-4">
@@ -147,11 +223,27 @@ const Shop = () => {
                     </div>
 
                     <div className="row">
-                        {filteredProducts.map((data, index) => (
-                            <div className="col-lg-3 col-md-4 col-sm-6 col-12 mb-4" key={index}>
+                        {paginatedProducts.map((data, index) => (
+                            <div className="col-lg-3 col-md-4 col-sm-6 col-12 mb-4" key={data.id || index}>
                                 <ProductCard data={data} />
                             </div>
                         ))}
+                    </div>
+
+                    <div className="row">
+                        <div className="col-12 mt-4">
+                            {renderPagination()}
+                            <div className="text-center text-muted mt-2">
+                                {filteredProducts.length > 0 && (
+                                    <small>
+                                        {((currentPage - 1) * itemsPerPage) + 1}
+                                        -
+                                        {Math.min(currentPage * itemsPerPage, filteredProducts.length)}
+                                        {' '} / {filteredProducts.length} ürün gösteriliyor
+                                    </small>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>

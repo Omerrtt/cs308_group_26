@@ -7,7 +7,6 @@ import NaveItems from './NaveItems'
 import TopHeader from './TopHeader'
 import { useHistory } from "react-router-dom"
 import svg from '../../../assets/img/svg/cancel.svg'
-import svgsearch from '../../../assets/img/svg/search.svg'
 
 import { useDispatch, useSelector } from "react-redux";
 import Swal from 'sweetalert2'
@@ -164,11 +163,6 @@ const Header = () => {
                                     </div>
 
                                     <ul className="header-action-link action-color--black action-hover-color--golden">
-                                        <li>
-                                            <a href="#search" className="search_width" onClick={handleSearch} >
-                                                <img src={svgsearch} alt="img" />
-                                            </a>
-                                        </li>
                                         <li>
                                             <Link to="/cart" className="cart-link" title="Sepetim">
                                                 <i className="fa fa-shopping-cart"></i>

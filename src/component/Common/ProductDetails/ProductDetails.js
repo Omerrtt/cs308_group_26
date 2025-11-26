@@ -203,6 +203,33 @@ const ProductDetailsOne = () => {
         ? product.description.split(/\n+/).map(paragraph => paragraph.trim()).filter(Boolean)
         : [];
 
+    // Tüm görselleri birleştir: image + images array'i
+    const getAllImages = () => {
+        const allImages = [];
+        
+        // Önce ana görseli ekle (image)
+        if (product?.image) {
+            allImages.push(product.image);
+        } else if (product?.img) {
+            allImages.push(product.img);
+        } else if (product?.mainImage) {
+            allImages.push(product.mainImage);
+        }
+        
+        // Sonra images array'indeki görselleri ekle (tekrar edenleri hariç tut)
+        if (product?.images && Array.isArray(product.images)) {
+            product.images.forEach(img => {
+                if (img && !allImages.includes(img)) {
+                    allImages.push(img);
+                }
+            });
+        }
+        
+        return allImages;
+    };
+
+    const allImages = getAllImages();
+
     return (
         <>
             <section id="product_single_one" className="ptb-100">
@@ -229,11 +256,11 @@ const ProductDetailsOne = () => {
                                 </div>
                                 
                                 {/* Thumbnail Galerisi */}
-                                {product.images && product.images.length > 0 && (
+                                {allImages.length > 0 && (
                                     <div className="product-gallery mt-4">
                                         <h6 className="gallery-title">Ürün Görselleri</h6>
                                         <div className="gallery-thumbnails">
-                                            {product.images.map((image, index) => (
+                                            {allImages.map((image, index) => (
                                                 <div 
                                                     key={index} 
                                                     className={`thumbnail-item ${img === image ? 'active' : ''} ${isHovering && hoveredImage === image ? 'hovering' : ''}`}

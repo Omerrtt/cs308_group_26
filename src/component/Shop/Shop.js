@@ -68,17 +68,30 @@ const Shop = () => {
         const fetchProducts = async () => {
             setLoading(true)
             try {
-                const products = getProductsData()
+                console.log('🔄 Shop: Ürünler yükleniyor...');
+                const products = await getProductsData() // await eklendi
+                console.log(`✅ Shop sayfası: ${products ? products.length : 0} ürün yüklendi`)
+                
+                if (!products || products.length === 0) {
+                    console.warn('⚠️ Shop: Ürünler boş! Lütfen console\'daki hata mesajlarını kontrol edin.');
+                }
+                
                 // İlk yüklemede default olarak popularity'ye göre sırala
-                const sortedProducts = sortProducts(products, 'popularity')
+                const sortedProducts = sortProducts(products || [], 'popularity')
                 setAllProducts(sortedProducts)
                 setFilteredProducts(sortedProducts)
+                
+                if (sortedProducts.length === 0) {
+                    console.error('❌ Shop: Hiç ürün yüklenemedi!');
+                }
             } catch (error) {
-                console.error('Ürünler yüklenirken hata:', error)
+                console.error('❌ Shop: Ürünler yüklenirken hata:', error)
+                console.error('Hata detayı:', error.stack)
                 setAllProducts([])
                 setFilteredProducts([])
+            } finally {
+                setLoading(false)
             }
-            setLoading(false)
         }
 
         fetchProducts()

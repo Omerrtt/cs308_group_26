@@ -1,6 +1,6 @@
-import {createSlice} from "@reduxjs/toolkit";
+import {createSlice, createAsyncThunk} from "@reduxjs/toolkit";
 // Demo Data
-import { getProductsData } from '../data/productsData'
+import { getProductsData, getProductsDataSync, fetchProductsFromFirebase } from '../data/productsData'
 // Alert
 import Swal from "sweetalert2";
 
@@ -28,22 +28,42 @@ const saveCartToStorage = (carts) => {
     }
 };
 
+// Async thunk: Firebase'den ürünleri yükle
+export const loadProductsFromFirebase = createAsyncThunk(
+    'products/loadFromFirebase',
+    async () => {
+        const products = await getProductsData();
+        return products;
+    }
+);
+
 // Product Slice
 const productsSlice = createSlice({
     name: 'products',
     initialState: {
-        products: getProductsData(),
+        products: getProductsDataSync() || [], // İlk yükleme için senkron versiyon (JSON'dan)
         carts: loadCartFromStorage(),
         favorites: [],
         compare: [],
-        single:null,
+        single: null,
+        loading: false,
+        error: null,
     },
     reducers: {
         // Get Single Product
         getProductById: (state, action) => {
             let { id } = action.payload;
-            let arr = state.products.find(item => item.id === parseInt(id))
-            state.single = arr
+            if (!Array.isArray(state.products)) {
+                console.warn('⚠️ Redux getProductById: products array değil');
+                state.single = null;
+                return;
+            }
+            const searchId = parseInt(id, 10);
+            let arr = state.products.find(item => {
+                const itemId = item.id || item.originalId;
+                return itemId === searchId || itemId === id || item.originalId === id;
+            });
+            state.single = arr || null;
         },
         // Add to Cart
         addToCart: (state, action) =>{
@@ -214,6 +234,23 @@ const productsSlice = createSlice({
             state.favorites = arr
             
         },
+    },
+    extraReducers: (builder) => {
+        builder
+            .addCase(loadProductsFromFirebase.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(loadProductsFromFirebase.fulfilled, (state, action) => {
+                state.loading = false;
+                state.products = action.payload;
+                console.log(`✅ Redux Store: ${action.payload.length} ürün Firebase'den yüklendi ve store'a eklendi`);
+            })
+            .addCase(loadProductsFromFirebase.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.error.message;
+                console.error('Firebase ürün yükleme hatası:', action.error);
+            });
     }
 })
 

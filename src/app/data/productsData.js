@@ -1,7 +1,17 @@
-// Tüm ürün verilerini JSON'dan yükle
-import allProductsData from './allProducts.json'
+// Tüm ürün verilerini Firebase'den veya JSON'dan yükle
+import { db } from '../../firebaseConfig'
 import categoryTreeData from './categoryTree.json'
 import productEans from './productEans.json'
+
+// Fallback için JSON'dan yükle (Firebase yüklenene kadar)
+let allProductsData = [];
+try {
+    // JSON import'u sadece fallback için
+    const jsonData = require('./allProducts.json');
+    allProductsData = jsonData;
+} catch (e) {
+    console.warn('allProducts.json yüklenemedi, Firebase kullanılacak');
+}
 
 // Ürün adından benzersiz 6 haneli kod oluştur
 const generateProductCode = (productName) => {
@@ -21,9 +31,82 @@ const generateProductCode = (productName) => {
     return code.toString();
 }
 
-// Ürünleri formatla ve ID ekle
-const formatProducts = () => {
-    return allProductsData.map((product, index) => {
+// Firebase'den ürünleri çek
+let cachedProducts = null;
+let isLoadingProducts = false;
+
+export const fetchProductsFromFirebase = async () => {
+    // Cache varsa direkt dön
+    if (cachedProducts) {
+        return cachedProducts;
+    }
+    
+    // Zaten yükleniyorsa bekle
+    if (isLoadingProducts) {
+        return new Promise((resolve) => {
+            const checkInterval = setInterval(() => {
+                if (cachedProducts) {
+                    clearInterval(checkInterval);
+                    resolve(cachedProducts);
+                }
+            }, 100);
+        });
+    }
+    
+    isLoadingProducts = true;
+    
+    try {
+        console.log('🔥 Firebase\'den ürünler yükleniyor...');
+        const snapshot = await db.collection('products').get();
+        const products = [];
+        
+        if (snapshot.empty) {
+            console.warn('⚠️ Firebase\'de hiç ürün bulunamadı! Collection boş.');
+            isLoadingProducts = false;
+            return [];
+        }
+        
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            // Firebase'deki document ID'sini kullan, ama eğer product içinde id varsa onu öncelikli kullan
+            products.push({
+                ...data,
+                // Firebase document ID'sini originalId olarak sakla, product içindeki id'yi kullan
+                id: data.id || doc.id,
+                originalId: data.originalId || data.id || doc.id,
+                firebaseDocId: doc.id // Debug için
+            });
+        });
+        
+        console.log(`✅ ${products.length} ürün Firebase'den başarıyla yüklendi!`);
+        if (products.length > 0) {
+            console.log(`📊 İlk 3 ürün örneği:`, products.slice(0, 3).map(p => ({ 
+                id: p.id, 
+                originalId: p.originalId,
+                name: p.name || p.title || 'İsim yok',
+                hasImage: !!(p.image || p.img || p.images?.[0])
+            })));
+        }
+        cachedProducts = products;
+        isLoadingProducts = false;
+        return products;
+    } catch (error) {
+        console.error('❌ Firebase\'den ürün yükleme hatası:', error);
+        console.log('⚠️ Fallback: JSON dosyasından yükleniyor...');
+        isLoadingProducts = false;
+        // Hata durumunda JSON'dan yükle
+        if (allProductsData && allProductsData.length > 0) {
+            console.log(`📦 ${allProductsData.length} ürün JSON'dan yüklendi (Firebase hatası nedeniyle)`);
+            return formatProductsFromJSON(allProductsData);
+        }
+        console.warn('⚠️ Ne Firebase ne de JSON\'dan ürün yüklenemedi!');
+        return [];
+    }
+};
+
+// JSON'dan ürünleri formatla (fallback için)
+const formatProductsFromJSON = (productsData) => {
+    return productsData.map((product, index) => {
         // Yeni obje oluştur (readonly property hatasını önlemek için)
         const formattedProduct = { ...product };
         const productIdString = (formattedProduct.id || formattedProduct['Product ID'] || formattedProduct.productId || '').toString();
@@ -82,8 +165,162 @@ const formatProducts = () => {
     });
 }
 
-export const getProductsData = () => {
-    return formatProducts();
+// Firebase Timestamp'lerini Date'e çevir (yardımcı fonksiyon)
+const convertFirebaseTimestamps = (product) => {
+    // Firebase Timestamp'lerini Date'e çevir (Redux serialization için)
+    if (product.createdAt) {
+        if (typeof product.createdAt.toDate === 'function') {
+            product.createdAt = product.createdAt.toDate().toISOString();
+        } else if (product.createdAt.seconds) {
+            // Firestore Timestamp objesi
+            product.createdAt = new Date(product.createdAt.seconds * 1000).toISOString();
+        }
+    }
+    
+    if (product.updatedAt) {
+        if (typeof product.updatedAt.toDate === 'function') {
+            product.updatedAt = product.updatedAt.toDate().toISOString();
+        } else if (product.updatedAt.seconds) {
+            // Firestore Timestamp objesi
+            product.updatedAt = new Date(product.updatedAt.seconds * 1000).toISOString();
+        }
+    }
+    
+    // firebaseDocId'yi kaldır (debug için eklenmişti)
+    if (product.firebaseDocId) {
+        delete product.firebaseDocId;
+    }
+    
+    return product;
+}
+
+// Ürünleri formatla ve ID ekle (Firebase'den gelen veriler için)
+const formatProducts = (productsData) => {
+    if (!productsData || productsData.length === 0) {
+        console.warn('⚠️ formatProducts: productsData boş, JSON\'dan yükleniyor...');
+        if (allProductsData && allProductsData.length > 0) {
+            return formatProductsFromJSON(allProductsData);
+        }
+        return [];
+    }
+    
+    console.log(`📝 formatProducts: ${productsData.length} ürün formatlanıyor...`);
+    
+    return productsData.map((product, index) => {
+        // Yeni obje oluştur (readonly property hatasını önlemek için)
+        const formattedProduct = { ...product };
+        
+        // Firebase'den gelen ID'yi kullan (zaten formatlanmış olmalı)
+        const productIdString = (formattedProduct.id || formattedProduct['Product ID'] || formattedProduct.productId || formattedProduct.originalId || '').toString();
+        const numericId = parseInt(productIdString, 10);
+
+        // ID'yi sayıya çevir ve yedekle - eğer sayı değilse string olarak kullan
+        formattedProduct.originalId = formattedProduct.originalId || productIdString || null;
+        
+        // ID'yi sayıya çevirmeye çalış, başarısız olursa string ID kullan
+        if (!Number.isNaN(numericId) && numericId > 0) {
+            formattedProduct.id = numericId;
+        } else if (productIdString) {
+            // String ID kullan (Firebase document ID gibi)
+            formattedProduct.id = productIdString;
+        } else {
+            // Son çare: index kullan
+            formattedProduct.id = index + 1;
+        }
+        
+        // Eğer productCode yoksa oluştur
+        if (!formattedProduct.productCode) {
+            formattedProduct.productCode = generateProductCode(formattedProduct.name || formattedProduct['Product Name']);
+        }
+
+        // EAN bilgisini ekle - öncelik allProducts.json'daki ean alanı
+        if (!formattedProduct.ean) {
+            formattedProduct.ean =
+                formattedProduct['EAN'] ||
+                formattedProduct['EAN Number'] ||
+                formattedProduct['Barkod (EAN Number)'] ||
+                null;
+            
+            // Eğer hala yoksa, productEans.json'dan fallback olarak al
+            if (!formattedProduct.ean && productEans[productIdString]) {
+                formattedProduct.ean = productEans[productIdString].toString();
+            }
+        }
+        
+        // Ana görseli image attribute'undan öncelikli olarak al
+        if (formattedProduct.image) {
+            formattedProduct.img = formattedProduct.image;
+            formattedProduct.mainImage = formattedProduct.image;
+        } else if (formattedProduct.img) {
+            formattedProduct.mainImage = formattedProduct.img;
+        } else if (formattedProduct.mainImage) {
+            formattedProduct.img = formattedProduct.mainImage;
+        } else if (formattedProduct.images && formattedProduct.images.length > 0) {
+            formattedProduct.img = formattedProduct.images[0];
+            formattedProduct.mainImage = formattedProduct.images[0];
+        }
+        
+        // title alanını name'den oluştur
+        if (!formattedProduct.title) {
+            formattedProduct.title = formattedProduct.name || formattedProduct['Product Name'];
+        }
+        
+        // inStock varsayılan olarak true
+        if (formattedProduct.inStock === undefined) {
+            formattedProduct.inStock = true;
+        }
+        
+        // Firebase Timestamp'lerini dönüştür
+        convertFirebaseTimestamps(formattedProduct);
+        
+        return formattedProduct;
+    });
+}
+
+// Ana fonksiyon: Firebase'den veya JSON'dan ürünleri getir
+export const getProductsData = async () => {
+    try {
+        console.log('🔄 getProductsData: Firebase\'den ürünler çekiliyor...');
+        const products = await fetchProductsFromFirebase();
+        console.log(`📦 getProductsData: Firebase'den ${products.length} ürün alındı`);
+        
+        if (!products || products.length === 0) {
+            console.warn('⚠️ Firebase\'den ürün gelmedi, JSON\'dan yükleniyor...');
+            if (allProductsData && allProductsData.length > 0) {
+                const jsonProducts = formatProductsFromJSON(allProductsData);
+                console.log(`📦 getProductsData: JSON'dan ${jsonProducts.length} ürün yüklendi`);
+                return jsonProducts;
+            }
+            console.error('❌ Ne Firebase ne de JSON\'dan ürün yüklenemedi!');
+            return [];
+        }
+        
+        const formatted = formatProducts(products);
+        console.log(`✅ getProductsData: ${formatted.length} ürün formatlandı ve döndürüldü`);
+        return formatted;
+    } catch (error) {
+        console.error('❌ getProductsData hatası:', error);
+        // Fallback: JSON'dan yükle
+        if (allProductsData && allProductsData.length > 0) {
+            const jsonProducts = formatProductsFromJSON(allProductsData);
+            console.log(`📦 getProductsData: Hata nedeniyle JSON'dan ${jsonProducts.length} ürün yüklendi`);
+            return jsonProducts;
+        }
+        return [];
+    }
+}
+
+// Senkron versiyon (geriye dönük uyumluluk için - Redux store için)
+export const getProductsDataSync = () => {
+    // Eğer cache varsa kullan
+    if (cachedProducts) {
+        return formatProducts(cachedProducts);
+    }
+    // Yoksa JSON'dan yükle
+    if (allProductsData && allProductsData.length > 0) {
+        return formatProductsFromJSON(allProductsData);
+    }
+    return [];
 }
 
 
@@ -305,9 +542,14 @@ const getCategoryNameBySlug = (slug) => {
     return null;
 }
 
-// Kategoriye göre ürünleri filtrele
-export const getProductsByCategory = (categorySlug) => {
-    const products = getProductsData();
+// Kategoriye göre ürünleri filtrele (async versiyon)
+export const getProductsByCategory = async (categorySlug) => {
+    const products = await getProductsData(); // await eklendi
+    
+    if (!products || !Array.isArray(products)) {
+        console.warn('⚠️ getProductsByCategory: products array değil veya boş');
+        return [];
+    }
     
     if (categorySlug === 'all' || categorySlug === 'tum-urunler') {
         return products;
@@ -381,8 +623,16 @@ export const getCategoryTree = () => {
     return categoryTreeData;
 }
 
-// ID'ye göre ürün bul
-export const getProductById = (id) => {
-    const products = getProductsData()
-    return products.find(product => product.id === parseInt(id))
+// ID'ye göre ürün bul (async versiyon)
+export const getProductById = async (id) => {
+    const products = await getProductsData() // await eklendi
+    if (!products || !Array.isArray(products)) {
+        console.warn('⚠️ getProductById: products array değil veya boş');
+        return null;
+    }
+    return products.find(product => {
+        const productId = product.id || product.originalId;
+        const searchId = parseInt(id, 10);
+        return productId === searchId || productId === id || product.originalId === id;
+    }) || null;
 }

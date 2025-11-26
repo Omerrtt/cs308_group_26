@@ -11,38 +11,43 @@ const TrendingProducts = () => {
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        try {
-            // En çok yorumlanan 100 ürünü al
-            const allProducts = getProductsData()
-            console.log('Toplam ürün sayısı:', allProducts.length)
-            console.log('İlk ürün:', allProducts[0])
-            
-            if (!allProducts || allProducts.length === 0) {
-                console.log('Ürün bulunamadı!')
+        const fetchProducts = async () => {
+            try {
+                setLoading(true)
+                // En çok yorumlanan 100 ürünü al
+                const allProducts = await getProductsData() // await eklendi
+                console.log('Toplam ürün sayısı:', allProducts?.length || 0)
+                console.log('İlk ürün:', allProducts?.[0])
+                
+                if (!allProducts || !Array.isArray(allProducts) || allProducts.length === 0) {
+                    console.log('Ürün bulunamadı!')
+                    setLoading(false)
+                    return
+                }
+                
+                // Yorum sayısına göre sırala (en yüksekten en düşüğe) - yeni array oluştur
+                const sortedByReviews = [...allProducts].sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0))
+                
+                // En çok yorumlanan 100 ürünü al
+                const top100Products = sortedByReviews.slice(0, Math.min(100, allProducts.length))
+                
+                // Random karıştır
+                const shuffled = [...top100Products].sort(() => 0.5 - Math.random())
+                
+                console.log('Kullanılabilir ürün sayısı:', shuffled.length)
+                setAllAvailableProducts(shuffled)
+                
+                // İlk 12 ürünü göster
+                const initialProducts = shuffled.slice(0, Math.min(12, shuffled.length))
+                setTrendingProducts(initialProducts)
+            } catch (error) {
+                console.error('TrendingProducts hatası:', error)
+            } finally {
                 setLoading(false)
-                return
             }
-            
-            // Yorum sayısına göre sırala (en yüksekten en düşüğe) - yeni array oluştur
-            const sortedByReviews = [...allProducts].sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0))
-            
-            // En çok yorumlanan 100 ürünü al
-            const top100Products = sortedByReviews.slice(0, Math.min(100, allProducts.length))
-            
-            // Random karıştır
-            const shuffled = [...top100Products].sort(() => 0.5 - Math.random())
-            
-            console.log('Kullanılabilir ürün sayısı:', shuffled.length)
-            setAllAvailableProducts(shuffled)
-            
-            // İlk 12 ürünü göster
-            const initialProducts = shuffled.slice(0, Math.min(12, shuffled.length))
-            setTrendingProducts(initialProducts)
-            setLoading(false)
-        } catch (error) {
-            console.error('TrendingProducts hatası:', error)
-            setLoading(false)
         }
+        
+        fetchProducts()
     }, [])
 
     const loadMoreProducts = () => {

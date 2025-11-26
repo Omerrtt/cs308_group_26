@@ -70,6 +70,7 @@ const ContactTwo = loadable(() => pMinDelay(import('./page/contact/contact-two')
 const Contact = loadable(() => pMinDelay(import('./page/contact'), 250), { fallback: <Loading /> });
 const ScrollToTop = loadable(() => pMinDelay(import('./component/Common/ScrollToTop'), 250), { fallback: <Loading /> });
 const Fashion = loadable(() => pMinDelay(import('./page/index'), 250), { fallback: <Loading /> });
+const UploadProducts = loadable(() => pMinDelay(import('./page/admin/upload-products'), 250), { fallback: <Loading /> });
 
 const App = () => {
   return (
@@ -144,6 +145,7 @@ const App = () => {
             <Route path='/contact-one' exact component={ContactOne} />
             <Route path='/contact-two' exact component={ContactTwo} />
             <Route path='/contact' exact component={Contact} />
+            <Route path='/admin/upload-products' exact component={UploadProducts} />
             <Route exact component={Error} />
           </Switch>
         </Router>

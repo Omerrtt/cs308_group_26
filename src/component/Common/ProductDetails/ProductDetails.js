@@ -19,19 +19,33 @@ const ProductDetailsOne = () => {
     const [showAllComments, setShowAllComments] = useState(false);
     
     useEffect(() => {
-        const productData = getProductById(id);
-        if (productData) {
-            // WhatsApp tıklama sayısını local storage'dan al
-            const whatsappClicks = getProductWhatsAppClicks(productData.id);
-            const updatedProduct = {
-                ...productData,
-                whatsappClicks: whatsappClicks
-            };
-            setProduct(updatedProduct);
-            // Redux store'u da güncelle
-            dispatch({ type: "products/getProductById", payload: { id } });
-        }
-        setLoading(false);
+        const fetchProduct = async () => {
+            setLoading(true);
+            try {
+                const productData = await getProductById(id); // await eklendi
+                if (productData) {
+                    // WhatsApp tıklama sayısını local storage'dan al
+                    const whatsappClicks = getProductWhatsAppClicks(productData.id);
+                    const updatedProduct = {
+                        ...productData,
+                        whatsappClicks: whatsappClicks
+                    };
+                    setProduct(updatedProduct);
+                    // Redux store'u da güncelle
+                    dispatch({ type: "products/getProductById", payload: { id } });
+                } else {
+                    console.warn(`⚠️ ProductDetails: ID ${id} ile ürün bulunamadı`);
+                    setProduct(null);
+                }
+            } catch (error) {
+                console.error('❌ ProductDetails: Ürün yüklenirken hata:', error);
+                setProduct(null);
+            } finally {
+                setLoading(false);
+            }
+        };
+        
+        fetchProduct();
     }, [id, dispatch]);
     
     // Product yüklendiğinde ana görseli ata - image attribute'unu öncelikli kullan

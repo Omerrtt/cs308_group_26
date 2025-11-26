@@ -154,13 +154,18 @@ const CategoryPage = () => {
                 
                 if (categorySlug === 'tum-urunler' || categorySlug === 'all') {
                     // Tüm ürünleri getir
-                    categoryProducts = getProductsData()
+                    categoryProducts = await getProductsData() // await eklendi
                     setCategoryName('Tüm Ürünler')
-                    setFilteredProducts(categoryProducts)
-                    setDisplayedProducts(categoryProducts.slice(0, itemsPerPage))
+                    if (Array.isArray(categoryProducts)) {
+                        setFilteredProducts(categoryProducts)
+                        setDisplayedProducts(categoryProducts.slice(0, itemsPerPage))
+                    } else {
+                        setFilteredProducts([])
+                        setDisplayedProducts([])
+                    }
                 } else {
                     // Belirli kategori ürünlerini getir
-                    categoryProducts = getProductsByCategory(categorySlug)
+                    categoryProducts = await getProductsByCategory(categorySlug) // await eklendi
                     console.log('CategoryPage - categoryProducts:', categoryProducts?.length || 0)
                     setCategoryName(getCategoryName(categorySlug))
                     
@@ -178,6 +183,11 @@ const CategoryPage = () => {
                     }
                     
                     // Alt kategori seçilmişse filtrele
+                    if (!Array.isArray(categoryProducts)) {
+                        console.warn('⚠️ CategoryPage: categoryProducts array değil:', categoryProducts);
+                        categoryProducts = [];
+                    }
+                    
                     if (subcategoryParam && foundSubcategories.length > 0) {
                         const subcat = foundSubcategories.find(s => s.slug === subcategoryParam)
                         if (subcat) {
@@ -198,10 +208,10 @@ const CategoryPage = () => {
                     }
                 }
                 
-                console.log('CategoryPage - Final categoryProducts:', categoryProducts?.length || 0)
+                console.log('CategoryPage - Final categoryProducts:', Array.isArray(categoryProducts) ? categoryProducts.length : 0)
                 console.log('CategoryPage - categoryName:', categoryName || getCategoryName(categorySlug))
                 
-                setProducts(categoryProducts)
+                setProducts(Array.isArray(categoryProducts) ? categoryProducts : [])
                 setSubcategories(foundSubcategories)
                 setCurrentPage(1)
             } catch (error) {

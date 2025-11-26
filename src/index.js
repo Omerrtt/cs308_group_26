@@ -9,6 +9,7 @@ import { store } from './app/store';
 import { Provider } from 'react-redux';
 import { auth, db } from './firebaseConfig';
 import { register, logout } from './app/slices/user';
+import { loadProductsFromFirebase } from './app/slices/products';
 
 // import Bootstrap CSS first
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -57,6 +58,9 @@ auth.onAuthStateChanged(async (user) => {
     store.dispatch(logout());
   }
 });
+
+// Uygulama başlatıldığında Firebase'den ürünleri yükle
+store.dispatch(loadProductsFromFirebase());
 
 ReactDOM.render(
   <React.StrictMode>

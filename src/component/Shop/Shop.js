@@ -69,8 +69,10 @@ const Shop = () => {
             setLoading(true)
             try {
                 const products = getProductsData()
-                setAllProducts(products)
-                setFilteredProducts(products)
+                // İlk yüklemede default olarak popularity'ye göre sırala
+                const sortedProducts = sortProducts(products, 'popularity')
+                setAllProducts(sortedProducts)
+                setFilteredProducts(sortedProducts)
             } catch (error) {
                 console.error('Ürünler yüklenirken hata:', error)
                 setAllProducts([])

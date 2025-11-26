@@ -35,7 +35,6 @@ const TopHeader = () => {
             return;
         }
         history.push(`/shop?search=${encodeURIComponent(trimmed)}`);
-        setSearchTerm('');
     }
 
     return (

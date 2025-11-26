@@ -38,17 +38,20 @@ const formatProducts = () => {
             formattedProduct.productCode = generateProductCode(formattedProduct.name || formattedProduct['Product Name']);
         }
 
-        // EAN bilgisini ekle
+        // EAN bilgisini ekle - öncelik allProducts.json'daki ean alanı
+        // allProducts.json'dan ean zaten kopyalandı ({ ...product } ile)
+        // Eğer yoksa, alternatif alan isimlerini kontrol et
         if (!formattedProduct.ean) {
             formattedProduct.ean =
-                formattedProduct['ean'] ||
                 formattedProduct['EAN'] ||
                 formattedProduct['EAN Number'] ||
                 formattedProduct['Barkod (EAN Number)'] ||
-                productEans[productIdString] ||
                 null;
-        } else if (!formattedProduct.ean && productEans[productIdString]) {
-            formattedProduct.ean = productEans[productIdString];
+            
+            // Eğer hala yoksa, productEans.json'dan fallback olarak al (geriye dönük uyumluluk)
+            if (!formattedProduct.ean && productEans[productIdString]) {
+                formattedProduct.ean = productEans[productIdString].toString();
+            }
         }
         
         // Ana görseli image attribute'undan öncelikli olarak al

@@ -272,8 +272,24 @@ const ProductDetailsOne = () => {
                                         </small>
                                     </div>
                                     {product.ean && (
-                                        <div className="product-ean-info mb-3">
+                                        <div className="product-ean-info mb-2">
                                             <small className="text-muted">EAN: <strong>{product.ean}</strong></small>
+                                        </div>
+                                    )}
+                                    {product.warrantyStatus && (
+                                        <div className="product-warranty-info mb-2">
+                                            <small className="text-muted">
+                                                <i className="fa fa-shield-alt" style={{marginRight: '5px', color: '#28a745'}}></i>
+                                                Garanti: <strong>{product.warrantyStatus}</strong>
+                                            </small>
+                                        </div>
+                                    )}
+                                    {product.distributor && (
+                                        <div className="product-distributor-info mb-3">
+                                            <small className="text-muted">
+                                                <i className="fa fa-building" style={{marginRight: '5px', color: '#007bff'}}></i>
+                                                Distribütör: <strong>{product.distributor}</strong>
+                                            </small>
                                         </div>
                                     )}
                                 <div className="reviews_rating">

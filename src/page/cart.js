@@ -17,7 +17,7 @@ const Cart = () => {
         }
     }, [status, history]);
 
-    // If user is not authenticated, don't render anything
+    // If user is not authenticated, don't render any thing
     if (!status) {
         return null;
     }

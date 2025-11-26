@@ -4,12 +4,36 @@ import { getProductsData } from '../data/productsData'
 // Alert
 import Swal from "sweetalert2";
 
+const CART_STORAGE_KEY = 'cs308_persisted_cart';
+
+const canUseStorage = () => typeof window !== 'undefined' && window.localStorage;
+
+const loadCartFromStorage = () => {
+    if (!canUseStorage()) return [];
+    try {
+        const stored = window.localStorage.getItem(CART_STORAGE_KEY);
+        return stored ? JSON.parse(stored) : [];
+    } catch (error) {
+        console.error('Cart load failed', error);
+        return [];
+    }
+};
+
+const saveCartToStorage = (carts) => {
+    if (!canUseStorage()) return;
+    try {
+        window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(carts));
+    } catch (error) {
+        console.error('Cart save failed', error);
+    }
+};
+
 // Product Slice
 const productsSlice = createSlice({
     name: 'products',
     initialState: {
         products: getProductsData(),
-        carts: [],
+        carts: loadCartFromStorage(),
         favorites: [],
         compare: [],
         single:null,
@@ -24,15 +48,58 @@ const productsSlice = createSlice({
         // Add to Cart
         addToCart: (state, action) =>{
 
-            let { id } = action.payload;
+            let { id, quantity = 1 } = action.payload;
+            const numericId = parseInt(id);
+            const normalizedQuantity = quantity > 0 ? quantity : 1;
+
+            const product = state.products.find(item => item.id === numericId)
+            if (!product) {
+                Swal.fire({
+                    title: 'Failed!',
+                    text: 'Product could not be found.',
+                    icon: 'error',
+                    showConfirmButton: false,
+                    timer: 3000
+                })
+                return;
+            }
+
+            const parsedStock = typeof product.stock === 'number'
+                ? product.stock
+                : parseInt(product.stock, 10);
+            const hasStockInfo = Number.isFinite(parsedStock);
+
+            if (hasStockInfo && parsedStock <= 0) {
+                Swal.fire({
+                    title: 'Stok Yok',
+                    text: 'Bu ürün şu anda stokta bulunmuyor.',
+                    icon: 'warning',
+                    showConfirmButton: false,
+                    timer: 3000
+                })
+                return;
+            }
+
+            const limitedQuantity = hasStockInfo
+                ? Math.min(normalizedQuantity, parsedStock)
+                : normalizedQuantity;
+
+            if (hasStockInfo && normalizedQuantity > parsedStock) {
+                Swal.fire({
+                    title: 'Stok Sınırı',
+                    text: `En fazla ${parsedStock} adet ekleyebilirsiniz.`,
+                    icon: 'info',
+                    showConfirmButton: false,
+                    timer: 3000
+                })
+            }
 
             // Check existance
-            let item = state.carts.find(i => i.id === parseInt(id))
+            let item = state.carts.find(i => i.id === numericId)
             if (item === undefined) {
-                // Get Product
-                let arr = state.products.find(item => item.id === parseInt(id))
-                arr.quantity = 1
-                state.carts.push(arr)
+                const cartItem = { ...product, quantity: limitedQuantity }
+                state.carts.push(cartItem)
+                saveCartToStorage(state.carts)
                 Swal.fire({
                     title: 'Success!',
                     text: 'Successfully added to your Cart',
@@ -51,7 +118,7 @@ const productsSlice = createSlice({
                     showConfirmButton: false,
                     timer: 5000
                   })
-              }
+            }
         },
         // Add to Compare
         addToComp: (state, action) =>{
@@ -101,6 +168,7 @@ const productsSlice = createSlice({
                     item.quantity = val
                 }
             })
+            saveCartToStorage(state.carts)
 
         },
         // Remove Cart
@@ -108,6 +176,7 @@ const productsSlice = createSlice({
             let { id } = action.payload;
             let arr = state.carts.filter(item => item.id !== parseInt(id))
             state.carts = arr
+            saveCartToStorage(state.carts)
             
         },
         // Delete from Compare
@@ -120,6 +189,7 @@ const productsSlice = createSlice({
         // Clear Cart
         clearCart: (state) =>{
             state.carts = []
+            saveCartToStorage(state.carts)
         },
         // Add to Favorite / Wishlist
         addToFav: (state, action) =>{

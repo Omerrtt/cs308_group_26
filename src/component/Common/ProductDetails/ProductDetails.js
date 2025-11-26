@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import RelatedProduct from './RelatedProduct'
-import { Link } from 'react-router-dom'
+import { Link, useHistory, useParams } from 'react-router-dom'
 import { useSelector, useDispatch } from "react-redux";
-import { useParams } from 'react-router-dom';
 import { RatingStar } from "rating-star";
 import Swal from 'sweetalert2';
 import { getProductById } from '../../../app/data/productsData';
@@ -11,6 +10,8 @@ import { incrementWhatsAppClick, getProductWhatsAppClicks } from '../../../utils
 const ProductDetailsOne = () => {
     let dispatch = useDispatch();
     let { id } = useParams();
+    const history = useHistory();
+    const isLoggedIn = useSelector(state => state.user.status);
     
     // Gerçek ürün verilerini al
     const [product, setProduct] = useState(null);
@@ -46,11 +47,6 @@ const ProductDetailsOne = () => {
             setImg(null);
         }
     }, [product]);
-
-    // Add to cart
-    const addToCart = async (id) => {
-        dispatch({ type: "products/addToCart", payload: { id } })
-    }
 
     // Add to Favorite
     const addToFav = async (id) => {
@@ -125,6 +121,11 @@ const ProductDetailsOne = () => {
     }, [])
 
     const incNum = () => {
+        if (product?.stock && count >= product.stock) {
+            Swal.fire('Stok Sınırı', `Stokta sadece ${product.stock} adet var.`, 'warning')
+            setCount(product.stock)
+            return
+        }
         setCount(count + 1)
     }
     const decNum = () => {
@@ -134,6 +135,39 @@ const ProductDetailsOne = () => {
             Swal.fire('Sorry!', "Minimun Quantity Reached",'warning')
             setCount(1)
         }
+    }
+
+    const handleAddToCartClick = () => {
+        if (!product) return;
+
+        if (!product.stock || product.stock <= 0) {
+            Swal.fire('Stok Yok', 'Bu ürün stokta olmadığı için sepete eklenemez.', 'warning')
+            return
+        }
+
+        if (count > product.stock) {
+            Swal.fire('Stok Sınırı', `En fazla ${product.stock} adet seçebilirsiniz.`, 'info')
+            setCount(product.stock)
+            return
+        }
+
+        if (!isLoggedIn) {
+            Swal.fire({
+                title: 'Giriş Gerekli',
+                text: 'Sepete ürün eklemek için lütfen önce giriş yapın.',
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonText: 'Giriş Yap',
+                cancelButtonText: 'İptal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    history.push('/login')
+                }
+            })
+            return
+        }
+
+        dispatch({ type: "products/addToCart", payload: { id: product.id, quantity: count } })
     }
     if (loading) {
         return (
@@ -232,8 +266,10 @@ const ProductDetailsOne = () => {
                                     <div className="brand-info mb-2">
                                         <small className="text-muted">Marka: {product.brand}</small>
                                     </div>
-                                    <div className="product-code-info mb-2">
-                                        <small className="text-muted">Ürün Kodu: <strong>{product.productCode}</strong></small>
+                                    <div className="product-id-info mb-2">
+                                        <small className="text-muted">
+                                            Product ID: <strong>{product.originalId || product.id}</strong>
+                                        </small>
                                     </div>
                                     {product.ean && (
                                         <div className="product-ean-info mb-3">
@@ -337,6 +373,21 @@ const ProductDetailsOne = () => {
                                             </div>
                                         </div>
                                     </form>
+                                    <div className="add-to-cart-section mt-3">
+                                        <button 
+                                            type="button" 
+                                            className="btn btn-primary theme-btn-one"
+                                            onClick={handleAddToCartClick}
+                                            disabled={!product.stock || product.stock <= 0}
+                                        >
+                                            Sepete Ekle
+                                        </button>
+                                        {(!product.stock || product.stock <= 0) && (
+                                            <small className="text-danger d-block mt-2">
+                                                Bu ürün şu anda stokta yok.
+                                            </small>
+                                        )}
+                                    </div>
                                     
                                     {/* Ürün Açıklaması - Color bilgisinin altında */}
                                     <div className="product-description-section mt-4">

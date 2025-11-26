@@ -7,8 +7,8 @@ export const tokenizeSearch = (text) => {
     .filter(Boolean);
 };
 
-export const matchesSearchTokens = (product, tokens) => {
-  if (!tokens.length || !product) return false;
+const getSearchableFields = (product) => {
+  if (!product) return [];
 
   const nameField = (product.name || product.title || '').toLowerCase();
   const descriptionField = (product.description || '').toLowerCase();
@@ -17,18 +17,45 @@ export const matchesSearchTokens = (product, tokens) => {
     .filter(Boolean)
     .map((id) => id.toString().toLowerCase());
 
-  const hasMatch = (haystack) => tokens.some((token) => haystack.includes(token));
+  return [
+    nameField,
+    descriptionField,
+    eanField,
+    ...ids,
+  ].filter(Boolean);
+};
 
-  if (nameField && hasMatch(nameField)) return true;
-  if (descriptionField && hasMatch(descriptionField)) return true;
-  if (eanField && hasMatch(eanField)) return true;
+const tokenExistsInFields = (token, fields) =>
+  fields.some((field) => field.includes(token));
 
-  return ids.some((id) => hasMatch(id));
+export const matchesAnySearchToken = (product, tokens) => {
+  if (!tokens.length || !product) return false;
+
+  const fields = getSearchableFields(product);
+  return tokens.some((token) => tokenExistsInFields(token, fields));
+};
+
+export const matchesAllSearchTokens = (product, tokens) => {
+  if (!tokens.length || !product) return false;
+
+  const fields = getSearchableFields(product);
+  return tokens.every((token) => tokenExistsInFields(token, fields));
 };
 
 export const filterProductsBySearch = (products, query) => {
   const tokens = tokenizeSearch(query);
   if (!tokens.length) return products;
-  return products.filter((product) => matchesSearchTokens(product, tokens));
+
+  const strictMatches = products.filter((product) =>
+    matchesAllSearchTokens(product, tokens)
+  );
+
+  if (strictMatches.length) {
+    return strictMatches;
+  }
+
+  return products.filter((product) =>
+    matchesAnySearchToken(product, tokens)
+  );
 };
 

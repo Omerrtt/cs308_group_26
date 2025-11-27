@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet';
 import loadable from './component/Common/loader/loadable';
 import Loading from './component/Common/loader';
 import pMinDelay from 'p-min-delay';
+import CartPersistence from './component/Common/CartPersistence';
 
 // All Page Lazy Import
 const Furniture = loadable(() => pMinDelay(import('./page/furniture'), 250), { fallback: <Loading /> });
@@ -81,6 +82,7 @@ const App = () => {
       </Helmet>
       <BrowserRouter>
         <Router>
+          <CartPersistence />
           <ScrollToTop />
           <Switch>
             <Route path='/' exact component={Fashion} />

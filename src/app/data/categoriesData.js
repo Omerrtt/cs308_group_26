@@ -413,15 +413,15 @@ export const getMainCategories = () => {
 // Kategori breadcrumb oluştur
 export const getCategoryBreadcrumb = (slug) => {
     const breadcrumb = []
-    
+
     const findPath = (categories, targetSlug, path = []) => {
         for (const category of categories) {
             const currentPath = [...path, category]
-            
+
             if (category.slug === targetSlug) {
                 return currentPath
             }
-            
+
             if (category.children) {
                 const found = findPath(category.children, targetSlug, currentPath)
                 if (found) return found
@@ -429,7 +429,7 @@ export const getCategoryBreadcrumb = (slug) => {
         }
         return null
     }
-    
+
     const path = findPath(CategoriesData, slug)
     return path || []
 }

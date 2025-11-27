@@ -1,4 +1,4 @@
-import {createSlice} from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
 // Demo Data
 import { getProductsData } from '../data/productsData'
 // Alert
@@ -12,7 +12,7 @@ const productsSlice = createSlice({
         carts: [],
         favorites: [],
         compare: [],
-        single:null,
+        single: null,
     },
     reducers: {
         // Get Single Product
@@ -22,7 +22,7 @@ const productsSlice = createSlice({
             state.single = arr
         },
         // Add to Cart
-        addToCart: (state, action) =>{
+        addToCart: (state, action) => {
 
             let { id } = action.payload;
 
@@ -39,9 +39,9 @@ const productsSlice = createSlice({
                     icon: 'success',
                     showConfirmButton: false,
                     timer: 2500
-                  })
+                })
 
-            }else{
+            } else {
                 Swal.fire({
                     title: 'Failed!',
                     text: 'This product is already added in your Cart',
@@ -50,11 +50,11 @@ const productsSlice = createSlice({
                     imageAlt: item.title,
                     showConfirmButton: false,
                     timer: 5000
-                  })
-              }
+                })
+            }
         },
         // Add to Compare
-        addToComp: (state, action) =>{
+        addToComp: (state, action) => {
             if (state.compare.length >= 3) {
                 Swal.fire({
                     title: 'Failed!',
@@ -62,7 +62,7 @@ const productsSlice = createSlice({
                     icon: 'warning',
                     showConfirmButton: false,
                     timer: 2500,
-                  })
+                })
                 return;
             }
 
@@ -80,49 +80,49 @@ const productsSlice = createSlice({
                     icon: 'success',
                     showConfirmButton: false,
                     timer: 2500,
-                  })
-            }else{
-                    Swal.fire({
-                        title: 'Failed!',
-                        text: 'Already Added in Compare List',
-                        imageUrl: item.img,
-                        imageWidth: 200,
-                        imageAlt: item.title,
-                        showConfirmButton: false,
-                        timer: 5000,
-                    })
-              }
+                })
+            } else {
+                Swal.fire({
+                    title: 'Failed!',
+                    text: 'Already Added in Compare List',
+                    imageUrl: item.img,
+                    imageWidth: 200,
+                    imageAlt: item.title,
+                    showConfirmButton: false,
+                    timer: 5000,
+                })
+            }
         },
         // Update Cart
-        updateCart: (state, action) =>{
+        updateCart: (state, action) => {
             let { val, id } = action.payload;
             state.carts.forEach(item => {
-                if(item.id === parseInt(id)){
+                if (item.id === parseInt(id)) {
                     item.quantity = val
                 }
             })
 
         },
         // Remove Cart
-        removeCart: (state, action) =>{
+        removeCart: (state, action) => {
             let { id } = action.payload;
             let arr = state.carts.filter(item => item.id !== parseInt(id))
             state.carts = arr
-            
+
         },
         // Delete from Compare
-        delCompare: (state, action) =>{
+        delCompare: (state, action) => {
             let { id } = action.payload;
             let arr = state.compare.filter(item => item.id !== parseInt(id))
             state.compare = arr
-            
+
         },
         // Clear Cart
-        clearCart: (state) =>{
+        clearCart: (state) => {
             state.carts = []
         },
         // Add to Favorite / Wishlist
-        addToFav: (state, action) =>{
+        addToFav: (state, action) => {
             let { id } = action.payload;
 
             // Check existance
@@ -133,19 +133,35 @@ const productsSlice = createSlice({
                 arr.quantity = 1
                 state.favorites.push(arr)
                 Swal.fire('Success', "Added to Wishlist", 'success')
-            }else{
-                  Swal.fire('Failed', "Already Added in Wishlist", 'warning')
-              }
+            } else {
+                Swal.fire('Failed', "Already Added in Wishlist", 'warning')
+            }
         },
         // Remove from Favorite / Wishlist
-        removeFav: (state, action) =>{
+        removeFav: (state, action) => {
             let { id } = action.payload;
             let arr = state.favorites.filter(item => item.id !== id)
             state.favorites = arr
-            
+
+        },
+        // Set Cart (for persistence)
+        setCart: (state, action) => {
+            state.carts = action.payload.carts;
         },
     }
 })
 
 const productsReducer = productsSlice.reducer
+export const {
+    getProductById,
+    addToCart,
+    addToComp,
+    updateCart,
+    removeCart,
+    delCompare,
+    clearCart,
+    addToFav,
+    removeFav,
+    setCart
+} = productsSlice.actions;
 export default productsReducer

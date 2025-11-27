@@ -107,7 +107,7 @@ const ProductDetailsTwo = () => {
                                     <p>{product.description}</p>
                                     <div className="customs_selects">
                                         <select name="product" className="customs_sel_box">
-                                            <option value="">Size</option>
+                                            <option value="">Beden</option>
                                             <option value="small">S</option>
                                             <option value="medium">M</option>
                                             <option value="learz">L</option>
@@ -115,7 +115,7 @@ const ProductDetailsTwo = () => {
                                         </select>
                                     </div>
                                     <div className="variable-single-item">
-                                        <span>Color</span>
+                                        <span>Renk</span>
                                         <div className="product-variable-color">
                                             <label htmlFor="modal-product-color-red1">
                                                 <input name="modal-product-color" id="modal-product-color-red1"
@@ -149,7 +149,7 @@ const ProductDetailsTwo = () => {
                                                     </button>
                                                 </div>
                                             </div>
-                                            <a href="#!" className="theme-btn-one btn-black-overlay btn_sm ml-3" onClick={(e) => { e.preventDefault(); addToCart(product.id); }}>Add To Cart</a>
+                                            <a href="#!" className="theme-btn-one btn-black-overlay btn_sm ml-3" onClick={(e) => { e.preventDefault(); addToCart(product.id); }}>Sepete Ekle</a>
                                         </div>
                                     </form>
                                     <div className="links_Product_areas">
@@ -179,9 +179,9 @@ const ProductDetailsTwo = () => {
                     <div className="col-lg-6 offset-lg-3 col-md-6 offset-md-3 col-sm-12 col-12">
                         <div className="empaty_cart_area">
                             <img src={img} alt="img" />
-                            <h2>PRODUCT NOT FOUND</h2>
-                            <h3>Sorry Mate... No Item Found according to Your query!</h3>
-                            <Link to="/shop" className="btn btn-black-overlay btn_sm">Continue Shopping</Link>
+                            <h2>ÜRÜN BULUNAMADI</h2>
+                            <h3>Üzgünüz... Aradığınız kriterlere uygun ürün bulunamadı!</h3>
+                            <Link to="/shop" className="btn btn-black-overlay btn_sm">Alışverişe Devam Et</Link>
                         </div>
                     </div>
                 </div>

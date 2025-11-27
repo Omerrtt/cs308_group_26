@@ -24,7 +24,7 @@ const Cart = () => {
         dispatch({ type: "products/removeCart", payload: { id } });
         Swal.fire({
             icon: 'success',
-            title: 'Removed from Cart',
+            title: 'Sepetten Çıkarıldı',
             showConfirmButton: false,
             timer: 1500
         })
@@ -41,7 +41,7 @@ const Cart = () => {
         dispatch({ type: "products/clearCart" });
         Swal.fire({
             icon: 'success',
-            title: 'Cart Cleared',
+            title: 'Sepet Temizlendi',
             showConfirmButton: false,
             timer: 1500
         })
@@ -59,10 +59,10 @@ const Cart = () => {
                                 <div className="card shadow-sm">
                                     <div className="card-body p-4">
                                         <div className="d-flex justify-content-between align-items-center mb-4">
-                                            <h3 className="mb-0">My Shopping Cart</h3>
+                                            <h3 className="mb-0">Alışveriş Sepetim</h3>
                                             {carts.length > 0 && (
                                                 <button className="btn btn-danger btn-sm" onClick={clearCartItems}>
-                                                    Clear Cart
+                                                    Sepeti Temizle
                                                 </button>
                                             )}
                                         </div>
@@ -71,10 +71,10 @@ const Cart = () => {
                                             {carts.length === 0 ? (
                                                 <div className="alert alert-info text-center">
                                                     <i className="fa fa-shopping-cart" style={{ fontSize: '48px', marginBottom: '15px', display: 'block' }}></i>
-                                                    <h5>Your cart is empty</h5>
-                                                    <p className="mb-0">Add some products to your cart to see them here!</p>
+                                                    <h5>Sepetiniz boş</h5>
+                                                    <p className="mb-0">Sepetinize ürün ekleyerek burada görebilirsiniz!</p>
                                                     <Link to="/shop" className="theme-btn-one btn-black-overlay btn_sm mt-3">
-                                                        Start Shopping
+                                                        Alışverişe Başla
                                                     </Link>
                                                 </div>
                                             ) : (
@@ -82,11 +82,11 @@ const Cart = () => {
                                                     <table className="table">
                                                         <thead>
                                                             <tr>
-                                                                <th>Product</th>
-                                                                <th>Price</th>
-                                                                <th>Quantity</th>
-                                                                <th>Total</th>
-                                                                <th>Action</th>
+                                                                <th>Ürün</th>
+                                                                <th>Fiyat</th>
+                                                                <th>Adet</th>
+                                                                <th>Toplam</th>
+                                                                <th>İşlem</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>
@@ -126,13 +126,13 @@ const Cart = () => {
                                             <div className="cart-summary mt-4 p-4" style={{ backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
                                                 <div className="row">
                                                     <div className="col-md-6">
-                                                        <h5>Cart Summary</h5>
+                                                        <h5>Sepet Özeti</h5>
                                                     </div>
                                                     <div className="col-md-6 text-right">
-                                                        <p className="mb-2">Subtotal: <strong>₺{subtotal.toLocaleString()}</strong></p>
-                                                        <p className="mb-2">Shipping: <strong>₺{shipping.toLocaleString()}</strong></p>
+                                                        <p className="mb-2">Ara Toplam: <strong>₺{subtotal.toLocaleString()}</strong></p>
+                                                        <p className="mb-2">Kargo: <strong>₺{shipping.toLocaleString()}</strong></p>
                                                         <hr />
-                                                        <h5>Total: <strong>₺{total.toLocaleString()}</strong></h5>
+                                                        <h5>Toplam: <strong>₺{total.toLocaleString()}</strong></h5>
                                                     </div>
                                                 </div>
                                                 <div className="row mt-3">
@@ -141,7 +141,7 @@ const Cart = () => {
                                                             to="/checkout"
                                                             className="theme-btn-one btn-black-overlay btn_md"
                                                         >
-                                                            Proceed to Checkout
+                                                            Ödemeye Geç
                                                         </Link>
                                                     </div>
                                                 </div>

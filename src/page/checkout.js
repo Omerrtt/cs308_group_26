@@ -50,8 +50,8 @@ const Checkout = () => {
             !formData.address || !formData.city || !formData.zipCode) {
             Swal.fire({
                 icon: 'error',
-                title: 'Missing Information',
-                text: 'Please fill in all shipping information fields'
+                title: 'Eksik Bilgi',
+                text: 'Lütfen tüm teslimat bilgilerini doldurunuz'
             });
             return;
         }
@@ -59,8 +59,8 @@ const Checkout = () => {
         if (!formData.cardNumber || !formData.cardName || !formData.expiryDate || !formData.cvv) {
             Swal.fire({
                 icon: 'error',
-                title: 'Missing Payment Information',
-                text: 'Please fill in all payment information fields'
+                title: 'Eksik Ödeme Bilgisi',
+                text: 'Lütfen tüm ödeme bilgilerini doldurunuz'
             });
             return;
         }
@@ -68,8 +68,8 @@ const Checkout = () => {
         if (carts.length === 0) {
             Swal.fire({
                 icon: 'error',
-                title: 'Cart is Empty',
-                text: 'Please add items to your cart before checking out'
+                title: 'Sepet Boş',
+                text: 'Lütfen ödeme yapmadan önce sepetinize ürün ekleyin'
             });
             return;
         }
@@ -77,9 +77,9 @@ const Checkout = () => {
         // Show success message
         Swal.fire({
             icon: 'success',
-            title: 'Order Placed Successfully!',
-            text: 'Your order has been placed. Thank you for shopping with us!',
-            confirmButtonText: 'Go to Homepage'
+            title: 'Sipariş Başarıyla Alındı!',
+            text: 'Siparişiniz alındı. Bizi tercih ettiğiniz için teşekkür ederiz!',
+            confirmButtonText: 'Anasayfaya Dön'
         }).then(() => {
             // Clear cart after successful order
             dispatch({ type: "products/clearCart" });
@@ -99,11 +99,11 @@ const Checkout = () => {
                                 {/* Shipping Information */}
                                 <div className="card shadow-sm mb-4">
                                     <div className="card-body p-4">
-                                        <h4 className="mb-4">Shipping Information</h4>
+                                        <h4 className="mb-4">Teslimat Bilgileri</h4>
 
                                         <div className="row">
                                             <div className="col-md-6 mb-3">
-                                                <label className="form-label">Full Name *</label>
+                                                <label className="form-label">Ad Soyad *</label>
                                                 <input
                                                     type="text"
                                                     className="form-control"
@@ -115,7 +115,7 @@ const Checkout = () => {
                                                 />
                                             </div>
                                             <div className="col-md-6 mb-3">
-                                                <label className="form-label">Email *</label>
+                                                <label className="form-label">E-posta *</label>
                                                 <input
                                                     type="email"
                                                     className="form-control"
@@ -130,7 +130,7 @@ const Checkout = () => {
 
                                         <div className="row">
                                             <div className="col-md-6 mb-3">
-                                                <label className="form-label">Phone *</label>
+                                                <label className="form-label">Telefon *</label>
                                                 <input
                                                     type="tel"
                                                     className="form-control"
@@ -142,7 +142,7 @@ const Checkout = () => {
                                                 />
                                             </div>
                                             <div className="col-md-6 mb-3">
-                                                <label className="form-label">City *</label>
+                                                <label className="form-label">Şehir *</label>
                                                 <input
                                                     type="text"
                                                     className="form-control"
@@ -157,7 +157,7 @@ const Checkout = () => {
 
                                         <div className="row">
                                             <div className="col-md-8 mb-3">
-                                                <label className="form-label">Address *</label>
+                                                <label className="form-label">Adres *</label>
                                                 <input
                                                     type="text"
                                                     className="form-control"
@@ -169,7 +169,7 @@ const Checkout = () => {
                                                 />
                                             </div>
                                             <div className="col-md-4 mb-3">
-                                                <label className="form-label">Zip Code *</label>
+                                                <label className="form-label">Posta Kodu *</label>
                                                 <input
                                                     type="text"
                                                     className="form-control"
@@ -187,11 +187,11 @@ const Checkout = () => {
                                 {/* Payment Information */}
                                 <div className="card shadow-sm">
                                     <div className="card-body p-4">
-                                        <h4 className="mb-4">Payment Information</h4>
+                                        <h4 className="mb-4">Ödeme Bilgileri</h4>
 
                                         <div className="row">
                                             <div className="col-md-12 mb-3">
-                                                <label className="form-label">Card Number *</label>
+                                                <label className="form-label">Kart Numarası *</label>
                                                 <input
                                                     type="text"
                                                     className="form-control"
@@ -207,7 +207,7 @@ const Checkout = () => {
 
                                         <div className="row">
                                             <div className="col-md-12 mb-3">
-                                                <label className="form-label">Cardholder Name *</label>
+                                                <label className="form-label">Kart Sahibi *</label>
                                                 <input
                                                     type="text"
                                                     className="form-control"
@@ -222,7 +222,7 @@ const Checkout = () => {
 
                                         <div className="row">
                                             <div className="col-md-6 mb-3">
-                                                <label className="form-label">Expiry Date *</label>
+                                                <label className="form-label">Son Kullanma Tarihi *</label>
                                                 <input
                                                     type="text"
                                                     className="form-control"
@@ -256,12 +256,12 @@ const Checkout = () => {
                                 {/* Order Summary */}
                                 <div className="card shadow-sm sticky-top" style={{ top: '20px' }}>
                                     <div className="card-body p-4">
-                                        <h4 className="mb-4">Order Summary</h4>
+                                        <h4 className="mb-4">Sipariş Özeti</h4>
 
                                         <div className="order-items mb-4" style={{ maxHeight: '300px', overflowY: 'auto' }}>
                                             {carts.length === 0 ? (
                                                 <div className="alert alert-info">
-                                                    <p className="mb-0">No items in cart</p>
+                                                    <p className="mb-0">Sepette ürün yok</p>
                                                 </div>
                                             ) : (
                                                 <ul className="list-group list-group-flush">
@@ -283,16 +283,16 @@ const Checkout = () => {
 
                                         <div className="order-totals">
                                             <div className="d-flex justify-content-between mb-2">
-                                                <span>Subtotal:</span>
+                                                <span>Ara Toplam:</span>
                                                 <strong>₺{subtotal.toLocaleString()}</strong>
                                             </div>
                                             <div className="d-flex justify-content-between mb-2">
-                                                <span>Shipping:</span>
+                                                <span>Kargo:</span>
                                                 <strong>₺{shipping.toLocaleString()}</strong>
                                             </div>
                                             <hr />
                                             <div className="d-flex justify-content-between mb-4">
-                                                <h5>Total:</h5>
+                                                <h5>Toplam:</h5>
                                                 <h5><strong>₺{total.toLocaleString()}</strong></h5>
                                             </div>
 
@@ -300,7 +300,7 @@ const Checkout = () => {
                                                 type="submit"
                                                 className="theme-btn-one btn-black-overlay btn_md w-100"
                                             >
-                                                Place Order
+                                                Siparişi Tamamla
                                             </button>
                                         </div>
                                     </div>

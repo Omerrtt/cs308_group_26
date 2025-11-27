@@ -131,7 +131,7 @@ const ProductDetailsOne = () => {
         if (count > 1) {
             setCount(count - 1)
         } else {
-            Swal.fire('Sorry!', "Minimun Quantity Reached", 'warning')
+            Swal.fire('Üzgünüz!', "Minimum Adete Ulaşıldı", 'warning')
             setCount(1)
         }
     }
@@ -327,7 +327,7 @@ const ProductDetailsOne = () => {
                                                     </button>
                                                 </div>
                                             </div>
-                                            <a href="#!" className="theme-btn-one btn-black-overlay btn_sm ml-3" onClick={(e) => { e.preventDefault(); addToCart(product.id); }}>Add To Cart</a>
+                                            <a href="#!" className="theme-btn-one btn-black-overlay btn_sm ml-3" onClick={(e) => { e.preventDefault(); addToCart(product.id); }}>Sepete ekle</a>
                                         </div>
                                     </form>
 

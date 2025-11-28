@@ -121,12 +121,20 @@ const productsSlice = createSlice({
                 state.carts.push(cartItem)
                 saveCartToStorage(state.carts)
                 Swal.fire({
-                    title: 'Success!',
-                    text: 'Successfully added to your Cart',
+                    title: 'Başarılı!',
+                    text: 'Ürün sepete eklendi',
                     icon: 'success',
-                    showConfirmButton: false,
-                    timer: 2500
-                  })
+                    showConfirmButton: true,
+                    confirmButtonText: 'Sepete Git',
+                    cancelButtonText: 'Alışverişe Devam',
+                    showCancelButton: true,
+                    timer: 3000
+                }).then((result) => {
+                    if (result.isConfirmed || result.dismiss === Swal.DismissReason.timer) {
+                        // Auto redirect to cart after 3 seconds or if user clicks "Sepete Git"
+                        window.location.href = '/cart'
+                    }
+                })
 
             }else{
                 Swal.fire({
@@ -182,14 +190,14 @@ const productsSlice = createSlice({
         },
         // Update Cart
         updateCart: (state, action) =>{
-            let { val, id } = action.payload;
+            let { id, quantity } = action.payload;
+            const numericId = parseInt(id);
             state.carts.forEach(item => {
-                if(item.id === parseInt(id)){
-                    item.quantity = val
+                if(item.id === numericId){
+                    item.quantity = quantity || 1
                 }
             })
             saveCartToStorage(state.carts)
-
         },
         // Remove Cart
         removeCart: (state, action) =>{
@@ -256,3 +264,16 @@ const productsSlice = createSlice({
 
 const productsReducer = productsSlice.reducer
 export default productsReducer
+
+// Export actions
+export const { 
+    getProductById, 
+    addToCart, 
+    updateCart, 
+    removeCart, 
+    clearCart,
+    addToFav,
+    removeFav,
+    addToComp,
+    delCompare
+} = productsSlice.actions

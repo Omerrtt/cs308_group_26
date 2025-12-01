@@ -11,7 +11,6 @@ const ProductDetailsOne = () => {
     let dispatch = useDispatch();
     let { id } = useParams();
     const history = useHistory();
-    const isLoggedIn = useSelector(state => state.user.status);
     
     // Gerçek ürün verilerini al
     const [product, setProduct] = useState(null);
@@ -163,22 +162,6 @@ const ProductDetailsOne = () => {
         if (count > product.stock) {
             Swal.fire('Stok Sınırı', `En fazla ${product.stock} adet seçebilirsiniz.`, 'info')
             setCount(product.stock)
-            return
-        }
-
-        if (!isLoggedIn) {
-            Swal.fire({
-                title: 'Giriş Gerekli',
-                text: 'Sepete ürün eklemek için lütfen önce giriş yapın.',
-                icon: 'info',
-                showCancelButton: true,
-                confirmButtonText: 'Giriş Yap',
-                cancelButtonText: 'İptal'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    history.push('/login')
-                }
-            })
             return
         }
 

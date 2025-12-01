@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { useSelector, useDispatch } from "react-redux";
 import { useHistory } from "react-router-dom"
 import Swal from 'sweetalert2';
+import { clearCart } from '../../app/slices/products';
 
 const Sidebar = () => {
     const location = useLocation()
@@ -16,6 +17,7 @@ const Sidebar = () => {
             text: 'Thank You'
         })
         dispatch({ type: "user/logout" })
+        dispatch(clearCart()) // Sepeti temizle
         history.push("/login");
     }
     return (

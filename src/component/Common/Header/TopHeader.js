@@ -4,6 +4,7 @@ import avater from '../../../assets/img/common/avater.png'
 import { useSelector, useDispatch } from "react-redux";
 import { useHistory } from "react-router-dom"
 import Swal from 'sweetalert2';
+import { clearCart } from '../../../app/slices/products';
 
 const TopHeader = () => {
     let dispatch = useDispatch();
@@ -20,6 +21,7 @@ const TopHeader = () => {
             text: 'Thank You'
         })
         dispatch({ type: "user/logout" })
+        dispatch(clearCart()) // Sepeti temizle
         history.push("/login");
     }
 

@@ -11,6 +11,7 @@ import svg from '../../../assets/img/svg/cancel.svg'
 import { useDispatch, useSelector } from "react-redux";
 import Swal from 'sweetalert2'
 import { logout } from '../../../app/slices/user'
+import { clearCart } from '../../../app/slices/products'
 import { auth } from '../../../firebaseConfig'
 
 const Header = () => {
@@ -27,6 +28,7 @@ const Header = () => {
         try {
             await auth.signOut()
             dispatch(logout())
+            dispatch(clearCart()) // Sepeti temizle
             Swal.fire({
                 icon: 'success',
                 title: 'Çıkış Yapıldı',

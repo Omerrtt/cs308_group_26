@@ -61,7 +61,8 @@ const RegisterArea = () => {
                         uid: uid,
                         orders: [],
                         cart: [],
-                        addresses: []
+                        addresses: [],
+                        invoices: []
                     })
                 } catch(e) {
                     console.warn('Firestore write failed:', e)

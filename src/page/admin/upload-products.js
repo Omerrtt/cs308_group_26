@@ -98,7 +98,7 @@ const UploadProducts = () => {
     const handleUpdateUsers = async () => {
         const result = await Swal.fire({
             title: 'Kullanıcıları Güncelle',
-            text: 'Tüm kullanıcılara Orders, cart, addresses field\'ları eklenecek. Devam etmek istiyor musunuz?',
+            text: 'Tüm kullanıcılara Orders, cart, addresses, invoices field\'ları eklenecek. Devam etmek istiyor musunuz?',
             icon: 'question',
             showCancelButton: true,
             confirmButtonText: 'Evet, Güncelle',
@@ -151,6 +151,11 @@ const UploadProducts = () => {
 
                     if (!userData.hasOwnProperty('addresses')) {
                         updates.addresses = [];
+                        needsUpdate = true;
+                    }
+
+                    if (!userData.hasOwnProperty('invoices')) {
+                        updates.invoices = [];
                         needsUpdate = true;
                     }
 
@@ -232,7 +237,7 @@ const UploadProducts = () => {
                                 onClick={handleUpdateUsers}
                                 disabled={uploading || updatingUsers}
                             >
-                                {updatingUsers ? 'Güncelleniyor...' : 'Kullanıcıları Güncelle (Orders, Cart, Addresses)'}
+                                {updatingUsers ? 'Güncelleniyor...' : 'Kullanıcıları Güncelle (Orders, Cart, Addresses, Invoices)'}
                             </button>
 
                             <div className="alert alert-warning mt-3">

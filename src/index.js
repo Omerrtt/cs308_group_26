@@ -85,24 +85,29 @@ auth.onAuthStateChanged(async (user) => {
         const data = docSnap.data();
         userName = data.name || user.displayName || 'Müşteri';
         
-        // Eksik field'ları kontrol et ve ekle (eski kullanıcılar için)
-        const updates = {};
-        let needsUpdate = false;
-        
-        if (!data.hasOwnProperty('orders')) {
-          updates.orders = [];
-          needsUpdate = true;
-        }
-        
-        if (!data.hasOwnProperty('cart')) {
-          updates.cart = [];
-          needsUpdate = true;
-        }
-        
-        if (!data.hasOwnProperty('addresses')) {
-          updates.addresses = [];
-          needsUpdate = true;
-        }
+               // Eksik field'ları kontrol et ve ekle (eski kullanıcılar için)
+               const updates = {};
+               let needsUpdate = false;
+               
+               if (!data.hasOwnProperty('orders')) {
+                 updates.orders = [];
+                 needsUpdate = true;
+               }
+               
+               if (!data.hasOwnProperty('cart')) {
+                 updates.cart = [];
+                 needsUpdate = true;
+               }
+               
+               if (!data.hasOwnProperty('addresses')) {
+                 updates.addresses = [];
+                 needsUpdate = true;
+               }
+               
+               if (!data.hasOwnProperty('invoices')) {
+                 updates.invoices = [];
+                 needsUpdate = true;
+               }
         
         // Eksik field'ları güncelle
         if (needsUpdate) {

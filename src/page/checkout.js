@@ -589,13 +589,83 @@ const Checkout = () => {
             // Yeni siparişi ekle
             currentOrders.push(orderData);
             
-            // Firebase'e kaydet
+            // Invoice (Fatura) oluştur
+            const invoiceId = `INV-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+            const invoiceDate = new Date();
+            
+            const invoiceData = {
+                invoiceId: invoiceId,
+                orderId: orderId,
+                invoiceNumber: invoiceId,
+                invoiceDate: invoiceDate.toISOString(),
+                invoiceDateTimestamp: invoiceDate.getTime(),
+                invoiceDateString: invoiceDate.toLocaleDateString('tr-TR', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }),
+                // Müşteri bilgileri
+                customer: {
+                    name: user.name || formData.fullName,
+                    email: user.email || formData.email,
+                    phone: formData.phone
+                },
+                // Fatura adresi (billing address - teslimat adresi ile aynı)
+                billingAddress: {
+                    fullName: formData.fullName,
+                    email: formData.email,
+                    phone: formData.phone,
+                    address: formData.address,
+                    city: formData.city,
+                    zipCode: formData.zipCode
+                },
+                // Teslimat adresi
+                shippingAddress: deliveryAddress,
+                // Ürünler
+                items: orderItems,
+                // Fiyat bilgileri
+                subtotal: subtotal,
+                shipping: shipping,
+                tax: tax,
+                total: total,
+                // Ödeme bilgileri
+                paymentStatus: 'confirmed',
+                paymentMethod: 'credit_card',
+                paymentDate: invoiceDate.toISOString(),
+                // Sipariş durumu
+                orderStatus: 'pending',
+                // Fatura durumu
+                invoiceStatus: 'issued', // issued, paid, cancelled
+                // Tarih bilgileri
+                createdAt: invoiceDate.toISOString(),
+                createdAtTimestamp: invoiceDate.getTime(),
+                updatedAt: invoiceDate.toISOString(),
+                updatedAtTimestamp: invoiceDate.getTime()
+            };
+
+            console.log('Fatura oluşturuluyor:', invoiceData);
+
+            // Mevcut invoice'ları al
+            let currentInvoices = [];
+            if (userDoc.exists) {
+                const userData = userDoc.data();
+                currentInvoices = Array.isArray(userData.invoices) ? [...userData.invoices] : [];
+            }
+            
+            // Yeni faturayı ekle
+            currentInvoices.push(invoiceData);
+            
+            // Firebase'e kaydet - orders ve invoices array'lerini güncelle
             await userRef.update({
                 orders: currentOrders,
+                invoices: currentInvoices,
                 cart: [] // Sepeti temizle
             });
 
             console.log('✅ Sipariş Firebase\'e kaydedildi');
+            console.log('✅ Fatura Firebase\'e kaydedildi');
 
             // Redux store'dan sepeti temizle
             dispatch(clearCart());
@@ -607,6 +677,7 @@ const Checkout = () => {
                 html: `
                     <p>Siparişiniz başarıyla alındı.</p>
                     <p><strong>Sipariş No:</strong> ${orderId}</p>
+                    <p><strong>Fatura No:</strong> ${invoiceId}</p>
                     <p><strong>Tutar:</strong> ${total.toFixed(2)} ₺</p>
                     <p><strong>Tahmini Teslimat:</strong> ${orderData.estimatedDeliveryString}</p>
                 `,

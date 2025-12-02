@@ -112,12 +112,38 @@ const Header = () => {
     }
 
     // Sticky Menu Area
+    const isSticky = (e) => {
+        const header = document.querySelector('.header-section');
+        // Null check - element henüz DOM'da yoksa işlem yapma
+        if (!header) {
+            return;
+        }
+        const scrollTop = window.scrollY;
+        if (scrollTop >= 250) {
+            header.classList.add('is-sticky');
+        } else {
+            header.classList.remove('is-sticky');
+        }
+    };
+
     useEffect(() => {
-        window.addEventListener('scroll', isSticky);
-        return () => {
-            window.removeEventListener('scroll', isSticky);
+        // DOM yüklendikten sonra event listener ekle
+        const handleScroll = () => {
+            isSticky();
         };
-    });
+        
+        // Kısa bir delay ile kontrol et (DOM'un hazır olması için)
+        const timeoutId = setTimeout(() => {
+            window.addEventListener('scroll', handleScroll);
+            // İlk scroll pozisyonunu kontrol et
+            isSticky();
+        }, 100);
+        
+        return () => {
+            clearTimeout(timeoutId);
+            window.removeEventListener('scroll', handleScroll);
+        };
+    }, []); // Sadece mount/unmount'ta çalışsın
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -135,12 +161,6 @@ const Header = () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, [show]);
-
-    const isSticky = (e) => {
-        const header = document.querySelector('.header-section');
-        const scrollTop = window.scrollY;
-        scrollTop >= 250 ? header.classList.add('is-sticky') : header.classList.remove('is-sticky');
-    };
 
     return (
         <>

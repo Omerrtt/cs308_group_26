@@ -1,7 +1,208 @@
-// Invoice PDF Generator
-// Note: This is a simplified version. For production, use a proper PDF library like jsPDF or pdfkit
+import jsPDF from 'jspdf';
 
-export const generateInvoicePDF = (orderData) => {
+// Company information
+const companyInfo = {
+    name: 'Malikane Electronics',
+    address: 'Gültepe, Girne Sokak No1-3d',
+    city: 'Küçükçekmece İstanbul',
+    phone: '+90 539 397 39 49',
+    email: 'info@malikanelectronics.com'
+};
+
+// Generate PDF Invoice using jsPDF
+export const generateInvoicePDF = (invoiceData) => {
+    const doc = new jsPDF();
+    
+    // Set font
+    doc.setFont('helvetica');
+    
+    // Colors
+    const primaryColor = [0, 123, 255]; // #007bff
+    const darkColor = [51, 51, 51];
+    const lightColor = [108, 117, 125];
+    
+    let yPos = 20;
+    
+    // Header - Company Info
+    doc.setFontSize(24);
+    doc.setTextColor(...primaryColor);
+    doc.setFont('helvetica', 'bold');
+    doc.text(companyInfo.name, 20, yPos);
+    
+    yPos += 8;
+    doc.setFontSize(10);
+    doc.setTextColor(...darkColor);
+    doc.setFont('helvetica', 'normal');
+    doc.text(companyInfo.address, 20, yPos);
+    yPos += 5;
+    doc.text(companyInfo.city, 20, yPos);
+    yPos += 5;
+    doc.text(`Telefon: ${companyInfo.phone}`, 20, yPos);
+    yPos += 5;
+    doc.text(`E-posta: ${companyInfo.email}`, 20, yPos);
+    
+    // Invoice Title and Info (Right side)
+    doc.setFontSize(28);
+    doc.setTextColor(...primaryColor);
+    doc.setFont('helvetica', 'bold');
+    doc.text('FATURA', 150, 20);
+    
+    yPos = 28;
+    doc.setFontSize(10);
+    doc.setTextColor(...darkColor);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Fatura No: ${invoiceData.invoiceNumber || invoiceData.invoiceId || 'N/A'}`, 150, yPos);
+    yPos += 5;
+    doc.text(`Tarih: ${invoiceData.invoiceDateString || new Date().toLocaleDateString('tr-TR')}`, 150, yPos);
+    yPos += 5;
+    doc.text(`Sipariş No: ${invoiceData.orderId || 'N/A'}`, 150, yPos);
+    
+    // Line separator
+    yPos = 50;
+    doc.setDrawColor(...primaryColor);
+    doc.setLineWidth(0.5);
+    doc.line(20, yPos, 190, yPos);
+    
+    // Billing Info
+    yPos += 10;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Fatura Bilgileri', 20, yPos);
+    
+    yPos += 8;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    const customerName = invoiceData.customer?.name || invoiceData.billingAddress?.fullName || 'Müşteri';
+    doc.text(customerName, 20, yPos);
+    yPos += 5;
+    
+    if (invoiceData.billingAddress) {
+        const addr = invoiceData.billingAddress;
+        if (addr.address) doc.text(addr.address, 20, yPos);
+        yPos += 5;
+        if (addr.city || addr.zipCode) {
+            doc.text(`${addr.city || ''}${addr.zipCode ? ', ' + addr.zipCode : ''}`, 20, yPos);
+            yPos += 5;
+        }
+        if (addr.phone) {
+            doc.text(`Telefon: ${addr.phone}`, 20, yPos);
+            yPos += 5;
+        }
+    }
+    
+    const customerEmail = invoiceData.customer?.email || invoiceData.billingAddress?.email || '';
+    if (customerEmail) {
+        doc.text(`E-posta: ${customerEmail}`, 20, yPos);
+        yPos += 8;
+    } else {
+        yPos += 5;
+    }
+    
+    // Items Table Header
+    yPos += 5;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(255, 255, 255);
+    doc.setFillColor(...primaryColor);
+    doc.rect(20, yPos - 5, 170, 8, 'F');
+    
+    doc.text('Ürün', 22, yPos);
+    doc.text('Adet', 100, yPos);
+    doc.text('Birim Fiyat', 130, yPos);
+    doc.text('Toplam', 165, yPos);
+    
+    yPos += 8;
+    doc.setDrawColor(200, 200, 200);
+    doc.line(20, yPos, 190, yPos);
+    
+    // Items
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...darkColor);
+    
+    if (invoiceData.items && invoiceData.items.length > 0) {
+        invoiceData.items.forEach((item) => {
+            if (yPos > 250) {
+                doc.addPage();
+                yPos = 20;
+            }
+            
+            const itemTitle = item.title || 'Ürün';
+            const quantity = item.quantity || 1;
+            const price = parseFloat(item.price) || 0;
+            const total = price * quantity;
+            
+            // Wrap long product names
+            const lines = doc.splitTextToSize(itemTitle, 60);
+            doc.text(lines[0], 22, yPos);
+            if (lines.length > 1) {
+                doc.text(lines.slice(1).join(' '), 22, yPos + 4);
+            }
+            
+            doc.text(quantity.toString(), 100, yPos);
+            doc.text(`${price.toFixed(2)} ₺`, 130, yPos);
+            doc.text(`${total.toFixed(2)} ₺`, 165, yPos);
+            
+            yPos += 8;
+            doc.setDrawColor(220, 220, 220);
+            doc.line(20, yPos, 190, yPos);
+            yPos += 3;
+        });
+    }
+    
+    // Totals
+    yPos += 5;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    
+    const subtotal = invoiceData.subtotal || 0;
+    const shipping = invoiceData.shipping || 0;
+    const tax = invoiceData.tax || 0;
+    const total = invoiceData.total || 0;
+    
+    doc.text('Ara Toplam:', 130, yPos);
+    doc.text(`${subtotal.toFixed(2)} ₺`, 165, yPos);
+    yPos += 6;
+    
+    if (shipping > 0) {
+        doc.text('Kargo:', 130, yPos);
+        doc.text(`${shipping.toFixed(2)} ₺`, 165, yPos);
+        yPos += 6;
+    } else {
+        doc.setFont('helvetica', 'normal');
+        doc.text('Kargo:', 130, yPos);
+        doc.text('Ücretsiz', 165, yPos);
+        yPos += 6;
+    }
+    
+    if (tax > 0) {
+        doc.setFont('helvetica', 'normal');
+        doc.text('KDV:', 130, yPos);
+        doc.text(`${tax.toFixed(2)} ₺`, 165, yPos);
+        yPos += 6;
+    }
+    
+    // Total
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(...primaryColor);
+    doc.text('TOPLAM:', 130, yPos);
+    doc.text(`${total.toFixed(2)} ₺`, 165, yPos);
+    
+    // Footer
+    yPos = 270;
+    doc.setFontSize(8);
+    doc.setTextColor(...lightColor);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Teşekkür ederiz! ${companyInfo.name}`, 105, yPos, { align: 'center' });
+    yPos += 5;
+    doc.text('Bu fatura elektronik ortamda oluşturulmuştur.', 105, yPos, { align: 'center' });
+    
+    // Return PDF as blob
+    return doc.output('blob');
+};
+
+// Legacy HTML generator (kept for backward compatibility)
+export const generateInvoiceHTML = (orderData) => {
     // Company information
     const companyInfo = {
         name: 'Malikane Electronics',

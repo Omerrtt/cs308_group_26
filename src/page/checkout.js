@@ -9,6 +9,7 @@ import { auth, db } from '../firebaseConfig';
 import { store } from '../app/store';
 import firebase from 'firebase/app';
 import { clearCart } from '../app/slices/products';
+import { generateInvoicePDF } from '../utils/invoiceGenerator';
 
 const Checkout = () => {
     const history = useHistory();
@@ -666,6 +667,32 @@ const Checkout = () => {
 
             console.log('✅ Sipariş Firebase\'e kaydedildi');
             console.log('✅ Fatura Firebase\'e kaydedildi');
+
+            // Invoice PDF oluştur ve indir
+            try {
+                console.log('Invoice PDF oluşturuluyor...');
+                const invoicePDFBlob = generateInvoicePDF(invoiceData);
+                console.log('✅ PDF oluşturuldu');
+                
+                // PDF'i otomatik indir
+                const pdfUrl = URL.createObjectURL(invoicePDFBlob);
+                const link = document.createElement('a');
+                link.href = pdfUrl;
+                link.download = `Fatura_${invoiceId}.pdf`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                // Clean up
+                setTimeout(() => {
+                    URL.revokeObjectURL(pdfUrl);
+                }, 100);
+                
+                console.log('✅ PDF indirildi');
+            } catch (pdfError) {
+                console.error('❌ PDF oluşturma hatası:', pdfError);
+                // PDF hatası siparişi engellemez
+            }
 
             // Ürün stoklarını güncelle
             try {

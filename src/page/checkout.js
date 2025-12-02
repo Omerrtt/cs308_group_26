@@ -667,6 +667,50 @@ const Checkout = () => {
             console.log('✅ Sipariş Firebase\'e kaydedildi');
             console.log('✅ Fatura Firebase\'e kaydedildi');
 
+            // Ürün stoklarını güncelle
+            try {
+                console.log('Ürün stokları güncelleniyor...');
+                const batch = db.batch();
+                let stockUpdateCount = 0;
+                
+                for (const item of orderItems) {
+                    // Ürün ID'sini al (originalId varsa onu kullan, yoksa id)
+                    const productId = item.originalId || item.id;
+                    const productRef = db.collection('products').doc(productId.toString());
+                    const productDoc = await productRef.get();
+                    
+                    if (productDoc.exists) {
+                        const productData = productDoc.data();
+                        const currentStock = typeof productData.stock === 'number' 
+                            ? productData.stock 
+                            : parseInt(productData.stock, 10) || 0;
+                        
+                        const quantityToDeduct = item.quantity || 1;
+                        const newStock = Math.max(0, currentStock - quantityToDeduct);
+                        
+                        batch.update(productRef, {
+                            stock: newStock,
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        
+                        stockUpdateCount++;
+                        console.log(`  - Ürün ${productId}: ${currentStock} → ${newStock} (${quantityToDeduct} adet düşüldü)`);
+                    } else {
+                        console.warn(`  ⚠️ Ürün bulunamadı: ${productId}`);
+                    }
+                }
+                
+                if (stockUpdateCount > 0) {
+                    await batch.commit();
+                    console.log(`✅ ${stockUpdateCount} ürünün stoku güncellendi`);
+                } else {
+                    console.warn('⚠️ Güncellenecek ürün bulunamadı');
+                }
+            } catch (stockError) {
+                console.error('❌ Stok güncelleme hatası:', stockError);
+                // Stok hatası siparişi engellemez, sadece logla
+            }
+
             // Redux store'dan sepeti temizle
             dispatch(clearCart());
 

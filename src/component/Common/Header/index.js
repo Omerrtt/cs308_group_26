@@ -17,6 +17,7 @@ import { auth } from '../../../firebaseConfig'
 const Header = () => {
     const [click, setClick] = useState(false);
     const [show, setShow] = useState();
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const history = useHistory()
     let carts = useSelector((state) => state.products.carts);
     let favorites = useSelector((state) => state.products.favorites);
@@ -99,12 +100,29 @@ const Header = () => {
     }
     const handlemenu = (e) => {
         e.preventDefault();
-        if (click) {
-            document.querySelector("#mobile-menu-offcanvas").style = ("transform: translateX(100%);")
-        } else {
-            document.querySelector("#mobile-menu-offcanvas").style = ("transform: translateX(0%);")
+        const mobileMenu = document.querySelector("#mobile-menu-offcanvas");
+        
+        // Null check
+        if (!mobileMenu) {
+            console.warn('Mobile menu element not found');
+            return;
         }
-        setClick(!click);
+        
+        // Toggle mobile menu
+        const isOpen = !mobileMenuOpen;
+        setMobileMenuOpen(isOpen);
+        
+        if (isOpen) {
+            mobileMenu.style.transform = "translateX(0%)";
+            mobileMenu.style.visibility = "visible";
+            // Body scroll'u engelle
+            document.body.style.overflow = "hidden";
+        } else {
+            mobileMenu.style.transform = "translateX(100%)";
+            mobileMenu.style.visibility = "hidden";
+            // Body scroll'u geri aç
+            document.body.style.overflow = "";
+        }
     }
 
     const handleShow = (value) => {
@@ -319,7 +337,14 @@ const Header = () => {
                 </div>
             </div>
 
-            <div id="mobile-menu-offcanvas" className="offcanvas offcanvas-rightside offcanvas-mobile-menu-section">
+            <div 
+                id="mobile-menu-offcanvas" 
+                className="offcanvas offcanvas-rightside offcanvas-mobile-menu-section"
+                style={{ 
+                    transform: mobileMenuOpen ? "translateX(0%)" : "translateX(100%)",
+                    visibility: mobileMenuOpen ? "visible" : "hidden"
+                }}
+            >
 
                 <div className="offcanvas-header text-right">
                     <button className="offcanvas-close" onClick={handlemenu}>

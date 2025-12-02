@@ -352,6 +352,7 @@ const Checkout = () => {
 
     const handleSaveNewAddress = async (e) => {
         e.preventDefault();
+        e.stopPropagation(); // İç form submit edildiğinde dış formun submit edilmesini engelle
         
         console.log('=== ADRES KAYDETME BAŞLADI ===');
         console.log('newAddress state:', newAddress);
@@ -557,7 +558,7 @@ const Checkout = () => {
                                         {showAddAddressForm && (
                                             <div className="mb-4 p-3 border rounded">
                                                 <h5 className="mb-3">Yeni Adres Ekle</h5>
-                                                <form onSubmit={handleSaveNewAddress}>
+                                                <div onSubmit={handleSaveNewAddress}>
                                                     <div className="row">
                                                         <div className="col-md-6 mb-3">
                                                             <label className="form-label">Ad Soyad *</label>
@@ -632,7 +633,11 @@ const Checkout = () => {
                                                         </div>
                                                     </div>
                                                     <div className="d-flex gap-2">
-                                                        <button type="submit" className="btn btn-primary">
+                                                        <button 
+                                                            type="button" 
+                                                            className="btn btn-primary"
+                                                            onClick={handleSaveNewAddress}
+                                                        >
                                                             Adresi Kaydet
                                                         </button>
                                                         {addresses.length > 0 && (
@@ -645,7 +650,7 @@ const Checkout = () => {
                                                             </button>
                                                         )}
                                                     </div>
-                                                </form>
+                                                </div>
                                             </div>
                                         )}
 

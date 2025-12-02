@@ -39,7 +39,7 @@ const Payment = () => {
                         <p><strong>Ödeme Bilgisi:</strong></p>
                         <p>Ödeme işlemi için ödeme sayfasına yönlendirileceksiniz.</p>
                         <p className="mb-0"><strong>Toplam Tutar: {total.toFixed(2)} ₺</strong></p>
-                    </div>
+                        </div>
                 </div>
                 <button 
                     className="theme-btn-one btn-black-overlay btn_sm"

@@ -71,7 +71,7 @@ const Checkout = () => {
                 if (!currentStatus) {
                     setHasCheckedAuth(true);
                     history.push('/login');
-                }
+        }
             }, 1000);
             
             return () => clearTimeout(timeout);
@@ -668,7 +668,7 @@ const Checkout = () => {
             console.log('✅ Sipariş Firebase\'e kaydedildi');
             console.log('✅ Fatura Firebase\'e kaydedildi');
 
-            // Invoice PDF oluştur ve indir
+            // Invoice PDF oluştur, indir ve email gönder
             try {
                 console.log('Invoice PDF oluşturuluyor...');
                 const invoicePDFBlob = generateInvoicePDF(invoiceData);
@@ -689,8 +689,65 @@ const Checkout = () => {
                 }, 100);
                 
                 console.log('✅ PDF indirildi');
+                
+                // PDF'i base64'e çevir ve email gönder
+                const reader = new FileReader();
+                const base64Promise = new Promise((resolve, reject) => {
+                    reader.onloadend = () => {
+                        const base64data = reader.result.split(',')[1];
+                        resolve(base64data);
+                    };
+                    reader.onerror = reject;
+                });
+                reader.readAsDataURL(invoicePDFBlob);
+                const pdfBase64 = await base64Promise;
+                
+                // Firebase Functions ile email gönder
+                const customerEmail = invoiceData.customer?.email || formData.email;
+                console.log('=== EMAIL GÖNDERME BAŞLIYOR ===');
+                console.log('Customer Email:', customerEmail);
+                console.log('Invoice Data:', invoiceData);
+                console.log('PDF Base64 length:', pdfBase64?.length || 0);
+                
+                if (customerEmail) {
+                    console.log('📧 Email gönderiliyor:', customerEmail);
+                    try {
+                        const functions = firebase.functions();
+                        const sendInvoiceEmailFunction = functions.httpsCallable('sendInvoiceEmail');
+                        
+                        const toName = invoiceData.customer?.name || invoiceData.billingAddress?.fullName || 'Müşteri';
+                        
+                        console.log('Function çağrılıyor...');
+                        console.log('Parameters:', {
+                            toEmail: customerEmail,
+                            toName: toName,
+                            invoiceId: invoiceData.invoiceId,
+                            orderId: invoiceData.orderId,
+                            pdfBase64Length: pdfBase64?.length || 0
+                        });
+                        
+                        const result = await sendInvoiceEmailFunction({
+                            toEmail: customerEmail,
+                            toName: toName,
+                            invoiceData: invoiceData,
+                            pdfBase64: pdfBase64
+                        });
+                        
+                        console.log('✅ Email gönderildi!');
+                        console.log('Result:', result.data);
+                    } catch (emailError) {
+                        console.error('❌ Email gönderme hatası:');
+                        console.error('Error code:', emailError.code);
+                        console.error('Error message:', emailError.message);
+                        console.error('Error details:', emailError.details);
+                        console.error('Full error:', emailError);
+                        // Email hatası siparişi engellemez
+                    }
+                } else {
+                    console.warn('⚠️ Müşteri email adresi bulunamadı, email gönderilemedi');
+                }
             } catch (pdfError) {
-                console.error('❌ PDF oluşturma hatası:', pdfError);
+                console.error('❌ PDF oluşturma hatası (sipariş yine de başarılı):', pdfError);
                 // PDF hatası siparişi engellemez
             }
 
@@ -742,8 +799,8 @@ const Checkout = () => {
             dispatch(clearCart());
 
             // Başarı mesajı
-            Swal.fire({
-                icon: 'success',
+        Swal.fire({
+            icon: 'success',
                 title: 'Sipariş Başarılı!',
                 html: `
                     <p>Siparişiniz başarıyla alındı.</p>
@@ -753,9 +810,9 @@ const Checkout = () => {
                     <p><strong>Tahmini Teslimat:</strong> ${orderData.estimatedDeliveryString}</p>
                 `,
                 confirmButtonText: 'Ana Sayfaya Dön'
-            }).then(() => {
-                history.push('/');
-            });
+        }).then(() => {
+            history.push('/');
+        });
 
         } catch (error) {
             console.error('Sipariş kaydetme hatası:', error);

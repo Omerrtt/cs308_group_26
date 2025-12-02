@@ -183,9 +183,9 @@ const Cart = () => {
                                                 )}
                                             </>
                                         ) : carts.length === 0 ? (
-                                            <div className="cart-items">
-                                                <div className="alert alert-info text-center">
-                                                    <i className="fa fa-shopping-cart" style={{fontSize: '48px', marginBottom: '15px', display: 'block'}}></i>
+                                        <div className="cart-items">
+                                            <div className="alert alert-info text-center">
+                                                <i className="fa fa-shopping-cart" style={{fontSize: '48px', marginBottom: '15px', display: 'block'}}></i>
                                                     <h5>Sepetiniz boş</h5>
                                                     <p className="mb-0">Sepetinize ürün eklemek için alışverişe başlayın!</p>
                                                 </div>
@@ -268,32 +268,32 @@ const Cart = () => {
                                                                 })}
                                                             </tbody>
                                                         </table>
-                                                    </div>
-                                                </div>
+                                            </div>
+                                        </div>
 
-                                                <div className="cart-summary mt-4 p-4" style={{backgroundColor: '#f8f9fa', borderRadius: '8px'}}>
-                                                    <div className="row">
-                                                        <div className="col-md-6">
+                                        <div className="cart-summary mt-4 p-4" style={{backgroundColor: '#f8f9fa', borderRadius: '8px'}}>
+                                            <div className="row">
+                                                <div className="col-md-6">
                                                             <h5>Sepet Özeti</h5>
-                                                        </div>
-                                                        <div className="col-md-6 text-right">
+                                                </div>
+                                                <div className="col-md-6 text-right">
                                                             <p className="mb-2">Ara Toplam: <strong>{subtotal.toFixed(2)} ₺</strong></p>
                                                             <p className="mb-2">Kargo: <strong>Ücretsiz</strong></p>
-                                                            <hr />
+                                                    <hr />
                                                             <h5>Toplam: <strong>{total.toFixed(2)} ₺</strong></h5>
-                                                        </div>
-                                                    </div>
-                                                    <div className="row mt-3">
-                                                        <div className="col-12 text-center">
-                                                            <Link 
-                                                                to="/checkout"
-                                                                className="theme-btn-one btn-black-overlay btn_md"
-                                                            >
-                                                                Ödemeye Geç
-                                                            </Link>
-                                                        </div>
-                                                    </div>
                                                 </div>
+                                            </div>
+                                            <div className="row mt-3">
+                                                <div className="col-12 text-center">
+                                                    <Link 
+                                                        to="/checkout"
+                                                        className="theme-btn-one btn-black-overlay btn_md"
+                                                    >
+                                                                Ödemeye Geç
+                                                    </Link>
+                                                </div>
+                                            </div>
+                                        </div>
                                             </>
                                         )}
                                     </div>

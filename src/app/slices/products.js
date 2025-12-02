@@ -176,7 +176,7 @@ const productsSlice = createSlice({
                         // Auto redirect to cart after 3 seconds or if user clicks "Sepete Git"
                         window.location.href = '/cart'
                     }
-                })
+                  })
 
             }else{
                 Swal.fire({
@@ -188,7 +188,7 @@ const productsSlice = createSlice({
                     showConfirmButton: false,
                     timer: 5000
                   })
-            }
+              }
         },
         // Add to Compare
         addToComp: (state, action) =>{

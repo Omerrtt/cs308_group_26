@@ -165,11 +165,11 @@ const BillingsInfo = () => {
 
                     {/* Yeni Adres Formu */}
                     {showAddForm && (
-                        <div className="check-out-form">
+                    <div className="check-out-form">
                             <form onSubmit={handleSaveAddress}>
-                                <div className="row">
+                            <div className="row">
                                     <div className="col-lg-6 col-md-12 col-sm-12 col-12">
-                                        <div className="form-group">
+                                    <div className="form-group">
                                             <label htmlFor="firstName">Ad <span className="text-danger">*</span></label>
                                             <input 
                                                 type="text" 
@@ -196,7 +196,7 @@ const BillingsInfo = () => {
                                                 onChange={handleInputChange}
                                                 placeholder="Soyad" 
                                             />
-                                        </div>
+                                </div>
                                     </div>
                                     <div className="col-lg-12 col-md-12 col-sm-12 col-12">
                                         <div className="form-group">
@@ -210,7 +210,7 @@ const BillingsInfo = () => {
                                                 onChange={handleInputChange}
                                                 placeholder="Şirket Adı" 
                                             />
-                                        </div>
+                                </div>
                                     </div>
                                     <div className="col-lg-12 col-md-12 col-sm-12 col-12">
                                         <div className="form-group">
@@ -225,7 +225,7 @@ const BillingsInfo = () => {
                                                 onChange={handleInputChange}
                                                 placeholder="info@example.com" 
                                             />
-                                        </div>
+                                </div>
                                     </div>
                                     <div className="col-lg-12 col-md-12 col-sm-12 col-12">
                                         <div className="form-group">
@@ -240,10 +240,10 @@ const BillingsInfo = () => {
                                                 onChange={handleInputChange}
                                                 placeholder="+90 5XX XXX XX XX" 
                                             />
-                                        </div>
+                                </div>
                                     </div>
                                     <div className="col-lg-12 col-md-12 col-sm-12 col-12">
-                                        <div className="form-group">
+                                    <div className="form-group">
                                             <label htmlFor="country">Ülke <span className="text-danger">*</span></label>
                                             <select 
                                                 className="form-control" 
@@ -255,11 +255,11 @@ const BillingsInfo = () => {
                                             >
                                                 <option value="Türkiye">Türkiye</option>
                                                 <option value="Diğer">Diğer</option>
-                                            </select>
-                                        </div>
+                                        </select>
                                     </div>
+                                </div>
                                     <div className="col-lg-6 col-md-12 col-sm-12 col-12">
-                                        <div className="form-group">
+                                    <div className="form-group">
                                             <label htmlFor="city">Şehir <span className="text-danger">*</span></label>
                                             <input 
                                                 type="text" 
@@ -286,7 +286,7 @@ const BillingsInfo = () => {
                                                 required
                                                 placeholder="Posta Kodu" 
                                             />
-                                        </div>
+                                </div>
                                     </div>
                                     <div className="col-lg-12 col-md-12 col-sm-12 col-12">
                                         <div className="form-group">
@@ -301,10 +301,10 @@ const BillingsInfo = () => {
                                                 required
                                                 placeholder="Tam adres bilgisi" 
                                             />
-                                        </div>
+                                </div>
                                     </div>
                                     <div className="col-lg-12 col-md-12 col-sm-12 col-12">
-                                        <div className="form-group">
+                                    <div className="form-group">
                                             <label htmlFor="notes">Ek Notlar</label>
                                             <textarea 
                                                 rows="5" 
@@ -315,8 +315,8 @@ const BillingsInfo = () => {
                                                 onChange={handleInputChange}
                                                 placeholder="Sipariş notları"
                                             />
-                                        </div>
                                     </div>
+                                </div>
                                     <div className="col-lg-12 col-md-12 col-sm-12 col-12">
                                         <button 
                                             type="submit" 
@@ -325,10 +325,10 @@ const BillingsInfo = () => {
                                         >
                                             {loading ? 'Kaydediliyor...' : 'Adresi Kaydet'}
                                         </button>
-                                    </div>
                                 </div>
-                            </form>
-                        </div>
+                            </div>
+                        </form>
+                    </div>
                     )}
 
                     {/* Seçili adresi localStorage'a kaydet (payment için) */}

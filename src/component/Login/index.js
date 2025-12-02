@@ -182,7 +182,7 @@ const LoginArea = () => {
                                         </div>
                                     </div>
                                     <div className="d-flex justify-content-between align-items-center mt-3">
-                                        <Link to="/register" className="active">Hesabınız yok mu? Kayıt Ol</Link>
+                                    <Link to="/register" className="active">Hesabınız yok mu? Kayıt Ol</Link>
                                         <a 
                                             href="#!" 
                                             onClick={(e) => {

@@ -18,13 +18,13 @@ const TopHeader = () => {
             // Firebase auth state listener zaten logout ve clearCart yapacak
             await auth.signOut()
             
-            Swal.fire({
-                icon: 'success',
-                title: 'Logout Sucessfull',
-                text: 'Thank You'
-            })
+        Swal.fire({
+            icon: 'success',
+            title: 'Logout Sucessfull',
+            text: 'Thank You'
+        })
             
-            history.push("/login");
+        history.push("/login");
         } catch (error) {
             console.error('Logout error:', error)
             Swal.fire({

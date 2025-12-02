@@ -29,11 +29,11 @@ const YourOrders = () => {
                         </thead>
                         <tbody>
                             {carts.length === 0 ? (
-                                <tr>
+                            <tr>
                                     <td colSpan="2" className="text-center">
                                         <p>Sepetiniz boş</p>
-                                    </td>
-                                </tr>
+                                </td>
+                            </tr>
                             ) : (
                                 carts.map((item) => {
                                     const itemPrice = parseFloat(item.price) || 0
@@ -44,9 +44,9 @@ const YourOrders = () => {
                                             <td>
                                                 {item.title} 
                                                 <span className="product-qty"> x {itemQuantity}</span>
-                                            </td>
+                                </td>
                                             <td>{itemTotal.toFixed(2)} ₺</td>
-                                        </tr>
+                            </tr>
                                     )
                                 })
                             )}

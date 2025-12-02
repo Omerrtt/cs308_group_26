@@ -50,7 +50,7 @@ const Category = () => {
 
                 // Ana kategorileri al
                 const mainCategories = getMainCategories()
-                
+
                 // Her kategori için ürün sayısını hesapla
                 const categoriesWithCount = await Promise.all(
                     mainCategories.map(async (cat, index) => {
@@ -117,28 +117,28 @@ const Category = () => {
                             <p>Kategoriler yükleniyor...</p>
                         </div>
                     ) : (
-                        <div className="row">
+                    <div className="row">
                             {categories.map((category) => (
-                                <div className="col-lg-3 col-md-4 col-sm-6 col-6" key={category.id}>
-                                    <div className="baby_category_card">
-                                        <Link to={`/category/${category.slug}`}>
-                                            <div className="baby_cat_img">
-                                                <div 
-                                                    className="category-icon"
-                                                    style={{ backgroundColor: category.color }}
-                                                >
-                                                    <i className={category.icon}></i>
-                                                </div>
+                            <div className="col-lg-3 col-md-4 col-sm-6 col-6" key={category.id}>
+                                <div className="baby_category_card">
+                                    <Link to={`/category/${category.slug}`}>
+                                        <div className="baby_cat_img">
+                                            <div 
+                                                className="category-icon"
+                                                style={{ backgroundColor: category.color }}
+                                            >
+                                                <i className={category.icon}></i>
                                             </div>
-                                            <div className="baby_cat_content">
-                                                <h5>{category.name}</h5>
+                                        </div>
+                                        <div className="baby_cat_content">
+                                            <h5>{category.name}</h5>
                                                 <p>{category.count} Ürün</p>
-                                            </div>
-                                        </Link>
-                                    </div>
+                                        </div>
+                                    </Link>
                                 </div>
-                            ))}
-                        </div>
+                            </div>
+                        ))}
+                    </div>
                     )}
                 </div>
             </section>

@@ -157,8 +157,8 @@ const CategoryPage = () => {
                     categoryProducts = await getProductsData() // await eklendi
                     setCategoryName('Tüm Ürünler')
                     if (Array.isArray(categoryProducts)) {
-                        setFilteredProducts(categoryProducts)
-                        setDisplayedProducts(categoryProducts.slice(0, itemsPerPage))
+                    setFilteredProducts(categoryProducts)
+                    setDisplayedProducts(categoryProducts.slice(0, itemsPerPage))
                     } else {
                         setFilteredProducts([])
                         setDisplayedProducts([])

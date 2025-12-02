@@ -2,14 +2,17 @@ import React, { useEffect, useState } from 'react'
 import Header from '../component/Common/Header'
 import Banner from '../component/Common/Banner'
 import Footer from '../component/Common/Footer'
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { useHistory } from "react-router-dom";
 import Swal from 'sweetalert2';
 import { auth, db } from '../firebaseConfig';
 import { store } from '../app/store';
+import firebase from 'firebase/app';
+import { clearCart } from '../app/slices/products';
 
 const Checkout = () => {
     const history = useHistory();
+    const dispatch = useDispatch();
     const user = useSelector((state) => state.user.user);
     const status = useSelector((state) => state.user.status);
     
@@ -483,15 +486,143 @@ const Checkout = () => {
             return;
         }
 
-        // Show success message
-        Swal.fire({
-            icon: 'success',
-            title: 'Sipariş Başarılı!',
-            text: 'Siparişiniz alındı. Teşekkür ederiz!',
-            confirmButtonText: 'Ana Sayfaya Dön'
-        }).then(() => {
-            history.push('/');
-        });
+        // Sepet kontrolü
+        if (cartItems.length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Sepet Boş',
+                text: 'Sepetinizde ürün bulunmuyor'
+            });
+            return;
+        }
+
+        try {
+            const currentUser = auth.currentUser;
+            if (!currentUser) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Oturum Hatası',
+                    text: 'Lütfen giriş yapın'
+                }).then(() => {
+                    history.push('/login');
+                });
+                return;
+            }
+
+            // Sipariş ID oluştur
+            const orderId = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+            
+            // Sipariş tarihi
+            const orderDate = new Date();
+            
+            // Tahmini teslimat tarihi (7 gün sonra)
+            const estimatedDeliveryDate = new Date();
+            estimatedDeliveryDate.setDate(estimatedDeliveryDate.getDate() + 7);
+            
+            // Delivery address oluştur
+            const deliveryAddress = {
+                fullName: formData.fullName,
+                email: formData.email,
+                phone: formData.phone,
+                address: formData.address,
+                city: formData.city,
+                zipCode: formData.zipCode
+            };
+
+            // Sipariş öğeleri
+            const orderItems = cartItems.map(item => ({
+                id: item.id,
+                originalId: item.originalId || item.id,
+                title: item.title,
+                price: parseFloat(item.price) || 0,
+                quantity: item.quantity || 1,
+                image: item.img || item.image || '',
+                total: (parseFloat(item.price) || 0) * (item.quantity || 1)
+            }));
+
+            // Sipariş verisi (array içinde serverTimestamp kullanılamaz, string kullanıyoruz)
+            const orderData = {
+                orderId: orderId,
+                orderDate: orderDate.toISOString(), // ISO string formatında
+                orderDateTimestamp: orderDate.getTime(), // Timestamp (number)
+                orderDateString: orderDate.toLocaleDateString('tr-TR', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }),
+                items: orderItems,
+                subtotal: subtotal,
+                shipping: shipping,
+                tax: tax,
+                total: total,
+                paymentStatus: 'confirmed', // Ödeme başarılı
+                paymentMethod: 'credit_card',
+                deliveryAddress: deliveryAddress,
+                estimatedDelivery: estimatedDeliveryDate.toISOString(), // ISO string formatında
+                estimatedDeliveryTimestamp: estimatedDeliveryDate.getTime(), // Timestamp (number)
+                estimatedDeliveryString: estimatedDeliveryDate.toLocaleDateString('tr-TR', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                }),
+                status: 'pending', // Sipariş durumu: pending, processing, shipped, delivered, cancelled
+                createdAt: orderDate.toISOString(), // ISO string formatında
+                createdAtTimestamp: orderDate.getTime(), // Timestamp (number)
+                updatedAt: orderDate.toISOString(), // ISO string formatında
+                updatedAtTimestamp: orderDate.getTime() // Timestamp (number)
+            };
+
+            console.log('Sipariş kaydediliyor:', orderData);
+
+            // Firebase'e kaydet - users collection'ındaki orders array'ine ekle
+            const userRef = db.collection('users').doc(currentUser.uid);
+            const userDoc = await userRef.get();
+            
+            let currentOrders = [];
+            if (userDoc.exists) {
+                const userData = userDoc.data();
+                currentOrders = Array.isArray(userData.orders) ? [...userData.orders] : [];
+            }
+            
+            // Yeni siparişi ekle
+            currentOrders.push(orderData);
+            
+            // Firebase'e kaydet
+            await userRef.update({
+                orders: currentOrders,
+                cart: [] // Sepeti temizle
+            });
+
+            console.log('✅ Sipariş Firebase\'e kaydedildi');
+
+            // Redux store'dan sepeti temizle
+            dispatch(clearCart());
+
+            // Başarı mesajı
+            Swal.fire({
+                icon: 'success',
+                title: 'Sipariş Başarılı!',
+                html: `
+                    <p>Siparişiniz başarıyla alındı.</p>
+                    <p><strong>Sipariş No:</strong> ${orderId}</p>
+                    <p><strong>Tutar:</strong> ${total.toFixed(2)} ₺</p>
+                    <p><strong>Tahmini Teslimat:</strong> ${orderData.estimatedDeliveryString}</p>
+                `,
+                confirmButtonText: 'Ana Sayfaya Dön'
+            }).then(() => {
+                history.push('/');
+            });
+
+        } catch (error) {
+            console.error('Sipariş kaydetme hatası:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Hata',
+                text: 'Sipariş kaydedilirken bir hata oluştu: ' + (error.message || 'Bilinmeyen hata')
+            });
+        }
     };
 
     return (

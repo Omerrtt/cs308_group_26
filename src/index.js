@@ -33,6 +33,35 @@ auth.onAuthStateChanged(async (user) => {
       if (docSnap.exists) {
         const data = docSnap.data();
         userName = data.name || user.displayName || 'Müşteri';
+        
+        // Eksik field'ları kontrol et ve ekle (eski kullanıcılar için)
+        const updates = {};
+        let needsUpdate = false;
+        
+        if (!data.hasOwnProperty('orders')) {
+          updates.orders = [];
+          needsUpdate = true;
+        }
+        
+        if (!data.hasOwnProperty('cart')) {
+          updates.cart = [];
+          needsUpdate = true;
+        }
+        
+        if (!data.hasOwnProperty('addresses')) {
+          updates.addresses = [];
+          needsUpdate = true;
+        }
+        
+        // Eksik field'ları güncelle
+        if (needsUpdate) {
+          try {
+            await docRef.update(updates);
+            console.log('Kullanıcı profili güncellendi:', user.uid);
+          } catch (updateError) {
+            console.warn('Kullanıcı profili güncellenirken hata:', updateError);
+          }
+        }
       } else {
         userName = user.displayName || (user.email ? user.email.split('@')[0] : 'Müşteri');
       }

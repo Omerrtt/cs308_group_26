@@ -1,0 +1,60 @@
+// Production Firestore Security Rules
+// Bu kuralları Firebase Console > Firestore Database > Rules sekmesine yapıştırın
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Products koleksiyonu - Herkes okuyabilir, yazma için authentication gerekli
+    match /products/{productId} {
+      // Herkes ürünleri okuyabilir
+      allow read: if true;
+      
+      // Yazma için sadece authenticated kullanıcılar (ileride admin kontrolü eklenebilir)
+      // NOT: Script çalıştırmak için geçici olarak 'allow write: if true;' yapın
+      // Ürünler yüklendikten sonra tekrar 'allow write: if request.auth != null;' yapın
+      allow write: if request.auth != null;
+    }
+    
+    // Users koleksiyonu - Kullanıcılar sadece kendi verilerini okuyup yazabilir
+    match /users/{userId} {
+      // Kullanıcılar kendi dokümanlarını okuyabilir
+      allow read: if request.auth != null && request.auth.uid == userId;
+      
+      // Kullanıcılar kendi dokümanlarını oluşturabilir
+      allow create: if request.auth != null && request.auth.uid == userId;
+      
+      // Kullanıcılar kendi dokümanlarını güncelleyebilir
+      allow update: if request.auth != null && request.auth.uid == userId;
+      
+      // ⚠️ GEÇİCİ: Admin sayfasından tüm kullanıcıları güncellemek için
+      // Bu satırı ekleyin (işlem bitince kaldırın):
+      allow update: if request.auth != null;
+    }
+    
+    // Orders koleksiyonu (gelecekte kullanılacak)
+    match /orders/{orderId} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+    
+    // Cart koleksiyonu (gelecekte kullanılacak)
+    match /carts/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Reviews/Ratings koleksiyonu (gelecekte kullanılacak)
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+    
+    // Diğer tüm koleksiyonlar için varsayılan: Reddet
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+

@@ -58,7 +58,10 @@ const RegisterArea = () => {
                         name: user,
                         email: email,
                         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                        uid: uid
+                        uid: uid,
+                        orders: [],
+                        cart: [],
+                        addresses: []
                     })
                 } catch(e) {
                     console.warn('Firestore write failed:', e)

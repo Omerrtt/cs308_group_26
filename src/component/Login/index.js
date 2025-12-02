@@ -1,12 +1,10 @@
 import React, { useState } from 'react'
 import { Link, useHistory } from 'react-router-dom'
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import Swal from 'sweetalert2';
 import { auth, db } from '../../firebaseConfig'
-import { register } from '../../app/slices/user'
 
 const LoginArea = () => {
-    let dispatch = useDispatch();
     const history = useHistory()
 
     let status = useSelector((state) => state.user.status);
@@ -96,7 +94,11 @@ const LoginArea = () => {
                 const userCredential = await auth.signInWithEmailAndPassword(email, pass)
                 const uid = userCredential.user.uid
 
-                // Firestore'dan kullanıcı bilgilerini al
+                // Firebase auth state listener zaten Redux store'u güncelleyecek
+                // Bu yüzden burada dispatch yapmaya gerek yok
+                setLoading(false)
+
+                // Kullanıcı adını gösterim için al (sadece mesaj için)
                 let nameToUse = 'Müşteri'
                 try {
                     const docRef = db.collection('users').doc(uid)
@@ -111,10 +113,6 @@ const LoginArea = () => {
                     console.warn('Firestore read failed:', e)
                     nameToUse = userCredential.user.displayName || 'Müşteri'
                 }
-
-                // Redux store'u güncelle
-                dispatch(register({ user: nameToUse, email: email, pass: pass }))
-                setLoading(false)
 
                 Swal.fire({
                     icon: 'success',

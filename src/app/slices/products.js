@@ -3,6 +3,8 @@ import {createSlice, createAsyncThunk} from "@reduxjs/toolkit";
 import { getProductsData, getProductsDataSync, fetchProductsFromFirebase } from '../data/productsData'
 // Alert
 import Swal from "sweetalert2";
+// Firebase
+import { auth, db } from '../../firebaseConfig';
 
 const CART_STORAGE_KEY = 'cs308_persisted_cart';
 
@@ -36,6 +38,40 @@ export const loadProductsFromFirebase = createAsyncThunk(
         return products;
     }
 );
+
+// Firebase'e sepeti kaydet
+const saveCartToFirebase = async (carts) => {
+    const currentUser = auth.currentUser;
+    if (currentUser && carts && carts.length > 0) {
+        try {
+            const userRef = db.collection('users').doc(currentUser.uid);
+            await userRef.update({
+                cart: carts.map(item => ({
+                    id: item.id,
+                    title: item.title,
+                    price: item.price,
+                    img: item.img || item.image,
+                    quantity: item.quantity,
+                    originalId: item.originalId || item.id
+                }))
+            });
+            console.log('Sepet Firebase\'e kaydedildi');
+        } catch (error) {
+            console.error('Firebase sepet kaydetme hatası:', error);
+        }
+    } else if (currentUser && (!carts || carts.length === 0)) {
+        // Sepet boşsa Firebase'deki cart field'ını boş array yap
+        try {
+            const userRef = db.collection('users').doc(currentUser.uid);
+            await userRef.update({
+                cart: []
+            });
+            console.log('Sepet Firebase\'den temizlendi');
+        } catch (error) {
+            console.error('Firebase sepet temizleme hatası:', error);
+        }
+    }
+};
 
 // Product Slice
 const productsSlice = createSlice({
@@ -120,6 +156,12 @@ const productsSlice = createSlice({
                 const cartItem = { ...product, quantity: limitedQuantity }
                 state.carts.push(cartItem)
                 saveCartToStorage(state.carts)
+                
+                // Firebase'e kaydet (async, arka planda çalışır)
+                saveCartToFirebase(state.carts).catch(err => {
+                    console.error('Firebase sepet kaydetme hatası:', err);
+                });
+                
                 Swal.fire({
                     title: 'Başarılı!',
                     text: 'Ürün sepete eklendi',
@@ -198,6 +240,10 @@ const productsSlice = createSlice({
                 }
             })
             saveCartToStorage(state.carts)
+            // Firebase'e kaydet
+            saveCartToFirebase(state.carts).catch(err => {
+                console.error('Firebase sepet güncelleme hatası:', err);
+            });
         },
         // Remove Cart
         removeCart: (state, action) =>{
@@ -205,7 +251,10 @@ const productsSlice = createSlice({
             let arr = state.carts.filter(item => item.id !== parseInt(id))
             state.carts = arr
             saveCartToStorage(state.carts)
-            
+            // Firebase'e kaydet
+            saveCartToFirebase(state.carts).catch(err => {
+                console.error('Firebase sepet silme hatası:', err);
+            });
         },
         // Delete from Compare
         delCompare: (state, action) =>{
@@ -218,6 +267,10 @@ const productsSlice = createSlice({
         clearCart: (state) =>{
             state.carts = []
             saveCartToStorage(state.carts)
+            // Firebase'den temizle
+            saveCartToFirebase(state.carts).catch(err => {
+                console.error('Firebase sepet temizleme hatası:', err);
+            });
         },
         // Add to Favorite / Wishlist
         addToFav: (state, action) =>{

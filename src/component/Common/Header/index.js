@@ -26,9 +26,10 @@ const Header = () => {
 
     const handleLogout = async () => {
         try {
+            // Firebase auth state listener zaten logout ve clearCart yapacak
+            // Bu yüzden sadece signOut yapıyoruz
             await auth.signOut()
-            dispatch(logout())
-            dispatch(clearCart()) // Sepeti temizle
+            
             Swal.fire({
                 icon: 'success',
                 title: 'Çıkış Yapıldı',
@@ -36,6 +37,7 @@ const Header = () => {
                 timer: 1500,
                 showConfirmButton: false
             })
+            
             history.push('/')
         } catch (error) {
             console.error('Logout error:', error)

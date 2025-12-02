@@ -1,24 +1,34 @@
 import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import { useHistory } from "react-router-dom"
 import Swal from 'sweetalert2';
-import { clearCart } from '../../app/slices/products';
+import { auth } from '../../firebaseConfig';
 
 const Sidebar = () => {
     const location = useLocation()
-    let dispatch = useDispatch();
     const history = useHistory()
     let status = useSelector((state) => state.user.status);
-    const logout = () => {
-        Swal.fire({
-            icon: 'success',
-            title: 'Logout Sucessfull',
-            text: 'Thank You'
-        })
-        dispatch({ type: "user/logout" })
-        dispatch(clearCart()) // Sepeti temizle
-        history.push("/login");
+    const logout = async () => {
+        try {
+            // Firebase auth state listener zaten logout ve clearCart yapacak
+            await auth.signOut()
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Logout Sucessfull',
+                text: 'Thank You'
+            })
+            
+            history.push("/login");
+        } catch (error) {
+            console.error('Logout error:', error)
+            Swal.fire({
+                icon: 'error',
+                title: 'Hata',
+                text: 'Çıkış yapılırken bir hata oluştu'
+            })
+        }
     }
     return (
         <>

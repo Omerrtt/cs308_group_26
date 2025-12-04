@@ -45,6 +45,13 @@ const ProductCard = (props) => {
                             >
                                 <i className="fa fa-phone"></i>
                             </a>
+                            <button 
+                                onClick={() => addToCart(props.data.id)}
+                                className="add-to-cart-btn-small"
+                                title="Sepete Ekle"
+                            >
+                                <i className="fa fa-shopping-cart"></i>
+                            </button>
                     </div>
                 </div>
                 <div className="content">

@@ -56,6 +56,7 @@ const AddProducts = loadable(() => pMinDelay(import('./page/vendor/add-products'
 const VendorSetting = loadable(() => pMinDelay(import('./page/vendor/vendor-setting'), 250), { fallback: <Loading /> });
 const MyAccounts = loadable(() => pMinDelay(import('./page/my-account'), 250), { fallback: <Loading /> });
 const CustomerOrder = loadable(() => pMinDelay(import('./page/my-account/customer-order'), 250), { fallback: <Loading /> });
+const OrderDetails = loadable(() => pMinDelay(import('./page/order-details'), 250), { fallback: <Loading /> });
 const CustomerDownloads = loadable(() => pMinDelay(import('./page/my-account/customer-downloads'), 250), { fallback: <Loading /> });
 const CustomerAddress = loadable(() => pMinDelay(import('./page/my-account/customer-address'), 250), { fallback: <Loading /> });
 const CustomerAccountDetails = loadable(() => pMinDelay(import('./page/my-account/customer-account-details'), 250), { fallback: <Loading /> });
@@ -134,6 +135,7 @@ const App = () => {
             <Route path='/vendor/vendor-setting' exact component={VendorSetting} />
             <Route path='/my-account' exact component={MyAccounts} />
             <Route path='/my-account/customer-order' exact component={CustomerOrder} />
+            <Route path='/order-details/:id' exact component={OrderDetails} />
             <Route path='/my-account/customer-download' exact component={CustomerDownloads} />
             <Route path='/my-account/customer-address' exact component={CustomerAddress} />
             <Route path='/my-account/customer-account-details' exact component={CustomerAccountDetails} />

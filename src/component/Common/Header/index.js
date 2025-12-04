@@ -17,6 +17,7 @@ import { auth } from '../../../firebaseConfig'
 const Header = () => {
     const [click, setClick] = useState(false);
     const [show, setShow] = useState();
+    const [searchQuery, setSearchQuery] = useState('');
     const history = useHistory()
     let carts = useSelector((state) => state.products.carts);
     let favorites = useSelector((state) => state.products.favorites);
@@ -165,13 +166,13 @@ const Header = () => {
 
                                     <ul className="header-action-link action-color--black action-hover-color--golden">
                                         <li>
-                                            <a href="#search" className="search_width" onClick={handleSearch} >
-                                                <img src={svgsearch} alt="img" />
+                                            <a href="#search" onClick={handleSearch} style={{cursor: 'pointer'}}>
+                                                <i className="fa fa-search" style={{fontSize: '20px'}}></i>
                                             </a>
                                         </li>
                                         <li>
                                             <Link to="/cart" className="cart-link" title="Sepetim">
-                                                <i className="fa fa-shopping-cart"></i>
+                                                <i className="fa fa-shopping-cart" style={{fontSize: '20px'}}></i>
                                                 {carts.length > 0 && (
                                                     <span className="cart-count">{carts.length}</span>
                                                 )}
@@ -187,35 +188,18 @@ const Header = () => {
                                                         handleShow('user-menu');
                                                     }}
                                                 >
-                                                    <i className="fa fa-user-circle"></i>
-                                                    <span>{userData.name || 'Kullanıcı'}</span>
+                                                    <i className="fa fa-user-circle" style={{fontSize: '20px'}}></i>
                                                 </a>
                                                 {show === 'user-menu' && (
                                                     <div className="user-dropdown-menu">
-                                                        <Link 
-                                                            to="/profile"
-                                                            onClick={() => setShow('')}
-                                                        >
-                                                            <i className="fa fa-user"></i>
-                                                            Profilim
+                                                        <Link to="/profile" onClick={() => setShow('')}>
+                                                            <i className="fa fa-user"></i> Profilim
                                                         </Link>
-                                                        <Link 
-                                                            to="/my-account"
-                                                            onClick={() => setShow('')}
-                                                        >
-                                                            <i className="fa fa-cog"></i>
-                                                            Hesabım
+                                                        <Link to="/my-account" onClick={() => setShow('')}>
+                                                            <i className="fa fa-cog"></i> Hesabım
                                                         </Link>
-                                                        <a 
-                                                            href="#!"
-                                                            onClick={(e) => {
-                                                                e.preventDefault();
-                                                                handleLogout();
-                                                                setShow('');
-                                                            }}
-                                                        >
-                                                            <i className="fa fa-sign-out"></i>
-                                                            Çıkış Yap
+                                                        <a href="#!" onClick={(e) => { e.preventDefault(); handleLogout(); setShow(''); }}>
+                                                            <i className="fa fa-sign-out"></i> Çıkış Yap
                                                         </a>
                                                     </div>
                                                 )}
@@ -223,34 +207,25 @@ const Header = () => {
                                         ) : (
                                             <>
                                                 <li>
-                                                    <Link 
-                                                        to="/login"
-                                                        className="header-login-btn"
-                                                    >
-                                                        <i className="fa fa-sign-in"></i>
-                                                        <span>Giriş Yap</span>
+                                                    <Link to="/login">
+                                                        <i className="fa fa-sign-in" style={{fontSize: '20px'}}></i>
                                                     </Link>
                                                 </li>
                                                 <li>
-                                                    <Link 
-                                                        to="/register"
-                                                        className="header-register-btn"
-                                                    >
-                                                        <i className="fa fa-user-plus"></i>
-                                                        <span>Kayıt Ol</span>
+                                                    <Link to="/register">
+                                                        <i className="fa fa-user-plus" style={{fontSize: '20px'}}></i>
                                                     </Link>
                                                 </li>
                                             </>
                                         )}
                                         <li>
                                             <a 
-                                                href="https://wa.me/905393973949?text=Merhaba, Malikane Electronics ürünleriniz hakkında bilgi almak istiyorum." 
+                                                href="https://wa.me/905393973949" 
                                                 target="_blank" 
                                                 rel="noopener noreferrer"
-                                                className="whatsapp-btn-header"
-                                                title="WhatsApp ile İletişim"
+                                                title="WhatsApp"
                                             >
-                                                <i className="fab fa-whatsapp" style={{fontSize: '28px', color: '#25D366'}}></i>
+                                                <i className="fab fa-whatsapp" style={{fontSize: '24px', color: '#25D366'}}></i>
                                             </a>
                                         </li>
                                     </ul>
@@ -647,8 +622,24 @@ const Header = () => {
 
             <div id="search" className="search-modal">
                 <button type="button" className="close" onClick={handleSearch}><img src={svg} alt="icon" /></button>
-                <form onSubmit={(e) => { e.preventDefault(); handleSearch(); Swal.fire('Success', 'Check out the Results', 'success'); history.push('/shop') }}>
-                    <input type="search" placeholder="type keyword(s) here" required />
+                <form onSubmit={(e) => { 
+                    e.preventDefault(); 
+                    if (searchQuery.trim()) {
+                        history.push(`/shop?search=${encodeURIComponent(searchQuery.trim())}`);
+                        setSearchQuery('');
+                        setClick(false);
+                        document.querySelector("#search").style = ("transform: translate(-100%, 0); opacity: 0");
+                    } else {
+                        Swal.fire('Warning', 'Please enter a search term', 'warning');
+                    }
+                }}>
+                    <input 
+                        type="search" 
+                        placeholder="Search by name, ID, EAN, barcode..." 
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        required 
+                    />
                     <button type="submit" className="btn btn-lg btn-main-search">Search</button>
                 </form>
             </div>

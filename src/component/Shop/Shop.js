@@ -4,17 +4,20 @@ import Filter from './Filter'
 import { useSelector } from "react-redux";
 import { getProductsData } from '../../app/data/productsData';
 import BabyHeading from '../BabyToys/Heading';
+import { useLocation, useHistory } from 'react-router-dom';
+
 const Shop = () => {
+    const location = useLocation();
+    const history = useHistory();
     const [allProducts, setAllProducts] = useState([])
     const [filteredProducts, setFilteredProducts] = useState([])
     const [loading, setLoading] = useState(true)
     const [sortBy, setSortBy] = useState('popularity')
     const [filterBy, setFilterBy] = useState('most-popular')
+    const [searchQuery, setSearchQuery] = useState('')
 
-    // Sıralama fonksiyonları
     const sortProducts = (products, sortType) => {
         const sortedProducts = [...products]
-        
         switch (sortType) {
             case 'popularity':
                 return sortedProducts.sort((a, b) => (b.rating * b.reviewCount) - (a.rating * a.reviewCount))
@@ -33,7 +36,6 @@ const Shop = () => {
         }
     }
 
-    // Filtreleme fonksiyonu
     const filterProducts = (products, filterType) => {
         switch (filterType) {
             case 'most-popular':
@@ -49,18 +51,42 @@ const Shop = () => {
         }
     }
 
-    // Sıralama değiştiğinde
+    const searchProducts = (products, query) => {
+        if (!query || query.trim() === '') {
+            return products
+        }
+        const searchTerm = query.toLowerCase().trim()
+        return products.filter(product => {
+            const titleMatch = product.title?.toLowerCase().includes(searchTerm)
+            const descriptionMatch = product.description?.toLowerCase().includes(searchTerm)
+            const categoryMatch = product.category?.toLowerCase().includes(searchTerm)
+            const brandMatch = product.brand?.toLowerCase().includes(searchTerm)
+            const eanMatch = product.ean?.toLowerCase().includes(searchTerm)
+            const barcodeMatch = product.barcode?.toLowerCase().includes(searchTerm)
+            const idMatch = product.id?.toString().includes(searchTerm)
+            const skuMatch = product.sku?.toLowerCase().includes(searchTerm)
+            return titleMatch || descriptionMatch || categoryMatch || brandMatch || eanMatch || barcodeMatch || idMatch || skuMatch
+        })
+    }
+
     const handleSortChange = (sortType) => {
         setSortBy(sortType)
-        const sorted = sortProducts(allProducts, sortType)
+        const productsToSort = searchQuery ? searchProducts(allProducts, searchQuery) : allProducts
+        const sorted = sortProducts(productsToSort, sortType)
         setFilteredProducts(sorted)
     }
 
-    // Filtre değiştiğinde
     const handleFilterChange = (filterType) => {
         setFilterBy(filterType)
-        const filtered = filterProducts(allProducts, filterType)
+        const productsToFilter = searchQuery ? searchProducts(allProducts, searchQuery) : allProducts
+        const filtered = filterProducts(productsToFilter, filterType)
         setFilteredProducts(filtered)
+    }
+
+    const clearSearch = () => {
+        setSearchQuery('')
+        history.push('/shop')
+        setFilteredProducts(allProducts)
     }
 
     useEffect(() => {
@@ -69,7 +95,17 @@ const Shop = () => {
             try {
                 const products = getProductsData()
                 setAllProducts(products)
-                setFilteredProducts(products)
+                const params = new URLSearchParams(location.search)
+                const search = params.get('search')
+                if (search) {
+                    setSearchQuery(search)
+                    const searchedProducts = searchProducts(products, search)
+                    const sortedProducts = sortProducts(searchedProducts, sortBy)
+                    setFilteredProducts(sortedProducts)
+                } else {
+                    setSearchQuery('')
+                    setFilteredProducts(products)
+                }
             } catch (error) {
                 console.error('Ürünler yüklenirken hata:', error)
                 setAllProducts([])
@@ -77,9 +113,8 @@ const Shop = () => {
             }
             setLoading(false)
         }
-
         fetchProducts()
-    }, [])
+    }, [location.search])
 
     if (loading) {
         return (
@@ -100,20 +135,22 @@ const Shop = () => {
         <>
             <section id="shop_main_area" className="ptb-100">
                 <div className="container">
-                    {/* Başlık */}
-                    <BabyHeading heading="Tüm Ürünler" />
-                    
-                    {/* Filter Bileşeni */}
+                    <BabyHeading heading={searchQuery ? `"${searchQuery}" için Arama Sonuçları` : "Tüm Ürünler"} />
+                    {searchQuery && (
+                        <div className="alert alert-info d-flex justify-content-between align-items-center" role="alert">
+                            <div>
+                                <strong>{filteredProducts.length}</strong> ürün bulundu: <strong>"{searchQuery}"</strong>
+                            </div>
+                            <button className="btn btn-sm btn-outline-secondary" onClick={clearSearch}>
+                                <i className="fa fa-times"></i> Aramayı Temizle
+                            </button>
+                        </div>
+                    )}
                     <div className="row mb-4">
                         <div className="col-lg-6 col-md-12">
                             <div className="product_filter">
                                 <div className="customs_selects">
-                                    <select 
-                                        name="filter" 
-                                        className="customs_sel_box" 
-                                        value={filterBy}
-                                        onChange={(e) => handleFilterChange(e.target.value)}
-                                    >
+                                    <select name="filter" className="customs_sel_box" value={filterBy} onChange={(e) => handleFilterChange(e.target.value)}>
                                         <option value="most-popular">Most Popular</option>
                                         <option value="best-seller">Best Seller</option>
                                         <option value="trending">Trending</option>
@@ -128,12 +165,7 @@ const Shop = () => {
                                     <p>Sort By:</p>
                                 </div>
                                 <div className="customs_selects">
-                                    <select 
-                                        name="sort" 
-                                        className="customs_sel_box" 
-                                        value={sortBy}
-                                        onChange={(e) => handleSortChange(e.target.value)}
-                                    >
+                                    <select name="sort" className="customs_sel_box" value={sortBy} onChange={(e) => handleSortChange(e.target.value)}>
                                         <option value="popularity">Sort By Popularity</option>
                                         <option value="newness">Sort By Newness</option>
                                         <option value="price-low">Price: Low to High</option>
@@ -145,13 +177,24 @@ const Shop = () => {
                             </div>
                         </div>
                     </div>
-
                     <div className="row">
-                        {filteredProducts.map((data, index) => (
-                            <div className="col-lg-3 col-md-4 col-sm-6 col-12 mb-4" key={index}>
-                                <ProductCard data={data} />
+                        {filteredProducts.length > 0 ? (
+                            filteredProducts.map((data, index) => (
+                                <div className="col-lg-3 col-md-4 col-sm-6 col-12 mb-4" key={index}>
+                                    <ProductCard data={data} />
+                                </div>
+                            ))
+                        ) : (
+                            <div className="col-12">
+                                <div className="alert alert-warning text-center" role="alert">
+                                    <h4>Ürün Bulunamadı</h4>
+                                    <p>"{searchQuery}" için hiçbir ürün bulunamadı.</p>
+                                    <button className="btn btn-primary mt-3" onClick={clearSearch}>
+                                        Tüm Ürünleri Görüntüle
+                                    </button>
+                                </div>
                             </div>
-                        ))}
+                        )}
                     </div>
                 </div>
             </section>

@@ -8,14 +8,14 @@ const generateProductCode = (productName) => {
     const cleanName = productName.toLowerCase()
         .replace(/[^a-z0-9\s]/g, '')
         .replace(/\s+/g, '');
-    
+
     let hash = 0;
     for (let i = 0; i < cleanName.length; i++) {
         const char = cleanName.charCodeAt(i);
         hash = ((hash << 5) - hash) + char;
         hash = hash & hash;
     }
-    
+
     const positiveHash = Math.abs(hash);
     const code = (positiveHash % 900000) + 100000;
     return code.toString();
@@ -32,7 +32,7 @@ const formatProducts = () => {
         // ID'yi sayıya çevir ve yedekle
         formattedProduct.originalId = productIdString || null;
         formattedProduct.id = Number.isNaN(numericId) ? index + 1 : numericId;
-        
+
         // Eğer productCode yoksa oluştur
         if (!formattedProduct.productCode) {
             formattedProduct.productCode = generateProductCode(formattedProduct.name || formattedProduct['Product Name']);
@@ -50,7 +50,7 @@ const formatProducts = () => {
         } else if (!formattedProduct.ean && productEans[productIdString]) {
             formattedProduct.ean = productEans[productIdString];
         }
-        
+
         // Ana görseli image attribute'undan öncelikli olarak al
         // image -> img -> mainImage -> images[0] sırasıyla kontrol et
         if (formattedProduct.image) {
@@ -64,17 +64,17 @@ const formatProducts = () => {
             formattedProduct.img = formattedProduct.images[0];
             formattedProduct.mainImage = formattedProduct.images[0];
         }
-        
+
         // title alanını name'den oluştur
         if (!formattedProduct.title) {
             formattedProduct.title = formattedProduct.name || formattedProduct['Product Name'];
         }
-        
+
         // inStock varsayılan olarak true
         if (formattedProduct.inStock === undefined) {
             formattedProduct.inStock = true;
         }
-        
+
         return formattedProduct;
     });
 }
@@ -87,8 +87,8 @@ export const getProductsData = () => {
 // Eski 5 ürünlü versiyon (backup için)
 export const getFirstFiveProducts = () => {
     return [
-    {
-        id: 1,
+        {
+            id: 1,
             title: "USB 3.0 Hub, 4 bağlantı noktası USB hub ayırıcı, taşınabilir USB adaptör mini multiport genişletme masaüstü, dizüstü bilgisayar, xbox, flash sürücü, hdd, konsol, yazıcı, pc, klavyeler, hp, dell",
             titleEn: "USB 3.0 Hub, 4 Port USB Hub Splitter,Portable USB Adapter Mini Multiport Expander for Desktop, Laptop, Xbox, Flash Drive, HDD, Console, Printer, PC, Keyboards, HP, Dell",
             asin: "B0BWH9DZRV",
@@ -125,9 +125,9 @@ export const getFirstFiveProducts = () => {
                 "Uyumluluk": "Windows, Mac, Linux",
                 "Boyutlar": "Kompakt"
             }
-    },
-    {
-        id: 2,
+        },
+        {
+            id: 2,
             title: "Makita için 350W Güç İnverter 18V LXT LI-ION Pil, 2-Portlu Tedarik İnvertör Jeneratörleri Dönüştürücü DC 20V ila AC 110V ~ 120V LED Işık, 3 USB-A, 1 Tip-C, 1DC Port, Açık Seyahat Kampı için",
             titleEn: "350W Power Inverter for Makita 18V LXT Li-ion Battery,2-Port Supply Inverter Generators Converter DC 20V to AC 110V ~120V with LED Light,3 USB-A,1 Type-C,1DC Port, for Outdoor Travel Camping",
             asin: "B0D4PGCXNL",
@@ -165,9 +165,9 @@ export const getFirstFiveProducts = () => {
                 "USB Portları": "3x USB-A + 1x Type-C",
                 "LED Işık": "300 Lümen"
             }
-    },
-    {
-        id: 3,
+        },
+        {
+            id: 3,
             title: "Fujifilm Instax Mini 12 Anında Kamera Paketi - 20 Çekim Film, Özel Case, Deluxe 60 Cep Fotoğraf Albümü ve Bluebirdsales Aksesuarları - Otomatik Pozlama, Selfie Mirror, Pastel Blue içerir",
             titleEn: "Fujifilm Instax Mini 12 Instant Camera Bundle - Includes 20 Shots Film, Custom Case, Deluxe 60-Pocket Photo Album & BluebirdSales Accessories - Auto Exposure, Selfie Mirror, Pastel Blue",
             asin: "B0D6C6GG9X",
@@ -205,9 +205,9 @@ export const getFirstFiveProducts = () => {
                 "Özellikler": "Otomatik Pozlama, Selfie Mirror",
                 "Aksesuarlar": "Case, Albüm, Çerçeveler"
             }
-    },
-    {
-        id: 4,
+        },
+        {
+            id: 4,
             title: "4K video kamera, 2'den 1 dijital monoküler teleskop kamera, manuel odak 48MP fotoğraf maks.",
             titleEn: "4K Video Camcorder, 2 in 1 Digital Monocular Telescope Camera, Manual Focus 48MP Photo Max 4000ft 104X Digital Telescope Video Camera with 3.0\" Screen/Hood/Battery/SD Card/Case",
             asin: "B0FG7CNCMD",
@@ -244,9 +244,9 @@ export const getFirstFiveProducts = () => {
                 "Ekran": "3\" LCD",
                 "Pil": "4000mAh"
             }
-    },
-    {
-        id: 5,
+        },
+        {
+            id: 5,
             title: "Lensy ekran ücretsiz dijital kamera | Dört yerleşik filtre | Şarj edilebilir, 8MP, hafif, odaksuz, otomatik flaş, kullanımı kolay, yeniden kullanılabilir, retro film tarzı fotoğraflar (Forest Green)",
             titleEn: "LENSY Screen Free Digital Camera | Four Built in Filters | Rechargeable, 8mp, Lightweight, Focus-Free, Auto-Flash, Easy-to-Use, Reusable, Retro Film-Style Photos (Forest Green)",
             asin: "B0FDJVBCMF",
@@ -305,17 +305,17 @@ const getCategoryNameBySlug = (slug) => {
 // Kategoriye göre ürünleri filtrele
 export const getProductsByCategory = (categorySlug) => {
     const products = getProductsData();
-    
+
     if (categorySlug === 'all' || categorySlug === 'tum-urunler') {
         return products;
     }
-    
+
     // Ana kategori slug'ından kategori adını bul
     const categoryName = getCategoryNameBySlug(categorySlug);
     if (!categoryName) {
         return [];
     }
-    
+
     // Kategori ağacından tam kategori yollarını bul
     const matchingCategories = [];
     for (const [mainCat, data] of Object.entries(categoryTreeData)) {
@@ -337,7 +337,7 @@ export const getProductsByCategory = (categorySlug) => {
             }
         }
     }
-    
+
     // Ürünleri filtrele
     return products.filter(product => {
         const productCategory = product.category || '';

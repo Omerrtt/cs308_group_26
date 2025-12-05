@@ -99,7 +99,7 @@ const ProductDetailsTwo = () => {
                                         <RatingStar maxScore={5} rating={product.rating.rate} id="rating-star-common-2" />
                                         <span>({product.rating.count} Müşteri Değerlendirmesi)</span>
                                     </div>
-                                    <h4>₺{product.price.toLocaleString()} 
+                                    <h4>₺{product.price.toLocaleString()}
                                         {product.originalPrice && product.originalPrice !== product.price && (
                                             <del>₺{product.originalPrice.toLocaleString()}</del>
                                         )}
@@ -107,7 +107,7 @@ const ProductDetailsTwo = () => {
                                     <p>{product.description}</p>
                                     <div className="customs_selects">
                                         <select name="product" className="customs_sel_box">
-                                            <option value="">Size</option>
+                                            <option value="">Beden</option>
                                             <option value="small">S</option>
                                             <option value="medium">M</option>
                                             <option value="learz">L</option>
@@ -115,11 +115,11 @@ const ProductDetailsTwo = () => {
                                         </select>
                                     </div>
                                     <div className="variable-single-item">
-                                        <span>Color</span>
+                                        <span>Renk</span>
                                         <div className="product-variable-color">
                                             <label htmlFor="modal-product-color-red1">
                                                 <input name="modal-product-color" id="modal-product-color-red1"
-                                                    className="color-select" type="radio" onChange={() => { colorSwatch('red') }} defaultChecked/>
+                                                    className="color-select" type="radio" onChange={() => { colorSwatch('red') }} defaultChecked />
                                                 <span className="product-color-red"></span>
                                             </label>
                                             <label htmlFor="modal-product-color-green3">
@@ -149,6 +149,7 @@ const ProductDetailsTwo = () => {
                                                     </button>
                                                 </div>
                                             </div>
+                                            <a href="#!" className="theme-btn-one btn-black-overlay btn_sm ml-3" onClick={(e) => { e.preventDefault(); addToCart(product.id); }}>Sepete Ekle</a>
                                         </div>
                                     </form>
                                     <div className="links_Product_areas">
@@ -162,26 +163,8 @@ const ProductDetailsTwo = () => {
                                                     className="fa fa-exchange"></i>Karşılaştır</a>
                                             </li>
                                         </ul>
-                                        
-                                        {/* WhatsApp ve Telefon İletişim Butonları */}
-                                        <div className="contact-buttons">
-                                            <a 
-                                                href={`https://wa.me/905551234567?text=Merhaba, ${product.title} ürünü hakkında bilgi almak istiyorum. Ürün Kodu: ${product.productCode} - Fiyat: ₺${product.price.toLocaleString()}`} 
-                                                target="_blank" 
-                                                rel="noopener noreferrer"
-                                                className="whatsapp-btn"
-                                            >
-                                                <i className="fab fa-whatsapp" style={{fontSize: '18px', marginRight: '8px'}}></i>
-                                                WhatsApp ile İletişim
-                                            </a>
-                                            <a 
-                                                href="tel:+905551234567" 
-                                                className="phone-btn"
-                                            >
-                                                <i className="fa fa-phone"></i>
-                                                Telefon Et
-                                            </a>
-                                        </div>
+
+
                                     </div>
 
                                 </div>
@@ -196,9 +179,9 @@ const ProductDetailsTwo = () => {
                     <div className="col-lg-6 offset-lg-3 col-md-6 offset-md-3 col-sm-12 col-12">
                         <div className="empaty_cart_area">
                             <img src={img} alt="img" />
-                            <h2>PRODUCT NOT FOUND</h2>
-                            <h3>Sorry Mate... No Item Found according to Your query!</h3>
-                            <Link to="/shop" className="btn btn-black-overlay btn_sm">Continue Shopping</Link>
+                            <h2>ÜRÜN BULUNAMADI</h2>
+                            <h3>Üzgünüz... Aradığınız kriterlere uygun ürün bulunamadı!</h3>
+                            <Link to="/shop" className="btn btn-black-overlay btn_sm">Alışverişe Devam Et</Link>
                         </div>
                     </div>
                 </div>

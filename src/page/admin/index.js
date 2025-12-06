@@ -65,44 +65,79 @@ const AdminPanel = () => {
     // Tüm kullanıcıların order'larını çek
     const loadAllOrders = async () => {
         try {
-            console.log('📦 Tüm kullanıcıların order\'ları yükleniyor...');
+            console.log('📦 Tüm siparişler yükleniyor...');
             
-            // Tüm kullanıcıları çek
-            const usersSnapshot = await db.collection('users').get();
-            const usersMap = {};
+            // Önce orders collection'ından çek (ana kaynak)
+            const ordersSnapshot = await db.collection('orders').get();
             const ordersList = [];
+            const userIds = new Set();
 
-            usersSnapshot.forEach((doc) => {
-                const userData = doc.data();
-                usersMap[doc.id] = {
-                    name: userData.name || 'İsimsiz',
-                    email: userData.email || 'Email yok',
-                    uid: doc.id
-                };
-
-                // Her kullanıcının order'larını al
-                if (userData.orders && Array.isArray(userData.orders)) {
-                    userData.orders.forEach((order) => {
-                        ordersList.push({
-                            ...order,
-                            userId: doc.id,
-                            userName: userData.name || 'İsimsiz',
-                            userEmail: userData.email || 'Email yok'
-                        });
-                    });
+            ordersSnapshot.forEach((doc) => {
+                const orderData = doc.data();
+                ordersList.push({
+                    ...orderData,
+                    // Document ID'yi de ekle (orderId ile aynı olmalı)
+                    documentId: doc.id
+                });
+                
+                // User ID'leri topla (kullanıcı bilgilerini çekmek için)
+                if (orderData.userId) {
+                    userIds.add(orderData.userId);
                 }
             });
 
+            console.log(`📦 Orders collection'dan ${ordersList.length} sipariş bulundu`);
+
+            // Kullanıcı bilgilerini çek
+            const usersMap = {};
+            if (userIds.size > 0) {
+                const userIdsArray = Array.from(userIds);
+                const userPromises = userIdsArray.map(async (userId) => {
+                    try {
+                        const userDoc = await db.collection('users').doc(userId).get();
+                        if (userDoc.exists) {
+                            const userData = userDoc.data();
+                            usersMap[userId] = {
+                                name: userData.name || 'İsimsiz',
+                                email: userData.email || 'Email yok',
+                                uid: userId
+                            };
+                        } else {
+                            usersMap[userId] = {
+                                name: 'Bilinmeyen Kullanıcı',
+                                email: 'Email yok',
+                                uid: userId
+                            };
+                        }
+                    } catch (error) {
+                        console.error(`Kullanıcı ${userId} bilgisi alınamadı:`, error);
+                        usersMap[userId] = {
+                            name: 'Bilinmeyen Kullanıcı',
+                            email: 'Email yok',
+                            uid: userId
+                        };
+                    }
+                });
+                await Promise.all(userPromises);
+            }
+
+            // Order'lara kullanıcı bilgilerini ekle
+            const ordersWithUserInfo = ordersList.map(order => ({
+                ...order,
+                userName: order.userName || usersMap[order.userId]?.name || 'İsimsiz',
+                userEmail: order.userEmail || usersMap[order.userId]?.email || 'Email yok'
+            }));
+
             // Order'ları tarihe göre sırala (en yeni önce)
-            ordersList.sort((a, b) => {
+            ordersWithUserInfo.sort((a, b) => {
                 const dateA = a.orderDateTimestamp || a.createdAtTimestamp || 0;
                 const dateB = b.orderDateTimestamp || b.createdAtTimestamp || 0;
                 return dateB - dateA;
             });
 
             setUsers(usersMap);
-            setAllOrders(ordersList);
-            console.log(`✅ ${ordersList.length} sipariş yüklendi`);
+            setAllOrders(ordersWithUserInfo);
+            console.log(`✅ ${ordersWithUserInfo.length} sipariş yüklendi (orders collection'dan)`);
         } catch (error) {
             console.error('❌ Order yükleme hatası:', error);
             Swal.fire({
@@ -116,36 +151,51 @@ const AdminPanel = () => {
     // Order status'unu güncelle
     const updateOrderStatus = async (userId, orderId, newStatus) => {
         try {
-            const userRef = db.collection('users').doc(userId);
-            const userDoc = await userRef.get();
-            
-            if (!userDoc.exists) {
-                throw new Error('Kullanıcı bulunamadı');
-            }
+            const updateTime = new Date();
+            const updateData = {
+                status: newStatus,
+                updatedAt: updateTime.toISOString(),
+                updatedAtTimestamp: updateTime.getTime()
+            };
 
-            const userData = userDoc.data();
-            const orders = userData.orders || [];
-            
-            // Order'ı bul ve güncelle
-            const updatedOrders = orders.map(order => {
-                if (order.orderId === orderId) {
-                    return {
-                        ...order,
-                        status: newStatus,
-                        updatedAt: new Date().toISOString(),
-                        updatedAtTimestamp: new Date().getTime()
-                    };
+            // Orders collection'ındaki order'ı güncelle (ana kaynak)
+            const orderRef = db.collection('orders').doc(orderId);
+            await orderRef.update(updateData);
+            console.log(`✅ Orders collection'daki order güncellendi: ${orderId}`);
+
+            // Users collection'ındaki orders array'ini de güncelle (senkronizasyon için)
+            try {
+                const userRef = db.collection('users').doc(userId);
+                const userDoc = await userRef.get();
+                
+                if (userDoc.exists) {
+                    const userData = userDoc.data();
+                    const orders = userData.orders || [];
+                    
+                    // Order'ı bul ve güncelle
+                    const updatedOrders = orders.map(order => {
+                        if (order.orderId === orderId) {
+                            return {
+                                ...order,
+                                ...updateData
+                            };
+                        }
+                        return order;
+                    });
+
+                    await userRef.update({ orders: updatedOrders });
+                    console.log(`✅ Users collection'daki order güncellendi: ${orderId}`);
                 }
-                return order;
-            });
-
-            await userRef.update({ orders: updatedOrders });
+            } catch (userUpdateError) {
+                console.warn('Users collection güncelleme hatası (orders collection güncellendi):', userUpdateError);
+                // Users collection güncelleme hatası kritik değil, orders collection güncellendi
+            }
             
             // Local state'i güncelle
             setAllOrders(prevOrders => 
                 prevOrders.map(order => 
-                    order.orderId === orderId && order.userId === userId
-                        ? { ...order, status: newStatus }
+                    order.orderId === orderId
+                        ? { ...order, ...updateData }
                         : order
                 )
             );
@@ -263,6 +313,7 @@ const AdminPanel = () => {
                                     <thead className="thead-dark">
                                         <tr>
                                             <th>Sipariş ID</th>
+                                            <th>Fatura No</th>
                                             <th>Müşteri</th>
                                             <th>Email</th>
                                             <th>Tarih</th>
@@ -276,15 +327,18 @@ const AdminPanel = () => {
                                     <tbody>
                                         {allOrders.length === 0 ? (
                                             <tr>
-                                                <td colSpan="9" className="text-center">
+                                                <td colSpan="10" className="text-center">
                                                     <p className="mb-0">Henüz sipariş bulunmuyor.</p>
                                                 </td>
                                             </tr>
                                         ) : (
                                             allOrders.map((order, index) => (
-                                                <tr key={`${order.userId}-${order.orderId}-${index}`}>
+                                                <tr key={`${order.orderId || order.documentId || index}`}>
                                                     <td>
                                                         <strong>{order.orderId || 'N/A'}</strong>
+                                                    </td>
+                                                    <td>
+                                                        <small>{order.invoiceNumber || 'N/A'}</small>
                                                     </td>
                                                     <td>{order.userName || 'İsimsiz'}</td>
                                                     <td>{order.userEmail || 'Email yok'}</td>
@@ -350,15 +404,29 @@ const AdminPanel = () => {
                                                                     title: 'Sipariş Detayları',
                                                                     html: `
                                                                         <div style="text-align: left;">
-                                                                            <p><strong>Sipariş ID:</strong> ${order.orderId}</p>
-                                                                            <p><strong>Müşteri:</strong> ${order.userName}</p>
-                                                                            <p><strong>Email:</strong> ${order.userEmail}</p>
+                                                                            <p><strong>Sipariş ID:</strong> ${order.orderId || 'N/A'}</p>
+                                                                            <p><strong>Fatura No:</strong> ${order.invoiceNumber || 'N/A'}</p>
+                                                                            <p><strong>Müşteri:</strong> ${order.userName || 'İsimsiz'}</p>
+                                                                            <p><strong>Email:</strong> ${order.userEmail || 'Email yok'}</p>
                                                                             <p><strong>Tarih:</strong> ${formatDate(order.orderDate || order.createdAt)}</p>
+                                                                            <p><strong>Ara Toplam:</strong> ${formatPrice(order.subtotal)}</p>
+                                                                            <p><strong>Kargo:</strong> ${formatPrice(order.shipping || 0)}</p>
+                                                                            <p><strong>Vergi:</strong> ${formatPrice(order.tax || 0)}</p>
                                                                             <p><strong>Toplam:</strong> ${formatPrice(order.total)}</p>
                                                                             <p><strong>Durum:</strong> ${order.status || 'pending'}</p>
                                                                             <p><strong>Ödeme Durumu:</strong> ${order.paymentStatus || 'N/A'}</p>
-                                                                            ${order.comment ? `<p><strong>Yorum:</strong> ${order.comment}</p>` : ''}
+                                                                            <p><strong>Ödeme Yöntemi:</strong> ${order.paymentMethod || 'N/A'}</p>
+                                                                            ${order.comment ? `<p><strong>Yorum/Not:</strong> ${order.comment}</p>` : ''}
                                                                             ${order.estimatedDelivery ? `<p><strong>Tahmini Teslimat:</strong> ${formatDate(order.estimatedDelivery)}</p>` : ''}
+                                                                            ${order.deliveryAddress ? `
+                                                                                <p><strong>Teslimat Adresi:</strong></p>
+                                                                                <p style="margin-left: 20px;">
+                                                                                    ${order.deliveryAddress.fullName || order.deliveryAddress.name || ''}<br/>
+                                                                                    ${order.deliveryAddress.address || ''}<br/>
+                                                                                    ${order.deliveryAddress.city || ''} ${order.deliveryAddress.zipCode || ''}<br/>
+                                                                                    ${order.deliveryAddress.phone || ''}
+                                                                                </p>
+                                                                            ` : ''}
                                                                         </div>
                                                                     `,
                                                                     width: '600px',

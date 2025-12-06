@@ -658,14 +658,77 @@ const Checkout = () => {
             // Yeni faturayı ekle
             currentInvoices.push(invoiceData);
             
-            // Firebase'e kaydet - orders ve invoices array'lerini güncelle
+            // Orders collection'ına kaydetmek için order document verisi
+            const orderDocumentData = {
+                orderId: orderId,
+                invoiceNumber: invoiceId, // Invoice number
+                userId: currentUser.uid,
+                userName: user.name || formData.fullName,
+                userEmail: user.email || formData.email,
+                orderDate: orderDate.toISOString(),
+                orderDateTimestamp: orderDate.getTime(),
+                orderDateString: orderDate.toLocaleDateString('tr-TR', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }),
+                items: orderItems,
+                subtotal: subtotal,
+                shipping: shipping,
+                tax: tax,
+                total: total,
+                paymentStatus: 'confirmed',
+                paymentMethod: 'credit_card',
+                deliveryAddress: deliveryAddress,
+                estimatedDelivery: estimatedDeliveryDate.toISOString(),
+                estimatedDeliveryTimestamp: estimatedDeliveryDate.getTime(),
+                estimatedDeliveryString: estimatedDeliveryDate.toLocaleDateString('tr-TR', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                }),
+                status: 'pending',
+                comment: formData.notes || '', // Kullanıcı notları/comment
+                createdAt: orderDate.toISOString(),
+                createdAtTimestamp: orderDate.getTime(),
+                updatedAt: orderDate.toISOString(),
+                updatedAtTimestamp: orderDate.getTime()
+            };
+
+            // ÖNCE Orders collection'ına kaydet (ana kaynak)
+            console.log('📦 Orders collection\'a kaydediliyor...');
+            console.log('Order ID:', orderId);
+            console.log('Order Document Data keys:', Object.keys(orderDocumentData));
+            
+            try {
+                const orderRef = db.collection('orders').doc(orderId);
+                await orderRef.set(orderDocumentData);
+                
+                console.log('✅ Sipariş orders collection\'a kaydedildi (Order ID: ' + orderId + ')');
+                console.log('✅ Orders collection document path: orders/' + orderId);
+            } catch (orderCollectionError) {
+                console.error('❌ Orders collection\'a kaydetme hatası:', orderCollectionError);
+                console.error('❌ Hata detayları:', {
+                    message: orderCollectionError.message,
+                    code: orderCollectionError.code,
+                    stack: orderCollectionError.stack
+                });
+                
+                // Orders collection'a kaydetme hatası kritik - siparişi engelle
+                throw new Error(`Orders collection'a kaydetme hatası: ${orderCollectionError.message}`);
+            }
+
+            // SONRA Firebase'e kaydet - users collection'ındaki orders array'ini güncelle
             await userRef.update({
                 orders: currentOrders,
                 invoices: currentInvoices,
                 cart: [] // Sepeti temizle
             });
 
-            console.log('✅ Sipariş Firebase\'e kaydedildi');
+            console.log('✅ Sipariş users collection\'a kaydedildi');
+
             console.log('✅ Fatura Firebase\'e kaydedildi');
 
             // Invoice PDF oluştur, indir ve email gönder

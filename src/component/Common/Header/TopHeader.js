@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import avater from '../../../assets/img/common/avater.png'
 import { useSelector } from "react-redux";
 import { useHistory } from "react-router-dom"
@@ -8,7 +8,16 @@ import { auth } from '../../../firebaseConfig';
 
 const TopHeader = () => {
     const history = useHistory()
+    const location = useLocation()
     const [searchTerm, setSearchTerm] = useState('');
+    
+    // Aynı sayfaya tıklandığında sayfayı yenile
+    const handleLinkClick = (e, targetPath) => {
+        if (location.pathname === targetPath) {
+            e.preventDefault();
+            window.location.reload();
+        }
+    }
 
     let status = useSelector((state) => state.user.status);
     let user = useSelector((state) => state.user.user);
@@ -99,13 +108,27 @@ const TopHeader = () => {
                                 {
                                     !status ?
                                         <ul className="right_list_fix">
-                                            <li><Link to="/login"><i className="fa fa-user"></i> Giriş Yap</Link></li>
+                                            <li>
+                                                <Link 
+                                                    to="/login"
+                                                    onClick={(e) => handleLinkClick(e, '/login')}
+                                                >
+                                                    <i className="fa fa-user"></i> Giriş Yap
+                                                </Link>
+                                            </li>
                                         </ul>
                                         :
                                         <ul className="right_list_fix">
                                             <li className="after_login"><img src={avater} alt="avater" /> {user.name || 'Jhon Doe'} <i className="fa fa-angle-down"></i>
                                                 <ul className="custom_dropdown">
-                                                    <li><Link to="/profile"><i className="fa fa-user"></i> Profilim</Link></li>
+                                                    <li>
+                                                        <Link 
+                                                            to="/profile"
+                                                            onClick={(e) => handleLinkClick(e, '/profile')}
+                                                        >
+                                                            <i className="fa fa-user"></i> Profilim
+                                                        </Link>
+                                                    </li>
                                                     <li><Link to="#!" onClick={() => { logout() }} ><i className="fa fa-sign-out"></i> Logout</Link></li>
                                                 </ul>
                                             </li>

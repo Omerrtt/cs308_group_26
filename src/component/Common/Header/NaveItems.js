@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 // import Img
 import banner from '../../../assets/img/common/nav_banner.png'
@@ -7,12 +7,26 @@ import banner from '../../../assets/img/common/nav_banner.png'
 const NaveItems = (props) => {
     // useState hook'u component'in en üstünde olmalı
     const [activeCategory, setActiveCategory] = useState(0);
+    const location = useLocation();
+    
+    // Aynı sayfaya tıklandığında sayfayı yenile
+    const handleLinkClick = (e, targetPath) => {
+        if (location.pathname === targetPath) {
+            e.preventDefault();
+            window.location.reload();
+        }
+    }
     
     // Eğer children yoksa basit link olarak göster
     if (!props.item.children) {
         return (
             <li>
-                <Link to={props.item.href || "#!"}>{props.item.name}</Link>
+                <Link 
+                    to={props.item.href || "#!"}
+                    onClick={(e) => props.item.href && handleLinkClick(e, props.item.href)}
+                >
+                    {props.item.name}
+                </Link>
             </li>
         )
     }
@@ -40,7 +54,11 @@ const NaveItems = (props) => {
                                             data-category-index={index}
                                             onMouseEnter={() => setActiveCategory(index)}
                                         >
-                                            <Link to={item.href} className="category-list-link">
+                                            <Link 
+                                                to={item.href} 
+                                                className="category-list-link"
+                                                onClick={(e) => handleLinkClick(e, item.href)}
+                                            >
                                                 <i className={`fa ${item.icon || 'fa-folder-open'}`}></i>
                                                 <span>{item.name}</span>
                                                 <i className="fa fa-angle-right"></i>
@@ -59,7 +77,11 @@ const NaveItems = (props) => {
                                         data-category-index={index}
                                     >
                                         <div className="category-details-header">
-                                            <Link to={item.href} className="category-details-title">
+                                            <Link 
+                                                to={item.href} 
+                                                className="category-details-title"
+                                                onClick={(e) => handleLinkClick(e, item.href)}
+                                            >
                                                 {item.name}
                                             </Link>
                                         </div>
@@ -67,7 +89,11 @@ const NaveItems = (props) => {
                                             <div className="category-details-grid">
                                                 {item.children.map((subItem, subIndex) => (
                                                     <div key={subIndex} className="category-details-item">
-                                                        <Link to={subItem.href} className="category-details-link">
+                                                        <Link 
+                                                            to={subItem.href} 
+                                                            className="category-details-link"
+                                                            onClick={(e) => handleLinkClick(e, subItem.href)}
+                                                        >
                                                             {subItem.name}
                                                         </Link>
                                                     </div>
@@ -96,14 +122,25 @@ const NaveItems = (props) => {
                                     <p className="mega-menu-item-title">{item.name}</p>
                                     <ul className="mega-menu-sub">
                                         {item.children && item.children.map((datas, index) => (
-                                            <li key={index}><Link to={datas.href}>{datas.name}</Link></li>
+                                            <li key={index}>
+                                                <Link 
+                                                    to={datas.href}
+                                                    onClick={(e) => handleLinkClick(e, datas.href)}
+                                                >
+                                                    {datas.name}
+                                                </Link>
+                                            </li>
                                         ))}
                                     </ul>
                                 </li>
                             ))}
                             <li className="mega-menu-item">
                                 <div className="menu-banner">
-                                    <Link to="/shop" className="menu-banner-link">
+                                    <Link 
+                                        to="/shop" 
+                                        className="menu-banner-link"
+                                        onClick={(e) => handleLinkClick(e, '/shop')}
+                                    >
                                         <img className="menu-banner-img" src={banner} alt="img" />
                                     </Link>
                                 </div>
@@ -114,10 +151,15 @@ const NaveItems = (props) => {
             ) : (
                 <li className="has-dropdown">
                     <a href="#!" className="main-menu-link">{props.item.name} <i className="fa fa-angle-down"></i></a>
-                    <ul className="sub-menu">
+                                    <ul className="sub-menu">
                         {props.item.children.map((data, index) => (
                             <li key={index}>
-                                <Link to={data.href}>{data.name}</Link>
+                                <Link 
+                                    to={data.href}
+                                    onClick={(e) => handleLinkClick(e, data.href)}
+                                >
+                                    {data.name}
+                                </Link>
                             </li>
                         ))}
                     </ul>

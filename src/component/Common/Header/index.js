@@ -1,6 +1,184 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import logo from '../../../assets/img/malikane-electronics-logo-removebg-preview.png'
+import logoWhite from '../../../assets/img/malikane-electronics-logo-removebg-preview.png'
+import { MenuData } from './MenuData'
+import NaveItems from './NaveItems'
+import TopHeader from './TopHeader'
+import { useHistory } from "react-router-dom"
+import svg from '../../../assets/img/svg/cancel.svg'
+
+import { useDispatch, useSelector } from "react-redux";
+import Swal from 'sweetalert2'
+import { logout } from '../../../app/slices/user'
+import { clearCart } from '../../../app/slices/products'
+import { auth } from '../../../firebaseConfig'
+
+const Header = () => {
+    const [click, setClick] = useState(false);
+    const [show, setShow] = useState();
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const history = useHistory()
+    let carts = useSelector((state) => state.products.carts);
+    let favorites = useSelector((state) => state.products.favorites);
+    let userStatus = useSelector((state) => state.user.status);
+    let userData = useSelector((state) => state.user.user);
+    let dispatch = useDispatch();
+
+    const handleLogout = async () => {
+        try {
+            // Firebase auth state listener zaten logout ve clearCart yapacak
+            // Bu yüzden sadece signOut yapıyoruz
+            await auth.signOut()
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Çıkış Yapıldı',
+                text: 'Başarıyla çıkış yaptınız',
+                timer: 1500,
+                showConfirmButton: false
+            })
+            
+            history.push('/')
+        } catch (error) {
+            console.error('Logout error:', error)
+            Swal.fire({
+                icon: 'error',
+                title: 'Hata',
+                text: 'Çıkış yapılırken bir hata oluştu'
+            })
+        }
+    }
+
+    const rmCartProduct = (id) => {
+        dispatch({ type: "products/removeCart", payload: { id } });
+    }
+
+    const rmFavProduct = (id) => {
+        dispatch({ type: "products/removeFav", payload: { id } });
+    }
+
+    const cartTotal = () => {
+        return carts.reduce(function (total, item) {
+            return total + ((item.quantity || 1) * item.price)
+        }, 0)
+    }
+
+    const handleClick = () => {
+        if (click) {
+            document.querySelector("#offcanvas-add-cart").style = ("transform: translateX(100%);")
+        } else {
+            document.querySelector("#offcanvas-add-cart").style = ("transform: translateX(0%);")
+        }
+        setClick(!click);
+    }
+    const handleWish = () => {
+        if (click) {
+            document.querySelector("#offcanvas-wishlish").style = ("transform: translateX(100%);")
+        } else {
+            document.querySelector("#offcanvas-wishlish").style = ("transform: translateX(0);")
+        }
+        setClick(!click);
+    }
+
+    const handleSearch = (e) => {
+        e.preventDefault();
+        if (click) {
+            document.querySelector("#search").style = ("transform: translate(-100%, 0); opacity: 0")
+        } else {
+            document.querySelector("#search").style = ("transform: translate(0px, 0px); opacity: 1")
+        }
+        setClick(!click);
+    }
+    const handleabout = () => {
+        if (click) {
+            document.querySelector("#offcanvas-about").style = ("transform: translateX(100%);")
+        } else {
+            document.querySelector("#offcanvas-about").style = ("transform: translateX(0%);")
+        }
+        setClick(!click);
+    }
+    const handlemenu = (e) => {
+        e.preventDefault();
+        const mobileMenu = document.querySelector("#mobile-menu-offcanvas");
+        
+        // Null check
+        if (!mobileMenu) {
+            console.warn('Mobile menu element not found');
+            return;
+        }
+        
+        // Toggle mobile menu
+        const isOpen = !mobileMenuOpen;
+        setMobileMenuOpen(isOpen);
+        
+        if (isOpen) {
+            mobileMenu.style.transform = "translateX(0%)";
+            mobileMenu.style.visibility = "visible";
+            // Body scroll'u engelle
+            document.body.style.overflow = "hidden";
+        } else {
+            mobileMenu.style.transform = "translateX(100%)";
+            mobileMenu.style.visibility = "hidden";
+            // Body scroll'u geri aç
+            document.body.style.overflow = "";
+        }
+    }
+
+    const handleShow = (value) => {
+        value === show ? setShow("") : setShow(value)
+    }
+
+    // Sticky Menu Area
+    const isSticky = (e) => {
+        const header = document.querySelector('.header-section');
+        // Null check - element henüz DOM'da yoksa işlem yapma
+        if (!header) {
+            return;
+        }
+        const scrollTop = window.scrollY;
+        if (scrollTop >= 250) {
+            header.classList.add('is-sticky');
+        } else {
+            header.classList.remove('is-sticky');
+        }
+    };
+
+    useEffect(() => {
+        // DOM yüklendikten sonra event listener ekle
+        const handleScroll = () => {
+            isSticky();
+        };
+        
+        // Kısa bir delay ile kontrol et (DOM'un hazır olması için)
+        const timeoutId = setTimeout(() => {
+            window.addEventListener('scroll', handleScroll);
+            // İlk scroll pozisyonunu kontrol et
+            isSticky();
+        }, 100);
+        
+        return () => {
+            clearTimeout(timeoutId);
+            window.removeEventListener('scroll', handleScroll);
+        };
+    }, []); // Sadece mount/unmount'ta çalışsın
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (show === 'user-menu' && !event.target.closest('.user-profile-dropdown')) {
+                setShow('');
+            }
+        };
+
+        if (show === 'user-menu') {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [show]);
 import { useSelector } from "react-redux";
 
 const Header = () => {
@@ -20,6 +198,23 @@ const Header = () => {
                                             <Link to="/"><img src={logo} alt="logo" /></Link>
                                         </div>
                                     </div>
+                                    <div className="main-menu menu-color--black menu-hover-color--golden d-none d-xl-block">
+                                        <nav>
+                                            <ul>
+                                                {MenuData.map((item, index) => (
+                                                    <NaveItems item={item} key={index} />
+                                                ))}
+                                            </ul>
+                                        </nav>
+                                    </div>
+
+                                    <ul className="header-action-link action-color--black action-hover-color--golden">
+                                        <li>
+                                            <Link to="/cart" className="cart-link" title="Sepetim">
+                                                <i className="fa fa-shopping-cart"></i>
+                                                {carts.length > 0 && (
+                                                    <span className="cart-count">{carts.length}</span>
+                                                )}
                                     {status && (
                                         <div style={{position: 'absolute', right: '0', top: '50%', transform: 'translateY(-50%)'}}>
                                             <Link to="/profile" className="d-flex align-items-center text-decoration-none">
@@ -75,7 +270,14 @@ const Header = () => {
                 </div>
             </div>
 
-            <div id="mobile-menu-offcanvas" className="offcanvas offcanvas-rightside offcanvas-mobile-menu-section">
+            <div 
+                id="mobile-menu-offcanvas" 
+                className="offcanvas offcanvas-rightside offcanvas-mobile-menu-section"
+                style={{ 
+                    transform: mobileMenuOpen ? "translateX(0%)" : "translateX(100%)",
+                    visibility: mobileMenuOpen ? "visible" : "hidden"
+                }}
+            >
 
                 <div className="offcanvas-header text-right">
                     <button className="offcanvas-close" onClick={handlemenu}>

@@ -9,7 +9,6 @@ import CartPersistence from './component/Common/CartPersistence';
 // All Page Lazy Import
 const Furniture = loadable(() => pMinDelay(import('./page/furniture'), 250), { fallback: <Loading /> });
 const Electronics = loadable(() => pMinDelay(import('./page/electronics'), 250), { fallback: <Loading /> });
-const Grocery = loadable(() => pMinDelay(import('./page/grocery'), 250), { fallback: <Loading /> });
 const Pharmacy = loadable(() => pMinDelay(import('./page/pharmacy'), 250), { fallback: <Loading /> });
 const Jewllary = loadable(() => pMinDelay(import('./page/jewllary'), 250), { fallback: <Loading /> });
 const BabyToys = loadable(() => pMinDelay(import('./page/baby-toys'), 250), { fallback: <Loading /> });
@@ -72,6 +71,9 @@ const ContactTwo = loadable(() => pMinDelay(import('./page/contact/contact-two')
 const Contact = loadable(() => pMinDelay(import('./page/contact'), 250), { fallback: <Loading /> });
 const ScrollToTop = loadable(() => pMinDelay(import('./component/Common/ScrollToTop'), 250), { fallback: <Loading /> });
 const Fashion = loadable(() => pMinDelay(import('./page/index'), 250), { fallback: <Loading /> });
+const UploadProducts = loadable(() => pMinDelay(import('./page/admin/upload-products'), 250), { fallback: <Loading /> });
+const Payment = loadable(() => pMinDelay(import('./page/payment'), 250), { fallback: <Loading /> });
+const CheckoutSuccess = loadable(() => pMinDelay(import('./page/checkout-success'), 250), { fallback: <Loading /> });
 
 const App = () => {
   return (
@@ -88,7 +90,6 @@ const App = () => {
             <Route path='/' exact component={Fashion} />
             <Route path='/furniture' exact component={Furniture} />
             <Route path='/electronics' exact component={Electronics} />
-            <Route path='/grocery' exact component={Grocery} />
             <Route path='/pharmacy' exact component={Pharmacy} />
             <Route path='/jewllary' exact component={Jewllary} />
             <Route path='/baby-toys' exact component={BabyToys} />
@@ -109,6 +110,8 @@ const App = () => {
             <Route path='/checkout' exact component={Checkout} />
             <Route path='/checkout-one' exact component={CheckoutOne} />
             <Route path='/checkout-two' exact component={CheckoutTwos} />
+            <Route path='/payment' exact component={Payment} />
+            <Route path='/checkout-success' exact component={CheckoutSuccess} />
             <Route path='/profile' exact component={Profile} />
             <Route path='/wishlist' exact component={WishLists} />
             <Route path='/compare' exact component={Compares} />
@@ -151,6 +154,7 @@ const App = () => {
             <Route path='/contact-one' exact component={ContactOne} />
             <Route path='/contact-two' exact component={ContactTwo} />
             <Route path='/contact' exact component={Contact} />
+            <Route path='/admin/upload-products' exact component={UploadProducts} />
             <Route exact component={Error} />
           </Switch>
         </Router>

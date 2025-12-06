@@ -1,12 +1,10 @@
 import React, { useState } from 'react'
 import { Link, useHistory } from 'react-router-dom'
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import Swal from 'sweetalert2';
 import { auth, db } from '../../firebaseConfig'
-import { register } from '../../app/slices/user'
 
 const LoginArea = () => {
-    let dispatch = useDispatch();
     const history = useHistory()
 
     let status = useSelector((state) => state.user.status);
@@ -14,6 +12,58 @@ const LoginArea = () => {
     const [email, setEmail] = useState('')
     const [pass, setPass] = useState('')
     const [loading, setLoading] = useState(false)
+    const [showForgotPassword, setShowForgotPassword] = useState(false)
+    const [forgotPasswordEmail, setForgotPasswordEmail] = useState('')
+    const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false)
+
+    // Forgot Password
+    const handleForgotPassword = async () => {
+        if (!forgotPasswordEmail) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Eksik Bilgi',
+                text: 'Lütfen email adresinizi girin'
+            })
+            return
+        }
+
+        setForgotPasswordLoading(true)
+        try {
+            await auth.sendPasswordResetEmail(forgotPasswordEmail, {
+                url: `${window.location.origin}/login`,
+                handleCodeInApp: false
+            })
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Mail Gönderildi!',
+                html: `Şifre sıfırlama linki <b>${forgotPasswordEmail}</b> adresine gönderildi.<br/>Lütfen email kutunuzu kontrol edin.`,
+                confirmButtonText: 'Tamam'
+            })
+            
+            setShowForgotPassword(false)
+            setForgotPasswordEmail('')
+        } catch (error) {
+            console.error('Forgot password error:', error)
+            let errorMessage = 'Bir hata oluştu. Lütfen tekrar deneyin.'
+            
+            if (error.code === 'auth/user-not-found') {
+                errorMessage = 'Bu email adresi ile kayıtlı kullanıcı bulunamadı.'
+            } else if (error.code === 'auth/invalid-email') {
+                errorMessage = 'Geçersiz email adresi.'
+            } else if (error.message) {
+                errorMessage = error.message
+            }
+            
+            Swal.fire({
+                icon: 'error',
+                title: 'Hata',
+                text: errorMessage
+            })
+        } finally {
+            setForgotPasswordLoading(false)
+        }
+    }
 
     // Login
     const login = async () => {
@@ -44,7 +94,11 @@ const LoginArea = () => {
                 const userCredential = await auth.signInWithEmailAndPassword(email, pass)
                 const uid = userCredential.user.uid
 
-                // Firestore'dan kullanıcı bilgilerini al
+                // Firebase auth state listener zaten Redux store'u güncelleyecek
+                // Bu yüzden burada dispatch yapmaya gerek yok
+                setLoading(false)
+
+                // Kullanıcı adını gösterim için al (sadece mesaj için)
                 let nameToUse = 'Müşteri'
                 try {
                     const docRef = db.collection('users').doc(uid)
@@ -59,10 +113,6 @@ const LoginArea = () => {
                     console.warn('Firestore read failed:', e)
                     nameToUse = userCredential.user.displayName || 'Müşteri'
                 }
-
-                // Redux store'u güncelle
-                dispatch(register({ user: nameToUse, email: email, pass: pass }))
-                setLoading(false)
 
                 Swal.fire({
                     icon: 'success',
@@ -131,8 +181,109 @@ const LoginArea = () => {
                                             <label className="form-check-label" htmlFor="materialUnchecked">Beni Hatırla</label>
                                         </div>
                                     </div>
+                                    <div className="d-flex justify-content-between align-items-center mt-3">
                                     <Link to="/register" className="active">Hesabınız yok mu? Kayıt Ol</Link>
+                                        <a 
+                                            href="#!" 
+                                            onClick={(e) => {
+                                                e.preventDefault()
+                                                setShowForgotPassword(true)
+                                            }}
+                                            style={{ color: '#ff8a00', textDecoration: 'none' }}
+                                        >
+                                            Şifremi Unuttum
+                                        </a>
+                                    </div>
                                 </form>
+                                
+                                {/* Forgot Password Modal */}
+                                {showForgotPassword && (
+                                    <div className="forgot-password-modal" style={{
+                                        position: 'fixed',
+                                        top: 0,
+                                        left: 0,
+                                        right: 0,
+                                        bottom: 0,
+                                        backgroundColor: 'rgba(0,0,0,0.5)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        zIndex: 9999
+                                    }}>
+                                        <div className="modal-content" style={{
+                                            backgroundColor: '#fff',
+                                            padding: '30px',
+                                            borderRadius: '10px',
+                                            maxWidth: '500px',
+                                            width: '90%',
+                                            position: 'relative'
+                                        }}>
+                                            <button
+                                                onClick={() => {
+                                                    setShowForgotPassword(false)
+                                                    setForgotPasswordEmail('')
+                                                }}
+                                                style={{
+                                                    position: 'absolute',
+                                                    top: '10px',
+                                                    right: '10px',
+                                                    background: 'none',
+                                                    border: 'none',
+                                                    fontSize: '24px',
+                                                    cursor: 'pointer',
+                                                    color: '#666'
+                                                }}
+                                            >
+                                                ×
+                                            </button>
+                                            <h3 className="mb-3">Şifremi Unuttum</h3>
+                                            <p className="mb-4" style={{ color: '#666' }}>
+                                                Şifre sıfırlama linkini göndermek için email adresinizi girin.
+                                            </p>
+                                            <form onSubmit={(e) => {
+                                                e.preventDefault()
+                                                handleForgotPassword()
+                                            }}>
+                                                <div className="default-form-box mb-3">
+                                                    <label>Email Adresi<span className="text-danger">*</span></label>
+                                                    <input
+                                                        type="email"
+                                                        className="form-control"
+                                                        required
+                                                        value={forgotPasswordEmail}
+                                                        onChange={e => setForgotPasswordEmail(e.target.value)}
+                                                        placeholder="ornek@email.com"
+                                                    />
+                                                </div>
+                                                <div className="d-flex gap-2">
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-secondary"
+                                                        onClick={() => {
+                                                            setShowForgotPassword(false)
+                                                            setForgotPasswordEmail('')
+                                                        }}
+                                                        style={{ flex: 1 }}
+                                                    >
+                                                        İptal
+                                                    </button>
+                                                    <button
+                                                        type="submit"
+                                                        className="btn btn-primary"
+                                                        disabled={forgotPasswordLoading}
+                                                        style={{ 
+                                                            flex: 1,
+                                                            backgroundColor: '#ff8a00',
+                                                            border: 'none'
+                                                        }}
+                                                    >
+                                                        {forgotPasswordLoading ? 'Gönderiliyor...' : 'Gönder'}
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

@@ -28,6 +28,9 @@ const ProductCard = (props) => {
                         {props.data.inStock ? <span className="sale">Stokta</span> : <span className="hot">Tükendi</span>}
                     </span>
                     <div className="product-actions">
+                        <a 
+                            href={`https://wa.me/905393973949?text=Merhaba, ${props.data.title} ürünü hakkında bilgi almak istiyorum. Product ID: ${props.data.originalId || props.data.id} - Fiyat: ₺${props.data.price.toLocaleString()}`} 
+                            target="_blank" 
                         <a
                             href={`https://wa.me/905393973949?text=Merhaba, ${props.data.title} ürünü hakkında bilgi almak istiyorum. Ürün Kodu: ${props.data.productCode} - Fiyat: ₺${props.data.price.toLocaleString()}`}
                             target="_blank"
@@ -62,6 +65,12 @@ const ProductCard = (props) => {
                     <h5 className="title">
                         <Link to={`/product-details-one/${props.data.id}`}>{props.data.title}</Link>
                     </h5>
+                                    <div className="brand-info">
+                                        <small className="text-muted">{props.data.brand}</small>
+                                    </div>
+                                    <div className="product-id-info">
+                                        <small className="text-muted">Product ID: <strong>{props.data.originalId || props.data.id}</strong></small>
+                                    </div>
                     <div className="brand-info">
                         <small className="text-muted">{props.data.brand}</small>
                     </div>

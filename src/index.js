@@ -7,7 +7,7 @@ import { store } from './app/store';
 import { Provider } from 'react-redux';
 import { auth, db } from './firebaseConfig';
 import { register, logout } from './app/slices/user';
-import { loadProductsFromFirebase, clearCart } from './app/slices/products';
+import { loadProductsFromFirebase, clearCart, setCart } from './app/slices/products';
 // import Bootstrap CSS first
 import 'bootstrap/dist/css/bootstrap.min.css';
 // import Custom Css - Bootstrap'ten sonra yüklensin
@@ -81,30 +81,32 @@ auth.onAuthStateChanged(async (user) => {
       const docSnap = await docRef.get();
       
       let userName = 'Müşteri';
+      let userData = null;
+      
       if (docSnap.exists) {
-        const data = docSnap.data();
-        userName = data.name || user.displayName || 'Müşteri';
+        userData = docSnap.data();
+        userName = userData.name || user.displayName || 'Müşteri';
         
                // Eksik field'ları kontrol et ve ekle (eski kullanıcılar için)
                const updates = {};
                let needsUpdate = false;
                
-               if (!data.hasOwnProperty('orders')) {
+               if (!userData.hasOwnProperty('orders')) {
                  updates.orders = [];
                  needsUpdate = true;
                }
                
-               if (!data.hasOwnProperty('cart')) {
+               if (!userData.hasOwnProperty('cart')) {
                  updates.cart = [];
                  needsUpdate = true;
                }
                
-               if (!data.hasOwnProperty('addresses')) {
+               if (!userData.hasOwnProperty('addresses')) {
                  updates.addresses = [];
                  needsUpdate = true;
                }
                
-               if (!data.hasOwnProperty('invoices')) {
+               if (!userData.hasOwnProperty('invoices')) {
                  updates.invoices = [];
                  needsUpdate = true;
                }
@@ -114,6 +116,11 @@ auth.onAuthStateChanged(async (user) => {
           try {
             await docRef.update(updates);
             console.log('Kullanıcı profili güncellendi:', user.uid);
+            // Güncellemeden sonra userData'yı da güncelle
+            if (updates.cart !== undefined) userData.cart = updates.cart;
+            if (updates.orders !== undefined) userData.orders = updates.orders;
+            if (updates.addresses !== undefined) userData.addresses = updates.addresses;
+            if (updates.invoices !== undefined) userData.invoices = updates.invoices;
           } catch (updateError) {
             console.warn('Kullanıcı profili güncellenirken hata:', updateError);
           }
@@ -128,6 +135,66 @@ auth.onAuthStateChanged(async (user) => {
         email: user.email || '', 
         pass: '' 
       }));
+      
+      // Cart merge işlemi: Redux cart + Firebase cart
+      try {
+        // Redux store'daki mevcut cart'ı al
+        const reduxCart = store.getState().products.carts || [];
+        console.log('🛒 Redux cart:', reduxCart.length, 'ürün');
+        
+        // Firebase'deki cart'ı al
+        const firebaseCart = (userData && userData.cart) ? userData.cart : [];
+        console.log('🔥 Firebase cart:', firebaseCart.length, 'ürün');
+        
+        // İki cart'ı birleştir - önce Firebase cart'ı temel al
+        const mergedCart = firebaseCart.map(item => ({
+          id: item.id,
+          originalId: item.originalId || item.id,
+          title: item.title,
+          price: item.price,
+          img: item.img || item.image,
+          quantity: item.quantity || 1
+        }));
+        
+        // Redux cart'taki her ürünü kontrol et ve birleştir
+        reduxCart.forEach(reduxItem => {
+          const productId = reduxItem.originalId || reduxItem.id;
+          const existingItemIndex = mergedCart.findIndex(
+            item => (item.originalId || item.id) === productId
+          );
+          
+          if (existingItemIndex >= 0) {
+            // Aynı ürün varsa, quantity'leri topla
+            const existingQuantity = mergedCart[existingItemIndex].quantity || 1;
+            const reduxQuantity = reduxItem.quantity || 1;
+            const newQuantity = existingQuantity + reduxQuantity;
+            mergedCart[existingItemIndex].quantity = newQuantity;
+            console.log(`✅ Ürün birleştirildi: ${reduxItem.title} (Firebase: ${existingQuantity} + Redux: ${reduxQuantity} = ${newQuantity})`);
+          } else {
+            // Yeni ürün (sadece Redux'ta var), ekle
+            mergedCart.push({
+              id: reduxItem.id,
+              originalId: reduxItem.originalId || reduxItem.id,
+              title: reduxItem.title,
+              price: reduxItem.price,
+              img: reduxItem.img || reduxItem.image,
+              quantity: reduxItem.quantity || 1
+            });
+            console.log(`➕ Yeni ürün eklendi (Redux'tan): ${reduxItem.title}`);
+          }
+        });
+        
+        console.log('🔄 Birleştirilmiş cart:', mergedCart.length, 'ürün');
+        
+        // Birleştirilmiş cart'ı Redux'a ve Firebase'e kaydet
+        if (mergedCart.length > 0 || reduxCart.length > 0 || firebaseCart.length > 0) {
+          store.dispatch(setCart(mergedCart));
+          console.log('✅ Cart birleştirme tamamlandı ve kaydedildi');
+        }
+      } catch (cartError) {
+        console.error('❌ Cart birleştirme hatası:', cartError);
+        // Hata olsa bile devam et
+      }
     } catch (error) {
       console.error('Firebase auth state listener error:', error);
       // Fallback: sadece email'den kullanıcı adı oluştur

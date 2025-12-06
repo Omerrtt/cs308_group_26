@@ -53,11 +53,6 @@ const AllOrders = loadable(() => pMinDelay(import('./page/vendor/all-order'), 25
 const VendorProfile = loadable(() => pMinDelay(import('./page/vendor/vendor-profile'), 250), { fallback: <Loading /> });
 const AddProducts = loadable(() => pMinDelay(import('./page/vendor/add-products'), 250), { fallback: <Loading /> });
 const VendorSetting = loadable(() => pMinDelay(import('./page/vendor/vendor-setting'), 250), { fallback: <Loading /> });
-const MyAccounts = loadable(() => pMinDelay(import('./page/my-account'), 250), { fallback: <Loading /> });
-const CustomerOrder = loadable(() => pMinDelay(import('./page/my-account/customer-order'), 250), { fallback: <Loading /> });
-const CustomerDownloads = loadable(() => pMinDelay(import('./page/my-account/customer-downloads'), 250), { fallback: <Loading /> });
-const CustomerAddress = loadable(() => pMinDelay(import('./page/my-account/customer-address'), 250), { fallback: <Loading /> });
-const CustomerAccountDetails = loadable(() => pMinDelay(import('./page/my-account/customer-account-details'), 250), { fallback: <Loading /> });
 const AccountEdit = loadable(() => pMinDelay(import('./page/vendor/account-edit'), 250), { fallback: <Loading /> });
 const Login = loadable(() => pMinDelay(import('./page/login'), 250), { fallback: <Loading /> });
 const Register = loadable(() => pMinDelay(import('./page/register'), 250), { fallback: <Loading /> });
@@ -71,6 +66,7 @@ const Contact = loadable(() => pMinDelay(import('./page/contact'), 250), { fallb
 const ScrollToTop = loadable(() => pMinDelay(import('./component/Common/ScrollToTop'), 250), { fallback: <Loading /> });
 const Fashion = loadable(() => pMinDelay(import('./page/index'), 250), { fallback: <Loading /> });
 const UploadProducts = loadable(() => pMinDelay(import('./page/admin/upload-products'), 250), { fallback: <Loading /> });
+const AdminPanel = loadable(() => pMinDelay(import('./page/admin'), 250), { fallback: <Loading /> });
 const Payment = loadable(() => pMinDelay(import('./page/payment'), 250), { fallback: <Loading /> });
 const CheckoutSuccess = loadable(() => pMinDelay(import('./page/checkout-success'), 250), { fallback: <Loading /> });
 
@@ -135,11 +131,6 @@ const App = () => {
             <Route path='/vendor/vendor-profile' exact component={VendorProfile} />
             <Route path='/vendor/add-products' exact component={AddProducts} />
             <Route path='/vendor/vendor-setting' exact component={VendorSetting} />
-            <Route path='/my-account' exact component={MyAccounts} />
-            <Route path='/my-account/customer-order' exact component={CustomerOrder} />
-            <Route path='/my-account/customer-download' exact component={CustomerDownloads} />
-            <Route path='/my-account/customer-address' exact component={CustomerAddress} />
-            <Route path='/my-account/customer-account-details' exact component={CustomerAccountDetails} />
             <Route path='/account-edit' exact component={AccountEdit} />
             <Route path='/login' exact component={Login} />
             <Route path='/register' exact component={Register} />
@@ -149,6 +140,7 @@ const App = () => {
             <Route path='/contact-one' exact component={ContactOne} />
             <Route path='/contact-two' exact component={ContactTwo} />
             <Route path='/contact' exact component={Contact} />
+            <Route path='/admin' exact component={AdminPanel} />
             <Route path='/admin/upload-products' exact component={UploadProducts} />
             <Route exact component={Error} />
           </Switch>

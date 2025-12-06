@@ -272,6 +272,15 @@ const productsSlice = createSlice({
                 console.error('Firebase sepet temizleme hatası:', err);
             });
         },
+        // Set Cart (merge işlemi için)
+        setCart: (state, action) => {
+            state.carts = action.payload || []
+            saveCartToStorage(state.carts)
+            // Firebase'e kaydet
+            saveCartToFirebase(state.carts).catch(err => {
+                console.error('Firebase sepet kaydetme hatası:', err);
+            });
+        },
         // Add to Favorite / Wishlist
         addToFav: (state, action) =>{
             let { id } = action.payload;
@@ -325,6 +334,7 @@ export const {
     updateCart, 
     removeCart, 
     clearCart,
+    setCart,
     addToFav,
     removeFav,
     addToComp,

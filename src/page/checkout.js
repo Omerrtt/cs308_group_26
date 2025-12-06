@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react'
 import Header from '../component/Common/Header'
-import Banner from '../component/Common/Banner'
 import Footer from '../component/Common/Footer'
 import { useSelector, useDispatch } from "react-redux";
 import { useHistory } from "react-router-dom";
@@ -21,6 +20,7 @@ const Checkout = () => {
     const [addresses, setAddresses] = useState([]);
     const [selectedAddressId, setSelectedAddressId] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
     const [showAddAddressForm, setShowAddAddressForm] = useState(false);
     const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
 
@@ -180,8 +180,7 @@ const Checkout = () => {
         return (
             <>
                 <Header />
-                <Banner title="Checkout" />
-                <section className="ptb-100">
+                <section className="ptb-100" style={{ paddingTop: '120px' }}>
                     <div className="container">
                         <div className="text-center">
                             <p>Yükleniyor...</p>
@@ -497,6 +496,9 @@ const Checkout = () => {
             return;
         }
 
+        // Submit başladı - loading state'i aktif et
+        setSubmitting(true);
+
         try {
             const currentUser = auth.currentUser;
             if (!currentUser) {
@@ -568,7 +570,7 @@ const Checkout = () => {
                     month: 'long', 
                     day: 'numeric' 
                 }),
-                status: 'pending', // Sipariş durumu: pending, processing, shipped, delivered, cancelled
+                status: 'processing', // Sipariş durumu: processing, in-transit, delivered
                 createdAt: orderDate.toISOString(), // ISO string formatında
                 createdAtTimestamp: orderDate.getTime(), // Timestamp (number)
                 updatedAt: orderDate.toISOString(), // ISO string formatında
@@ -636,7 +638,7 @@ const Checkout = () => {
                 paymentMethod: 'credit_card',
                 paymentDate: invoiceDate.toISOString(),
                 // Sipariş durumu
-                orderStatus: 'pending',
+                orderStatus: 'processing',
                 // Fatura durumu
                 invoiceStatus: 'issued', // issued, paid, cancelled
                 // Tarih bilgileri
@@ -658,14 +660,77 @@ const Checkout = () => {
             // Yeni faturayı ekle
             currentInvoices.push(invoiceData);
             
-            // Firebase'e kaydet - orders ve invoices array'lerini güncelle
+            // Orders collection'ına kaydetmek için order document verisi
+            const orderDocumentData = {
+                orderId: orderId,
+                invoiceNumber: invoiceId, // Invoice number
+                userId: currentUser.uid,
+                userName: user.name || formData.fullName,
+                userEmail: user.email || formData.email,
+                orderDate: orderDate.toISOString(),
+                orderDateTimestamp: orderDate.getTime(),
+                orderDateString: orderDate.toLocaleDateString('tr-TR', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }),
+                items: orderItems,
+                subtotal: subtotal,
+                shipping: shipping,
+                tax: tax,
+                total: total,
+                paymentStatus: 'confirmed',
+                paymentMethod: 'credit_card',
+                deliveryAddress: deliveryAddress,
+                estimatedDelivery: estimatedDeliveryDate.toISOString(),
+                estimatedDeliveryTimestamp: estimatedDeliveryDate.getTime(),
+                estimatedDeliveryString: estimatedDeliveryDate.toLocaleDateString('tr-TR', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                }),
+                status: 'processing',
+                comment: formData.notes || '', // Kullanıcı notları/comment
+                createdAt: orderDate.toISOString(),
+                createdAtTimestamp: orderDate.getTime(),
+                updatedAt: orderDate.toISOString(),
+                updatedAtTimestamp: orderDate.getTime()
+            };
+
+            // ÖNCE Orders collection'ına kaydet (ana kaynak)
+            console.log('📦 Orders collection\'a kaydediliyor...');
+            console.log('Order ID:', orderId);
+            console.log('Order Document Data keys:', Object.keys(orderDocumentData));
+            
+            try {
+                const orderRef = db.collection('orders').doc(orderId);
+                await orderRef.set(orderDocumentData);
+                
+                console.log('✅ Sipariş orders collection\'a kaydedildi (Order ID: ' + orderId + ')');
+                console.log('✅ Orders collection document path: orders/' + orderId);
+            } catch (orderCollectionError) {
+                console.error('❌ Orders collection\'a kaydetme hatası:', orderCollectionError);
+                console.error('❌ Hata detayları:', {
+                    message: orderCollectionError.message,
+                    code: orderCollectionError.code,
+                    stack: orderCollectionError.stack
+                });
+                
+                // Orders collection'a kaydetme hatası kritik - siparişi engelle
+                throw new Error(`Orders collection'a kaydetme hatası: ${orderCollectionError.message}`);
+            }
+
+            // SONRA Firebase'e kaydet - users collection'ındaki orders array'ini güncelle
             await userRef.update({
                 orders: currentOrders,
                 invoices: currentInvoices,
                 cart: [] // Sepeti temizle
             });
 
-            console.log('✅ Sipariş Firebase\'e kaydedildi');
+            console.log('✅ Sipariş users collection\'a kaydedildi');
+
             console.log('✅ Fatura Firebase\'e kaydedildi');
 
             // Invoice PDF oluştur, indir ve email gönder
@@ -821,14 +886,16 @@ const Checkout = () => {
                 title: 'Hata',
                 text: 'Sipariş kaydedilirken bir hata oluştu: ' + (error.message || 'Bilinmeyen hata')
             });
+        } finally {
+            // Submit bitti - loading state'i kapat
+            setSubmitting(false);
         }
     };
 
     return (
         <>
             <Header />
-            <Banner title="Checkout" />
-            <section className="ptb-100">
+            <section className="ptb-100" style={{ paddingTop: '120px' }}>
                 <div className="container">
                     <form onSubmit={handleSubmit}>
                         <div className="row">
@@ -1186,9 +1253,26 @@ const Checkout = () => {
                                             <button 
                                                 type="submit" 
                                                 className="theme-btn-one btn-black-overlay btn_md w-100"
-                                                disabled={cartItems.length === 0}
+                                                disabled={cartItems.length === 0 || submitting}
+                                                style={{ 
+                                                    position: 'relative',
+                                                    opacity: submitting ? 0.7 : 1,
+                                                    cursor: submitting ? 'not-allowed' : 'pointer'
+                                                }}
                                             >
-                                                Siparişi Tamamla
+                                                {submitting ? (
+                                                    <>
+                                                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" style={{ 
+                                                            width: '1rem', 
+                                                            height: '1rem',
+                                                            borderWidth: '2px',
+                                                            verticalAlign: 'middle'
+                                                        }}></span>
+                                                        Sipariş Tamamlanıyor...
+                                                    </>
+                                                ) : (
+                                                    'Siparişi Tamamla'
+                                                )}
                                             </button>
                                         </div>
                                     </div>

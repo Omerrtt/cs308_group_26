@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import logo from '../../../assets/img/malikane-electronics-logo-removebg-preview.png'
 import logoWhite from '../../../assets/img/malikane-electronics-logo-removebg-preview.png'
 import { MenuData } from './MenuData'
@@ -19,6 +19,7 @@ const Header = () => {
     const [show, setShow] = useState();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const history = useHistory()
+    const location = useLocation()
     let carts = useSelector((state) => state.products.carts);
     let favorites = useSelector((state) => state.products.favorites);
     let userStatus = useSelector((state) => state.user.status);
@@ -62,6 +63,14 @@ const Header = () => {
         return carts.reduce(function (total, item) {
             return total + ((item.quantity || 1) * item.price)
         }, 0)
+    }
+
+    // Aynı sayfaya tıklandığında sayfayı yenile
+    const handleLinkClick = (e, targetPath) => {
+        if (location.pathname === targetPath) {
+            e.preventDefault();
+            window.location.reload();
+        }
     }
 
     const handleClick = () => {
@@ -191,7 +200,12 @@ const Header = () => {
                                 <div className="col-12 d-flex align-items-center">
                                     <div className="header-logo">
                                         <div className="logo">
-                                            <Link to="/"><img src={logo} alt="logo" /></Link>
+                                            <Link 
+                                                to="/"
+                                                onClick={(e) => handleLinkClick(e, '/')}
+                                            >
+                                                <img src={logo} alt="logo" />
+                                            </Link>
                                         </div>
                                     </div>
                                     <div className="main-menu menu-color--black menu-hover-color--golden d-none d-xl-block">
@@ -206,7 +220,14 @@ const Header = () => {
 
                                     <ul className="header-action-link action-color--black action-hover-color--golden">
                                         <li>
-                                            <Link to="/cart" className="cart-link" title="Sepetim">
+                                            <Link 
+                                                to="/cart" 
+                                                className="cart-link" 
+                                                title="Sepetim"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                }}
+                                            >
                                                 <i className="fa fa-shopping-cart"></i>
                                                 {carts.length > 0 && (
                                                     <span className="cart-count">{carts.length}</span>
@@ -234,13 +255,6 @@ const Header = () => {
                                                         >
                                                             <i className="fa fa-user"></i>
                                                             Profilim
-                                                        </Link>
-                                                        <Link 
-                                                            to="/my-account"
-                                                            onClick={() => setShow('')}
-                                                        >
-                                                            <i className="fa fa-cog"></i>
-                                                            Hesabım
                                                         </Link>
                                                         <a 
                                                             href="#!"
@@ -314,6 +328,9 @@ const Header = () => {
                                 to="/cart" 
                                 className="cart-btn-mobile"
                                 title="Sepetim"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                }}
                             >
                                 <i className="fa fa-shopping-cart"></i>
                                 {carts.length > 0 && (
@@ -396,14 +413,20 @@ const Header = () => {
                                                                     </button>
                                                                     <ul className="sub-menu mobile-subcategory-menu">
                                                                         <li>
-                                                                            <Link to={category.href}>
+                                                                            <Link 
+                                                                                to={category.href}
+                                                                                onClick={(e) => handleLinkClick(e, category.href)}
+                                                                            >
                                                                                 <i className="fa fa-arrow-right"></i>
                                                                                 Tümünü Gör
                                                                             </Link>
                                                                         </li>
                                                                         {category.children.map((subCategory, subIndex) => (
                                                                             <li key={subIndex}>
-                                                                                <Link to={subCategory.href}>
+                                                                                <Link 
+                                                                                    to={subCategory.href}
+                                                                                    onClick={(e) => handleLinkClick(e, subCategory.href)}
+                                                                                >
                                                                                     <i className="fa fa-angle-right"></i>
                                                                                     {subCategory.name}
                                                                                 </Link>
@@ -412,7 +435,10 @@ const Header = () => {
                                                                     </ul>
                                                                 </>
                                                             ) : (
-                                                                <Link to={category.href}>
+                                                                <Link 
+                                                                    to={category.href}
+                                                                    onClick={(e) => handleLinkClick(e, category.href)}
+                                                                >
                                                                     <span>
                                                                         <i className="fa fa-folder-open"></i>
                                                                         {category.name}
@@ -428,16 +454,24 @@ const Header = () => {
                                     // Diğer menü öğeleri
                                     return (
                                         <li key={index}>
-                                            <Link to={item.href || "#!"}><span>{item.name}</span></Link>
+                                            <Link 
+                                                to={item.href || "#!"}
+                                                onClick={(e) => item.href && handleLinkClick(e, item.href)}
+                                            >
+                                                <span>{item.name}</span>
+                                            </Link>
                                         </li>
                                     );
                                 })}
-                                <li>
-                                    <Link to="/contact"><span>İletişim</span></Link>
-                                </li>
                                 {/* Sepet ve Profil Linkleri */}
                                 <li>
-                                    <Link to="/cart" className="mobile-cart-link">
+                                    <Link 
+                                        to="/cart" 
+                                        className="mobile-cart-link"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                        }}
+                                    >
                                         <i className="fa fa-shopping-cart"></i>
                                         <span>Sepetim</span>
                                         {carts.length > 0 && (
@@ -449,15 +483,13 @@ const Header = () => {
                                 {userStatus ? (
                                     <>
                                         <li className="mobile-user-section">
-                                            <Link to="/profile" className="mobile-user-link">
+                                            <Link 
+                                                to="/profile" 
+                                                className="mobile-user-link"
+                                                onClick={(e) => handleLinkClick(e, '/profile')}
+                                            >
                                                 <i className="fa fa-user-circle"></i>
                                                 <span>Profilim</span>
-                                            </Link>
-                                        </li>
-                                        <li>
-                                            <Link to="/my-account" className="mobile-user-link">
-                                                <i className="fa fa-cog"></i>
-                                                <span>Hesabım</span>
                                             </Link>
                                         </li>
                                         <li>
@@ -478,13 +510,21 @@ const Header = () => {
                                 ) : (
                                     <>
                                         <li className="mobile-user-section">
-                                            <Link to="/login" className="mobile-user-link">
+                                            <Link 
+                                                to="/login" 
+                                                className="mobile-user-link"
+                                                onClick={(e) => handleLinkClick(e, '/login')}
+                                            >
                                                 <i className="fa fa-sign-in"></i>
                                                 <span>Giriş Yap</span>
                                             </Link>
                                         </li>
                                         <li>
-                                            <Link to="/register" className="mobile-user-link">
+                                            <Link 
+                                                to="/register" 
+                                                className="mobile-user-link"
+                                                onClick={(e) => handleLinkClick(e, '/register')}
+                                            >
                                                 <i className="fa fa-user-plus"></i>
                                                 <span>Kayıt Ol</span>
                                             </Link>

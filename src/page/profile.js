@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import Header from '../component/Common/Header'
-import Banner from '../component/Common/Banner'
 import Footer from '../component/Common/Footer'
 import { useSelector } from "react-redux";
 import { useHistory } from "react-router-dom";
@@ -250,8 +249,7 @@ const Profile = () => {
     return (
         <>
             <Header />
-            <Banner title="Profilim" />
-            <section className="ptb-100">
+            <section className="ptb-100" style={{ paddingTop: '120px' }}>
                 <div className="container">
                     <div className="row">
                         <div className="col-lg-10 offset-lg-1">

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react'
 import Header from '../component/Common/Header'
-import Banner from '../component/Common/Banner'
 import Footer from '../component/Common/Footer'
 import { useSelector, useDispatch } from "react-redux";
 import { useHistory } from "react-router-dom";
@@ -21,6 +20,7 @@ const Checkout = () => {
     const [addresses, setAddresses] = useState([]);
     const [selectedAddressId, setSelectedAddressId] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
     const [showAddAddressForm, setShowAddAddressForm] = useState(false);
     const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
 
@@ -180,8 +180,7 @@ const Checkout = () => {
         return (
             <>
                 <Header />
-                <Banner title="Checkout" />
-                <section className="ptb-100">
+                <section className="ptb-100" style={{ paddingTop: '120px' }}>
                     <div className="container">
                         <div className="text-center">
                             <p>Yükleniyor...</p>
@@ -496,6 +495,9 @@ const Checkout = () => {
             });
             return;
         }
+
+        // Submit başladı - loading state'i aktif et
+        setSubmitting(true);
 
         try {
             const currentUser = auth.currentUser;
@@ -884,14 +886,16 @@ const Checkout = () => {
                 title: 'Hata',
                 text: 'Sipariş kaydedilirken bir hata oluştu: ' + (error.message || 'Bilinmeyen hata')
             });
+        } finally {
+            // Submit bitti - loading state'i kapat
+            setSubmitting(false);
         }
     };
 
     return (
         <>
             <Header />
-            <Banner title="Checkout" />
-            <section className="ptb-100">
+            <section className="ptb-100" style={{ paddingTop: '120px' }}>
                 <div className="container">
                     <form onSubmit={handleSubmit}>
                         <div className="row">
@@ -1249,9 +1253,26 @@ const Checkout = () => {
                                             <button 
                                                 type="submit" 
                                                 className="theme-btn-one btn-black-overlay btn_md w-100"
-                                                disabled={cartItems.length === 0}
+                                                disabled={cartItems.length === 0 || submitting}
+                                                style={{ 
+                                                    position: 'relative',
+                                                    opacity: submitting ? 0.7 : 1,
+                                                    cursor: submitting ? 'not-allowed' : 'pointer'
+                                                }}
                                             >
-                                                Siparişi Tamamla
+                                                {submitting ? (
+                                                    <>
+                                                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" style={{ 
+                                                            width: '1rem', 
+                                                            height: '1rem',
+                                                            borderWidth: '2px',
+                                                            verticalAlign: 'middle'
+                                                        }}></span>
+                                                        Sipariş Tamamlanıyor...
+                                                    </>
+                                                ) : (
+                                                    'Siparişi Tamamla'
+                                                )}
                                             </button>
                                         </div>
                                     </div>

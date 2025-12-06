@@ -1,143 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import logo from '../../../assets/img/malikane-electronics-logo-removebg-preview.png'
-import logoWhite from '../../../assets/img/malikane-electronics-logo-removebg-preview.png'
-import { MenuData } from './MenuData'
-import NaveItems from './NaveItems'
-import TopHeader from './TopHeader'
-import { useHistory } from "react-router-dom"
-import svg from '../../../assets/img/svg/cancel.svg'
-import svgsearch from '../../../assets/img/svg/search.svg'
-
-import { useDispatch, useSelector } from "react-redux";
-import Swal from 'sweetalert2'
-import { logout } from '../../../app/slices/user'
-import { auth } from '../../../firebaseConfig'
+import { useSelector } from "react-redux";
 
 const Header = () => {
-    const [click, setClick] = useState(false);
-    const [show, setShow] = useState();
-    const history = useHistory()
-    let carts = useSelector((state) => state.products.carts);
-    let favorites = useSelector((state) => state.products.favorites);
-    let userStatus = useSelector((state) => state.user.status);
-    let userData = useSelector((state) => state.user.user);
-    let dispatch = useDispatch();
-
-    const handleLogout = async () => {
-        try {
-            await auth.signOut()
-            dispatch(logout())
-            Swal.fire({
-                icon: 'success',
-                title: 'Çıkış Yapıldı',
-                text: 'Başarıyla çıkış yaptınız',
-                timer: 1500,
-                showConfirmButton: false
-            })
-            history.push('/')
-        } catch (error) {
-            console.error('Logout error:', error)
-            Swal.fire({
-                icon: 'error',
-                title: 'Hata',
-                text: 'Çıkış yapılırken bir hata oluştu'
-            })
-        }
-    }
-
-    const rmCartProduct = (id) => {
-        dispatch({ type: "products/removeCart", payload: { id } });
-    }
-
-    const rmFavProduct = (id) => {
-        dispatch({ type: "products/removeFav", payload: { id } });
-    }
-
-    const cartTotal = () => {
-        return carts.reduce(function (total, item) {
-            return total + ((item.quantity || 1) * item.price)
-        }, 0)
-    }
-
-    const handleClick = () => {
-        if (click) {
-            document.querySelector("#offcanvas-add-cart").style = ("transform: translateX(100%);")
-        } else {
-            document.querySelector("#offcanvas-add-cart").style = ("transform: translateX(0%);")
-        }
-        setClick(!click);
-    }
-    const handleWish = () => {
-        if (click) {
-            document.querySelector("#offcanvas-wishlish").style = ("transform: translateX(100%);")
-        } else {
-            document.querySelector("#offcanvas-wishlish").style = ("transform: translateX(0);")
-        }
-        setClick(!click);
-    }
-
-    const handleSearch = (e) => {
-        e.preventDefault();
-        if (click) {
-            document.querySelector("#search").style = ("transform: translate(-100%, 0); opacity: 0")
-        } else {
-            document.querySelector("#search").style = ("transform: translate(0px, 0px); opacity: 1")
-        }
-        setClick(!click);
-    }
-    const handleabout = () => {
-        if (click) {
-            document.querySelector("#offcanvas-about").style = ("transform: translateX(100%);")
-        } else {
-            document.querySelector("#offcanvas-about").style = ("transform: translateX(0%);")
-        }
-        setClick(!click);
-    }
-    const handlemenu = (e) => {
-        e.preventDefault();
-        if (click) {
-            document.querySelector("#mobile-menu-offcanvas").style = ("transform: translateX(100%);")
-        } else {
-            document.querySelector("#mobile-menu-offcanvas").style = ("transform: translateX(0%);")
-        }
-        setClick(!click);
-    }
-
-    const handleShow = (value) => {
-        value === show ? setShow("") : setShow(value)
-    }
-
-    // Sticky Menu Area
-    useEffect(() => {
-        window.addEventListener('scroll', isSticky);
-        return () => {
-            window.removeEventListener('scroll', isSticky);
-        };
-    });
-
-    // Close dropdown when clicking outside
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (show === 'user-menu' && !event.target.closest('.user-profile-dropdown')) {
-                setShow('');
-            }
-        };
-
-        if (show === 'user-menu') {
-            document.addEventListener('mousedown', handleClickOutside);
-        }
-
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [show]);
-
-    const isSticky = (e) => {
-        const header = document.querySelector('.header-section');
-        const scrollTop = window.scrollY;
-        scrollTop >= 250 ? header.classList.add('is-sticky') : header.classList.remove('is-sticky');
-    };
+    const status = useSelector((state) => state.user.status);
 
     return (
         <>
@@ -147,113 +14,20 @@ const Header = () => {
                     <div className="header-bottom header-bottom-color--golden section-fluid sticky-header sticky-color--golden">
                         <div className="container">
                             <div className="row">
-                                <div className="col-12 d-flex align-items-center">
+                                <div className="col-12 d-flex align-items-center justify-content-center position-relative">
                                     <div className="header-logo">
                                         <div className="logo">
                                             <Link to="/"><img src={logo} alt="logo" /></Link>
                                         </div>
                                     </div>
-                                    <div className="main-menu menu-color--black menu-hover-color--golden d-none d-xl-block">
-                                        <nav>
-                                            <ul>
-                                                {MenuData.map((item, index) => (
-                                                    <NaveItems item={item} key={index} />
-                                                ))}
-                                            </ul>
-                                        </nav>
-                                    </div>
-
-                                    <ul className="header-action-link action-color--black action-hover-color--golden">
-                                        <li>
-                                            <a href="#search" className="search_width" onClick={handleSearch} >
-                                                <img src={svgsearch} alt="img" />
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <Link to="/cart" className="cart-link" title="Sepetim">
-                                                <i className="fa fa-shopping-cart"></i>
-                                                {carts.length > 0 && (
-                                                    <span className="cart-count">{carts.length}</span>
-                                                )}
+                                    {status && (
+                                        <div style={{position: 'absolute', right: '0', top: '50%', transform: 'translateY(-50%)'}}>
+                                            <Link to="/profile" className="d-flex align-items-center text-decoration-none">
+                                                <i className="fa fa-user-circle" style={{fontSize: '28px', color: '#333', marginRight: '8px'}}></i>
+                                                <span style={{fontSize: '16px', color: '#333', fontWeight: '500'}}>Profile</span>
                                             </Link>
-                                        </li>
-                                        {userStatus ? (
-                                            <li className="user-profile-dropdown">
-                                                <a 
-                                                    href="#!" 
-                                                    className="user-profile-link"
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        handleShow('user-menu');
-                                                    }}
-                                                >
-                                                    <i className="fa fa-user-circle"></i>
-                                                    <span>{userData.name || 'Kullanıcı'}</span>
-                                                </a>
-                                                {show === 'user-menu' && (
-                                                    <div className="user-dropdown-menu">
-                                                        <Link 
-                                                            to="/profile"
-                                                            onClick={() => setShow('')}
-                                                        >
-                                                            <i className="fa fa-user"></i>
-                                                            Profilim
-                                                        </Link>
-                                                        <Link 
-                                                            to="/my-account"
-                                                            onClick={() => setShow('')}
-                                                        >
-                                                            <i className="fa fa-cog"></i>
-                                                            Hesabım
-                                                        </Link>
-                                                        <a 
-                                                            href="#!"
-                                                            onClick={(e) => {
-                                                                e.preventDefault();
-                                                                handleLogout();
-                                                                setShow('');
-                                                            }}
-                                                        >
-                                                            <i className="fa fa-sign-out"></i>
-                                                            Çıkış Yap
-                                                        </a>
-                                                    </div>
-                                                )}
-                                            </li>
-                                        ) : (
-                                            <>
-                                                <li>
-                                                    <Link 
-                                                        to="/login"
-                                                        className="header-login-btn"
-                                                    >
-                                                        <i className="fa fa-sign-in"></i>
-                                                        <span>Giriş Yap</span>
-                                                    </Link>
-                                                </li>
-                                                <li>
-                                                    <Link 
-                                                        to="/register"
-                                                        className="header-register-btn"
-                                                    >
-                                                        <i className="fa fa-user-plus"></i>
-                                                        <span>Kayıt Ol</span>
-                                                    </Link>
-                                                </li>
-                                            </>
-                                        )}
-                                        <li>
-                                            <a 
-                                                href="https://wa.me/905393973949?text=Merhaba, Malikane Electronics ürünleriniz hakkında bilgi almak istiyorum." 
-                                                target="_blank" 
-                                                rel="noopener noreferrer"
-                                                className="whatsapp-btn-header"
-                                                title="WhatsApp ile İletişim"
-                                            >
-                                                <i className="fab fa-whatsapp" style={{fontSize: '28px', color: '#25D366'}}></i>
-                                            </a>
-                                        </li>
-                                    </ul>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

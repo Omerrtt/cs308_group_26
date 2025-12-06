@@ -142,6 +142,9 @@ const App = () => {
             <Route path='/account-edit' exact component={AccountEdit} />
             <Route path='/login' exact component={Login} />
             <Route path='/register' exact component={Register} />
+            <Route path='/homepage' exact component={Homepage} />
+            <Route path='/profile' exact component={Profile} />
+            <Route component={Login} />
             <Route path='/privacy-policy' exact component={PrivacyPolicy} />
             <Route path='/faqs' exact component={Faqs} />
             <Route path='/coming-soon' exact component={ComingSoon} />

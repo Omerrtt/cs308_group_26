@@ -1,38 +1,99 @@
-# CS308 - Authentication System
+# Malikane Electronics E-Ticaret Sitesi
 
-Bu proje, login ve register sayfalarını içeren basit bir authentication sistemidir.
+Malikane Electronics için geliştirilmiş modern React tabanlı e-ticaret web uygulaması.
 
-## Kurulum
+## 🚀 Özellikler
 
-1. Bağımlılıkları yükleyin:
+- 🛍️ Ürün kataloğu ve kategoriler
+- 🔍 Ürün arama ve filtreleme
+- 👤 Firebase Authentication ile kullanıcı girişi/kaydı
+- 🛒 Sepet ve ödeme işlemleri
+- 📱 Responsive tasarım
+
+## 🔧 Kurulum
+
+### 1. Projeyi Klonlayın
 
 ```bash
-npm install
+git clone <repository-url>
+cd cs308_group_26
 ```
 
-2. `.env` dosyası oluşturun ve preflight check'i atlayın:
+### 2. Bağımlılıkları Yükleyin
 
+**Önemli:** Bu proje React 17 kullanmaktadır ve bazı paketler React 16 gerektirdiği için `--legacy-peer-deps` flag'i ile yükleme yapmanız gerekmektedir.
+
+**Windows kullanıcıları için:**
 ```bash
-echo "SKIP_PREFLIGHT_CHECK=true" > .env
+npm install cross-env --legacy-peer-deps
 ```
 
-## Çalıştırma
+**Mac/Linux kullanıcıları için:**
+```bash
+npm install --legacy-peer-deps
+```
+
+
+### 3. Uygulamayı Çalıştırın
+
+Geliştirme modunda çalıştırmak için:
 
 ```bash
 npm start
 ```
 
-Proje `http://localhost:3000` adresinde çalışacaktır.
+Uygulama [http://localhost:3000](http://localhost:3000) adresinde açılacaktır.
 
-## Sayfalar
+## ⚡ İlk Çalıştırma Özeti
 
-- `/login` - Giriş sayfası
-- `/register` - Kayıt sayfası
+İlk kez çalıştırmak için şu adımları takip edin:
 
-## Teknolojiler
+**Windows:**
+```bash
+# 1. Bağımlılıkları yükle (cross-env ile)
+npm install cross-env --legacy-peer-deps
 
-- React 17
-- React Router DOM
-- Bootstrap 5
-- Font Awesome
+# 2. .env dosyası oluştur
+# echo SKIP_PREFLIGHT_CHECK=true > .env
+
+# 3. Uygulamayı başlat
+npm start
+```
+
+**Mac/Linux:**
+```bash
+# 1. Bağımlılıkları yükle
+npm install --legacy-peer-deps
+
+# 2. .env dosyası oluştur
+# echo "SKIP_PREFLIGHT_CHECK=true" > .env
+
+# 3. Uygulamayı başlat
+npm start
+```
+
+## 📜 Mevcut Komutlar
+
+### Geliştirme
+
+```bash
+npm start
+```
+
+Geliştirme sunucusunu başlatır. Tarayıcıda otomatik olarak açılır ve kod değişikliklerinde otomatik yenilenir.
+
+
+
+Firebase Console'da Authentication ve Firestore'u etkinleştirmeniz gerekir.
+
+
+### babel-jest Versiyon Uyarısı
+
+Eğer `babel-jest` versiyon uyarısı alırsanız, `.env` dosyasında `SKIP_PREFLIGHT_CHECK=true` olduğundan emin olun. Bu uyarı uygulamanın çalışmasını engellemez.
+
+### Firebase Bağlantı Hataları
+
+- Firebase Console'da projenizin aktif olduğundan emin olun
+- `firebaseConfig.js` dosyasındaki yapılandırmanın doğru olduğunu kontrol edin
+- Firestore ve Authentication servislerinin etkin olduğunu doğrulayın
 

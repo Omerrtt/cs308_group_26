@@ -1,0 +1,650 @@
+{
+  "TV, Ses ve Elektronik": {
+    "slug": "tv-ses-ve-elektronik",
+    "name": "TV, Ses ve Elektronik",
+    "subcategories": {
+      "Projektörler": {
+        "slug": "projektorler",
+        "name": "Projektörler",
+        "full_paths": [
+          "TV, Ses ve Elektronik > Projektörler"
+        ]
+      },
+      "Televizyonlar": {
+        "slug": "televizyonlar",
+        "name": "Televizyonlar",
+        "full_paths": [
+          "TV, Ses ve Elektronik > Televizyonlar > 43 \"_ 49 \"",
+          "TV, Ses ve Elektronik > Televizyonlar > 60 \"_ 65 \"",
+          "TV, Ses ve Elektronik > Televizyonlar > 50 \"_ 55 \"",
+          "TV, Ses ve Elektronik > Televizyonlar > 75 \"_ 83 \"",
+          "TV, Ses ve Elektronik > Televizyonlar > 32 \"_ 42 \"",
+          "TV, Ses ve Elektronik > Televizyonlar > 85'in üzerinde \"",
+          "TV, Ses ve Elektronik > Televizyonlar > 32\"'e kadar"
+        ]
+      },
+      "Ev Sinema Sistemleri ve Ses": {
+        "slug": "ev-sinema-sistemleri-ve-ses",
+        "name": "Ev Sinema Sistemleri ve Ses",
+        "full_paths": [
+          "TV, Ses ve Elektronik > Ev Sinema Sistemleri ve Ses > Hoparlörler ve Alıcılar",
+          "TV, Ses ve Elektronik > Ev Sinema Sistemleri ve Ses > Medya Oynatıcılar",
+          "TV, Ses ve Elektronik > Ev Sinema Sistemleri ve Ses > Mini Sistemler",
+          "TV, Ses ve Elektronik > Ev Sinema Sistemleri ve Ses > Ses Aksesuarları",
+          "TV, Ses ve Elektronik > Ev Sinema Sistemleri ve Ses > DVD Oynatıcılar",
+          "TV, Ses ve Elektronik > Ev Sinema Sistemleri ve Ses > Ev Sineması ve Soundbar'lar"
+        ]
+      },
+      "Kişisel Ses ve Elektronik": {
+        "slug": "kisisel-ses-ve-elektronik",
+        "name": "Kişisel Ses ve Elektronik",
+        "full_paths": [
+          "TV, Ses ve Elektronik > Kişisel Ses ve Elektronik > CD Radyo Kasetçalar"
+        ]
+      },
+      "TV Aksesuarları": {
+        "slug": "tv-aksesuarlari",
+        "name": "TV Aksesuarları",
+        "full_paths": [
+          "TV, Ses ve Elektronik > TV Aksesuarları > Diğer",
+          "TV, Ses ve Elektronik > TV Aksesuarları > Duvar Montaj Aparatları",
+          "TV, Ses ve Elektronik > TV Aksesuarları > Uzaktan Kumandalar",
+          "TV, Ses ve Elektronik > TV Aksesuarları > Video Kabloları"
+        ]
+      },
+      "Müzik Aletleri": {
+        "slug": "muzik-aletleri",
+        "name": "Müzik Aletleri",
+        "full_paths": [
+          "TV, Ses ve Elektronik > Müzik Aletleri > Gitarlar ve Aksesuarlar"
+        ]
+      },
+      "GPS": {
+        "slug": "gps",
+        "name": "GPS",
+        "full_paths": [
+          "Otomatik > GPS"
+        ]
+      },
+      "DVR'ler": {
+        "slug": "dvr-ler",
+        "name": "DVR'ler",
+        "full_paths": [
+          "Otomatik > DVR'ler"
+        ]
+      },
+      "CD ve MP3 oynatıcılar": {
+        "slug": "cd-ve-mp3-oynaticilar",
+        "name": "CD ve MP3 oynatıcılar",
+        "full_paths": [
+          "Otomatik > CD ve MP3 oynatıcılar"
+        ]
+      },
+      "Amplifikatörler": {
+        "slug": "amplifikatorler",
+        "name": "Amplifikatörler",
+        "full_paths": [
+          "Otomatik > Amplifikatörler"
+        ]
+      },
+      "Hoparlörler": {
+        "slug": "hoparlorler",
+        "name": "Hoparlörler",
+        "full_paths": [
+          "Otomatik > Hoparlörler"
+        ]
+      },
+      "Genel": {
+        "slug": "genel",
+        "name": "Genel",
+        "full_paths": [
+          "TV, Audio ve Gaming"
+        ]
+      }
+    }
+  },
+  "Küçük Elektrikli Ev Aletleri": {
+    "slug": "kucuk-elektrikli-ev-aletleri",
+    "name": "Küçük Elektrikli Ev Aletleri",
+    "subcategories": {
+      "Bebek Aletleri": {
+        "slug": "bebek-aletleri",
+        "name": "Bebek Aletleri",
+        "full_paths": [
+          "Küçük Elektrikli Ev Aletleri > Bebek Aletleri"
+        ]
+      },
+      "Mutfak Aletleri": {
+        "slug": "mutfak-aletleri",
+        "name": "Mutfak Aletleri",
+        "full_paths": [
+          "Küçük Elektrikli Ev Aletleri > Mutfak Aletleri > Mikserler",
+          "Küçük Elektrikli Ev Aletleri > Mutfak Aletleri > Blenderler",
+          "Küçük Elektrikli Ev Aletleri > Mutfak Aletleri > Mutfak Robotları",
+          "Küçük Elektrikli Ev Aletleri > Mutfak Aletleri > Ocaklar",
+          "Küçük Elektrikli Ev Aletleri > Mutfak Aletleri > Fritözler",
+          "Küçük Elektrikli Ev Aletleri > Mutfak Aletleri > Multicooker'lar",
+          "Küçük Elektrikli Ev Aletleri > Mutfak Aletleri > Sağlıklı yemek pişirmeye yönelik aletler",
+          "Küçük Elektrikli Ev Aletleri > Mutfak Aletleri > Elektrikli Süpürgeler",
+          "Küçük Elektrikli Ev Aletleri > Mutfak Aletleri > Kıyma Makineleri",
+          "Küçük Elektrikli Ev Aletleri > Mutfak Aletleri > Tost Makineleri ve Sandviç Izgaralar",
+          "Küçük Elektrikli Ev Aletleri > Mutfak Aletleri > Barbekü",
+          "Küçük Elektrikli Ev Aletleri > Mutfak Aletleri > Fırınlar",
+          "Küçük Elektrikli Ev Aletleri > Mutfak Aletleri > Elektrikli Su Isıtıcıları",
+          "Küçük Ev Aletleri > Mutfak Aletleri > Sürahiler ve Su Filtreleri",
+          "Küçük Ev Aletleri > Mutfak Aletleri > Izgara & Izgaralar"
+        ]
+      },
+      "İçecek Hazırlama Aletleri": {
+        "slug": "i̇cecek-hazirlama-aletleri",
+        "name": "İçecek Hazırlama Aletleri",
+        "full_paths": [
+          "Küçük Elektrikli Ev Aletleri > İçecek Hazırlama Aletleri > Kahve Değirmenleri",
+          "Küçük Elektrikli Ev Aletleri > İçecek Hazırlama Aletleri > Kapsüllü Espresso Makineleri",
+          "Küçük Elektrikli Ev Aletleri > İçecek Hazırlama Aletleri > Kahve Makineleri"
+        ]
+      },
+      "İçecek Makineleri": {
+        "slug": "i̇cecek-makineleri",
+        "name": "İçecek Makineleri",
+        "full_paths": [
+          "Küçük Elektrikli Ev Aletleri > İçecek Makineleri > Blenderler",
+          "Küçük Ev Aletleri > İçecek Makineleri > Meyve Sıkacakları",
+          "Küçük Ev Aletleri > İçecek Makineleri > Espresso Makineleri"
+        ]
+      },
+      "Temizlik Gereçleri": {
+        "slug": "temizlik-gerecleri",
+        "name": "Temizlik Gereçleri",
+        "full_paths": [
+          "Küçük Elektrikli Ev Aletleri > Temizlik Gereçleri > Yıkama Süpürgeleri",
+          "Küçük Elektrikli Ev Aletleri > Temizlik Gereçleri > Pencere Temizleme Gereçleri",
+          "Küçük Elektrikli Ev Aletleri > Temizlik Gereçleri > Kuru ve ıslak temizlik için elektrikli süpürgeler",
+          "Küçük Elektrikli Ev Aletleri > Temizlik Gereçleri > Dik Süpürgeler",
+          "Küçük Elektrikli Ev Aletleri > Temizlik Gereçleri > Torbalı Süpürgeler",
+          "Küçük Elektrikli Ev Aletleri > Temizlik Gereçleri > Hazneli Elektrikli Süpürgeler",
+          "Küçük Elektrikli Ev Aletleri > Temizlik Gereçleri > El Süpürgeleri",
+          "Küçük Elektrikli Ev Aletleri > Temizlik Gereçleri > Su Jetleri",
+          "Küçük Elektrikli Ev Aletleri > Temizlik Gereçleri > Robot Süpürgeler",
+          "Küçük Elektrikli Ev Aletleri > Temizlik Gereçleri > Süpürgeler",
+          "Küçük Elektrikli Ev Aletleri > Temizlik Gereçleri > Buharlı Temizleyiciler"
+        ]
+      },
+      "Ütü Aletleri": {
+        "slug": "utu-aletleri",
+        "name": "Ütü Aletleri",
+        "full_paths": [
+          "Küçük Elektrikli Ev Aletleri > Ütü Aletleri > Buhar Jeneratörleri",
+          "Küçük Elektrikli Ev Aletleri > Ütü Aletleri > Ütüler",
+          "Küçük Elektrikli Ev Aletleri > Ütü Aletleri > Buharlı Ütü Aletleri"
+        ]
+      },
+      "Ev Aletleri": {
+        "slug": "ev-aletleri",
+        "name": "Ev Aletleri",
+        "full_paths": [
+          "Küçük Elektrikli Ev Aletleri > Ev Aletleri > Su Sebili",
+          "Küçük Elektrikli Ev Aletleri > Ev Aletleri > Dikiş Makineleri"
+        ]
+      },
+      "Aksesuarlar": {
+        "slug": "aksesuarlar",
+        "name": "Aksesuarlar",
+        "full_paths": [
+          "Küçük Elektrikli Ev Aletleri > Aksesuarlar > Mutfak için"
+        ]
+      },
+      "Genel": {
+        "slug": "genel",
+        "name": "Genel",
+        "full_paths": [
+          "Blenderler",
+          "Buhar Temizleyiciler",
+          "Çok Amaçlı Pişiriciler",
+          "Dikey Elektrikli Süpürgeler",
+          "Doğrayıcılar",
+          "Ekmek Yapma Makineleri",
+          "Elektrikli Bıçaklar",
+          "Elektrikli Su Isıtıcıları",
+          "Et Kıyma Makineleri",
+          "Fritözler",
+          "Izgaralar ve Tost Makineleri",
+          "Kahve Makineleri",
+          "Kazanlar",
+          "Kuru ve Islak Süpürgeler",
+          "Makarnalar",
+          "Makaslar",
+          "Meyve Sıkacakları",
+          "Mikserler",
+          "Mini Fırınlar",
+          "Mutfak Robotları",
+          "Mutfak Terazileri",
+          "Periyor Süpürgeler",
+          "Robot Elektrikli Süpürgeler",
+          "Sağlıklı Pişirme Aletleri",
+          "Sandviç Yapıcıları",
+          "Su Dispenserleri ve Soda Makineleri",
+          "Su Jetleri",
+          "Torba ile Süpürgeler",
+          "Torba Olmayan Süpürgeler",
+          "Tost Makineleri",
+          "Ütü ve Dikiş Makineleri",
+          "Vakum Makineleri"
+        ]
+      }
+    }
+  },
+  "Sağlık ve Güzellik Cihazları": {
+    "slug": "saglik-ve-guzellik-cihazlari",
+    "name": "Sağlık ve Güzellik Cihazları",
+    "subcategories": {
+      "Elektrikli Diş Fırçaları": {
+        "slug": "elektrikli-dis-fircalari",
+        "name": "Elektrikli Diş Fırçaları",
+        "full_paths": [
+          "Sağlık ve Güzellik Cihazları > Elektrikli Diş Fırçaları"
+        ]
+      },
+      "Kadın bakımı": {
+        "slug": "kadin-bakimi",
+        "name": "Kadın bakımı",
+        "full_paths": [
+          "Sağlık ve güzellik cihazları > Kadın bakımı > Elektrikli fırçalar",
+          "Sağlık ve güzellik cihazları > Kadın bakımı > Saç düzleştiriciler",
+          "Sağlık ve güzellik cihazları > Kadın bakımı > Kadın düzelticiler",
+          "Sağlık ve güzellik cihazları > Kadın bakımı > Fotoğraf epilatörleri",
+          "Sağlık ve güzellik cihazları > Kadın bakımı > Epilatörler"
+        ]
+      },
+      "Erkek bakımı": {
+        "slug": "erkek-bakimi",
+        "name": "Erkek bakımı",
+        "full_paths": [
+          "Sağlık ve güzellik cihazları > Erkek bakımı > Saç kesme makineleri"
+        ]
+      },
+      "Elektronik teraziler": {
+        "slug": "elektronik-teraziler",
+        "name": "Elektronik teraziler",
+        "full_paths": [
+          "Sağlık ve güzellik cihazları > Elektronik teraziler"
+        ]
+      },
+      "Vücut bakımı": {
+        "slug": "vucut-bakimi",
+        "name": "Vücut bakımı",
+        "full_paths": [
+          "Sağlık ve güzellik cihazları > Vücut bakımı > Masaj aletleri"
+        ]
+      },
+      "Diş duşları": {
+        "slug": "dis-duslari",
+        "name": "Diş duşları",
+        "full_paths": [
+          "Sağlık ve güzellik cihazları > Diş duşları"
+        ]
+      },
+      "Herkes için": {
+        "slug": "herkes-icin",
+        "name": "Herkes için",
+        "full_paths": [
+          "Sağlık ve güzellik cihazları > Herkes için"
+        ]
+      },
+      "Kadın Bakım Ürünleri": {
+        "slug": "kadin-bakim-urunleri",
+        "name": "Kadın Bakım Ürünleri",
+        "full_paths": [
+          "Sağlık ve Güzellik > Kadın Bakım Ürünleri > Saç Kurutma Makineleri"
+        ]
+      },
+      "Kadın Bakımı": {
+        "slug": "kadin-bakimi",
+        "name": "Kadın Bakımı",
+        "full_paths": [
+          "Sağlık ve Güzellik > Kadın Bakımı > Diğerleri"
+        ]
+      },
+      "Erkek Bakımı": {
+        "slug": "erkek-bakimi",
+        "name": "Erkek Bakımı",
+        "full_paths": [
+          "Sağlık ve Güzellik > Erkek Bakımı > Tıraş Makineleri"
+        ]
+      },
+      "Erkek Bakım Ürünleri": {
+        "slug": "erkek-bakim-urunleri",
+        "name": "Erkek Bakım Ürünleri",
+        "full_paths": [
+          "Sağlık ve Güzellik > Erkek Bakım Ürünleri > Düzelticiler"
+        ]
+      },
+      "Genel": {
+        "slug": "genel",
+        "name": "Genel",
+        "full_paths": [
+          "Elektrikli Tıraş Makineleri",
+          "Epilatörler",
+          "Fotoepilatörler",
+          "Kurutma Aletleri",
+          "Saç Düzleştiriciler",
+          "Saç Kesme Makineleri",
+          "Sağlık Ürünleri"
+        ]
+      }
+    }
+  },
+  "Klimalar, Isıtma ve Hava Bakımı": {
+    "slug": "klimalar-isitma-ve-hava-bakimi",
+    "name": "Klimalar, Isıtma ve Hava Bakımı",
+    "subcategories": {
+      "Hava Bakımı": {
+        "slug": "hava-bakimi",
+        "name": "Hava Bakımı",
+        "full_paths": [
+          "Klimalar, Isıtma ve Hava Bakımı > Hava Bakımı > Hava Temizleme Cihazı"
+        ]
+      },
+      "Hava bakımı": {
+        "slug": "hava-bakimi",
+        "name": "Hava bakımı",
+        "full_paths": [
+          "Klimalar, ısıtma cihazları ve klima > Hava bakımı > Hava nemlendirici",
+          "Klimalar, ısıtma cihazları ve klima bakımı > Hava bakımı > Hava nem alma cihazı"
+        ]
+      },
+      "Vantilatörler": {
+        "slug": "vantilatorler",
+        "name": "Vantilatörler",
+        "full_paths": [
+          "Klimalar, ısıtma ve klima cihazları > Vantilatörler > Standart"
+        ]
+      }
+    }
+  },
+  "Ev ve Bahçe": {
+    "slug": "ev-ve-bahce",
+    "name": "Ev ve Bahçe",
+    "subcategories": {
+      "Bahçe": {
+        "slug": "bahce",
+        "name": "Bahçe",
+        "full_paths": [
+          "Ev ve Bahçe > Bahçe > Barbekü"
+        ]
+      },
+      "Pişirme ve Servis": {
+        "slug": "pisirme-ve-servis",
+        "name": "Pişirme ve Servis",
+        "full_paths": [
+          "Ev ve Bahçe > Pişirme ve Servis > Tencereler",
+          "Ev ve Bahçe > Pişirme ve Servis > Tavalar"
+        ]
+      },
+      "Mobilya ve Yataklar": {
+        "slug": "mobilya-ve-yataklar",
+        "name": "Mobilya ve Yataklar",
+        "full_paths": [
+          "Ev ve Bahçe > Mobilya ve Yataklar > Ofis koltukları"
+        ]
+      }
+    }
+  },
+  "Otomotiv ve DIY": {
+    "slug": "otomotiv-ve-diy",
+    "name": "Otomotiv ve DIY",
+    "subcategories": {
+      "Aletler ve Elektrikli Ekipmanlar": {
+        "slug": "aletler-ve-elektrikli-ekipmanlar",
+        "name": "Aletler ve Elektrikli Ekipmanlar",
+        "full_paths": [
+          "Otomotiv ve DIY > Aletler ve Elektrikli Ekipmanlar > Elektrikli Karıştırıcılar ve Çırpıcılar",
+          "Otomotiv ve DIY > Aletler ve Elektrikli Ekipmanlar > Elektrikli Zımbalar"
+        ]
+      },
+      "Aletler ve Elektrik": {
+        "slug": "aletler-ve-elektrik",
+        "name": "Aletler ve Elektrik",
+        "full_paths": [
+          "Otomotiv ve DIY > Aletler ve Elektrik > Tutkal ve Lehim Tabancaları",
+          "Otomotiv ve DIY > Aletler ve Elektrik > Zımparalama Makineleri",
+          "Otomotiv ve DIY > Aletler ve Elektrik > Mengeneler ve Kelepçeler",
+          "Otomotiv ve DIY > Aletler ve Elektrik > Kesiciler",
+          "Otomotiv ve DIY > Aletler ve Elektrik > Pense",
+          "Otomotiv ve DIY > Aletler ve Elektrik > Açılı Taşlama Makineleri, Zımpara Makineleri, Parlatıcılar",
+          "Otomotiv ve DIY > Aletler ve Elektrik > Alet Setleri",
+          "Otomotiv ve DIY > Aletler ve Elektrik > Tornavidalar",
+          "Otomotiv ve DIY > Aletler ve Elektrik > Boya ve Sıva Tabancaları ve Sistemleri",
+          "Otomotiv ve Kendin Yap > Aletler ve Elektrik > Aletler ve Göstergeler"
+        ]
+      },
+      "Aletler ve Güç": {
+        "slug": "aletler-ve-guc",
+        "name": "Aletler ve Güç",
+        "full_paths": [
+          "Otomotiv ve DIY > Aletler ve Güç > Elektrikli Testereler ve Daire Testereler",
+          "Otomotiv ve DIY > Aletler ve Güç > Elektrikli Planyalar",
+          "Otomotiv ve DIY > Aletler ve Güç > Kaynak Makineleri"
+        ]
+      },
+      "Araçlar ve Güç": {
+        "slug": "araclar-ve-guc",
+        "name": "Araçlar ve Güç",
+        "full_paths": [
+          "Otomotiv ve DIY > Araçlar ve Güç > Elektrikli Alet Pilleri ve Şarj Aletleri",
+          "Otomotiv ve DIY > Araçlar ve Güç > Matkaplar"
+        ]
+      },
+      "Bahçe Aletleri": {
+        "slug": "bahce-aletleri",
+        "name": "Bahçe Aletleri",
+        "full_paths": [
+          "Otomotiv ve DIY > Bahçe Aletleri > Motorlu Testereler",
+          "Otomotiv ve DIY > Bahçe Aletleri > Su Fıskiyeleri",
+          "Otomotiv ve DIY > Bahçe Aletleri > Elektrikli Tırpanlar ve Çalı Tırpanları",
+          "Otomotiv ve DIY > Bahçe Aletleri > Çim Biçme Makineleri",
+          "Otomotiv ve DIY > Bahçe Aletleri > Yaprak Toplayıcılar, Üfleyiciler ve Öğütücüler",
+          "Otomotiv ve DIY > Bahçe Aletleri > Su Pompaları"
+        ]
+      }
+    }
+  },
+  "Hobiler ve Spor": {
+    "slug": "hobiler-ve-spor",
+    "name": "Hobiler ve Spor",
+    "subcategories": {
+      "Konsollar": {
+        "slug": "konsollar",
+        "name": "Konsollar",
+        "full_paths": [
+          "Hobiler ve Spor > Konsollar > Nintendo"
+        ]
+      },
+      "Oyun Aksesuarları": {
+        "slug": "oyun-aksesuarlari",
+        "name": "Oyun Aksesuarları",
+        "full_paths": [
+          "Hobiler ve Spor > Oyun Aksesuarları > Direksiyon Simidi",
+          "Hobiler ve Spor > Oyun Aksesuarları > Diğer"
+        ]
+      },
+      "Dronlar": {
+        "slug": "dronlar",
+        "name": "Dronlar",
+        "full_paths": [
+          "Hobiler ve Spor > Dronlar"
+        ]
+      },
+      "E_book": {
+        "slug": "e_book",
+        "name": "E_book",
+        "full_paths": [
+          "Hobiler ve Spor > E_book"
+        ]
+      },
+      "Aksiyon Kameraları ve Aksesuarları": {
+        "slug": "aksiyon-kameralari-ve-aksesuarlari",
+        "name": "Aksiyon Kameraları ve Aksesuarları",
+        "full_paths": [
+          "Hobiler ve Sporlar > Aksiyon Kameraları ve Aksesuarları"
+        ]
+      },
+      "Elektrikli Bisikletler, Tekerlekler ve Aksesuarlar": {
+        "slug": "elektrikli-bisikletler-tekerlekler-ve-aksesuarlar",
+        "name": "Elektrikli Bisikletler, Tekerlekler ve Aksesuarlar",
+        "full_paths": [
+          "Hobiler ve Sporlar > Elektrikli Bisikletler, Tekerlekler ve Aksesuarlar"
+        ]
+      },
+      "Scooter'lar ve scooter'lar": {
+        "slug": "scooterlar-ve-scooterlar",
+        "name": "Scooter'lar ve scooter'lar",
+        "full_paths": [
+          "Hobiler ve spor > Scooter'lar ve scooter'lar"
+        ]
+      },
+      "Taşınabilir hoparlörler": {
+        "slug": "tasinabilir-hoparlorler",
+        "name": "Taşınabilir hoparlörler",
+        "full_paths": [
+          "Hobiler ve spor > Taşınabilir hoparlörler"
+        ]
+      }
+    }
+  },
+  "Fotoğraf ve Video": {
+    "slug": "fotograf-ve-video",
+    "name": "Fotoğraf ve Video",
+    "subcategories": {
+      "Kameralar": {
+        "slug": "kameralar",
+        "name": "Kameralar",
+        "full_paths": [
+          "Fotoğraf ve Video > Kameralar > Anlık görüntüler için",
+          "Fotoğraf ve Video > Kameralar > DSLR",
+          "Fotoğraf ve Video > Kameralar > Kompakt kameralar",
+          "Fotoğraf ve Video > Kameralar",
+          "Fotoğraf ve Video > Kameralar > Aynasız kameralar"
+        ]
+      },
+      "Aksesuarlar": {
+        "slug": "aksesuarlar",
+        "name": "Aksesuarlar",
+        "full_paths": [
+          "Fotoğraf ve Video > Aksesuarlar > DSLR için"
+        ]
+      },
+      "Genel": {
+        "slug": "genel",
+        "name": "Genel",
+        "full_paths": [
+          "Foto ve Video Kameralar"
+        ]
+      }
+    }
+  },
+  "Bebek Ürünleri": {
+    "slug": "bebek-urunleri",
+    "name": "Bebek Ürünleri",
+    "subcategories": {
+      "Genel": {
+        "slug": "genel",
+        "name": "Genel",
+        "full_paths": [
+          "Bebek Ürünleri"
+        ]
+      }
+    }
+  },
+  "Hava Temizleyiciler": {
+    "slug": "hava-temizleyiciler",
+    "name": "Hava Temizleyiciler",
+    "subcategories": {
+      "Genel": {
+        "slug": "genel",
+        "name": "Genel",
+        "full_paths": [
+          "Hava Temizleyiciler"
+        ]
+      }
+    }
+  },
+  "Bilgisayarlar ve Bilgisayar Aksesuarları": {
+    "slug": "bilgisayarlar-ve-bilgisayar-aksesuarlari",
+    "name": "Bilgisayarlar ve Bilgisayar Aksesuarları",
+    "subcategories": {
+      "Genel": {
+        "slug": "genel",
+        "name": "Genel",
+        "full_paths": [
+          "Bilgisayarlar ve Bilgisayar Aksesuarları",
+          "Bilgisayar Aksesuarları"
+        ]
+      },
+      "Dizüstü Bilgisayarlar ve Aksesuarlar": {
+        "slug": "dizustu-bilgisayarlar-ve-aksesuarlar",
+        "name": "Dizüstü Bilgisayarlar ve Aksesuarlar",
+        "full_paths": [
+          "Dizüstü Bilgisayarlar, Bilgisayarlar ve Bilgisayar Aksesuarları > Dizüstü Bilgisayarlar ve Aksesuarlar > Çantalar"
+        ]
+      },
+      "Yazıcılar ve Tarayıcılar": {
+        "slug": "yazicilar-ve-tarayicilar",
+        "name": "Yazıcılar ve Tarayıcılar",
+        "full_paths": [
+          "Dizüstü Bilgisayarlar, Bilgisayarlar ve Bilgisayar Aksesuarları > Yazıcılar ve Tarayıcılar > Mürekkep Püskürtmeli Yazıcılar",
+          "Dizüstü Bilgisayarlar, Bilgisayarlar ve Bilgisayar Aksesuarları > Yazıcılar ve Tarayıcılar > Fotoğraf Yazıcıları",
+          "Dizüstü Bilgisayarlar, Bilgisayarlar ve Bilgisayar Aksesuarları > Yazıcılar ve Tarayıcılar > Lazer Yazıcılar",
+          "Dizüstü Bilgisayarlar, PC'ler ve Çevre Birimleri > Yazıcılar ve Tarayıcılar > Lazer MFP'ler"
+        ]
+      },
+      "Çevre Birimleri": {
+        "slug": "cevre-birimleri",
+        "name": "Çevre Birimleri",
+        "full_paths": [
+          "Dizüstü Bilgisayarlar, Bilgisayarlar ve Bilgisayar Aksesuarları > Çevre Birimleri > Yönlendiriciler",
+          "Dizüstü Bilgisayarlar, Bilgisayarlar ve Bilgisayar Aksesuarları > Çevre Birimleri > PC Sütunları",
+          "Dizüstü Bilgisayarlar, Bilgisayarlar ve Bilgisayar Aksesuarları > Çevre Birimleri > Fare Altlıkları",
+          "Dizüstü Bilgisayarlar, Bilgisayarlar ve Bilgisayar Aksesuarları > Çevre Birimleri > Fareler",
+          "Dizüstü Bilgisayarlar, Bilgisayarlar ve Bilgisayar Aksesuarları > Çevre Birimleri > Klavyeler",
+          "Dizüstü Bilgisayarlar, PC'ler ve Çevre Birimleri > Çevre Birimleri > Yönlendiriciler"
+        ]
+      },
+      "Dizüstü bilgisayarlar ve aksesuarlar": {
+        "slug": "dizustu-bilgisayarlar-ve-aksesuarlar",
+        "name": "Dizüstü bilgisayarlar ve aksesuarlar",
+        "full_paths": [
+          "Bilgisayarlar ve Bilgisayar Aksesuarları > Dizüstü bilgisayarlar ve aksesuarlar > Oyun kulaklıkları"
+        ]
+      },
+      "Akıllı ev": {
+        "slug": "akilli-ev",
+        "name": "Akıllı ev",
+        "full_paths": [
+          "Bilgisayarlar ve Bilgisayar Aksesuarları > Akıllı ev"
+        ]
+      },
+      "SSD": {
+        "slug": "ssd",
+        "name": "SSD",
+        "full_paths": [
+          "Bilgisayarlar ve Bilgisayar Aksesuarları > SSD"
+        ]
+      },
+      "Monitörler": {
+        "slug": "monitorler",
+        "name": "Monitörler",
+        "full_paths": [
+          "Dizüstü Bilgisayarlar, PC'ler ve Çevre Birimleri > Monitörler"
+        ]
+      },
+      "HDD ve Flash USB": {
+        "slug": "hdd-ve-flash-usb",
+        "name": "HDD ve Flash USB",
+        "full_paths": [
+          "Dizüstü Bilgisayarlar, PC'ler ve Çevre Birimleri > HDD ve Flash USB"
+        ]
+      }
+    }
+  }
+}

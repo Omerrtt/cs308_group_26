@@ -206,7 +206,14 @@ const Header = () => {
 
                                     <ul className="header-action-link action-color--black action-hover-color--golden">
                                         <li>
-                                            <Link to="/cart" className="cart-link" title="Sepetim">
+                                            <Link 
+                                                to="/cart" 
+                                                className="cart-link" 
+                                                title="Sepetim"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                }}
+                                            >
                                                 <i className="fa fa-shopping-cart"></i>
                                                 {carts.length > 0 && (
                                                     <span className="cart-count">{carts.length}</span>
@@ -307,6 +314,9 @@ const Header = () => {
                                 to="/cart" 
                                 className="cart-btn-mobile"
                                 title="Sepetim"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                }}
                             >
                                 <i className="fa fa-shopping-cart"></i>
                                 {carts.length > 0 && (
@@ -425,12 +435,15 @@ const Header = () => {
                                         </li>
                                     );
                                 })}
-                                <li>
-                                    <Link to="/contact"><span>İletişim</span></Link>
-                                </li>
                                 {/* Sepet ve Profil Linkleri */}
                                 <li>
-                                    <Link to="/cart" className="mobile-cart-link">
+                                    <Link 
+                                        to="/cart" 
+                                        className="mobile-cart-link"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                        }}
+                                    >
                                         <i className="fa fa-shopping-cart"></i>
                                         <span>Sepetim</span>
                                         {carts.length > 0 && (

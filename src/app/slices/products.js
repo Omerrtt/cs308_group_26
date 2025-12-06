@@ -1,4 +1,5 @@
 import {createSlice, createAsyncThunk} from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
 // Demo Data
 import { getProductsData, getProductsDataSync, fetchProductsFromFirebase } from '../data/productsData'
 // Alert
@@ -102,7 +103,7 @@ const productsSlice = createSlice({
             state.single = arr || null;
         },
         // Add to Cart
-        addToCart: (state, action) =>{
+        addToCart: (state, action) => {
 
             let { id, quantity = 1 } = action.payload;
             const numericId = parseInt(id);
@@ -177,29 +178,34 @@ const productsSlice = createSlice({
                         window.location.href = '/cart'
                     }
                   })
+                    text: 'Sepetinize başarıyla eklendi',
+                    icon: 'success',
+                    showConfirmButton: false,
+                    timer: 2500
+                })
 
-            }else{
+            } else {
                 Swal.fire({
-                    title: 'Failed!',
-                    text: 'This product is already added in your Cart',
+                    title: 'Başarısız!',
+                    text: 'Bu ürün zaten sepetinizde mevcut',
                     imageUrl: item.img,
                     imageWidth: 200,
                     imageAlt: item.title,
                     showConfirmButton: false,
                     timer: 5000
-                  })
-              }
+                })
+            }
         },
         // Add to Compare
-        addToComp: (state, action) =>{
+        addToComp: (state, action) => {
             if (state.compare.length >= 3) {
                 Swal.fire({
-                    title: 'Failed!',
-                    text: 'Compare List is Full',
+                    title: 'Başarısız!',
+                    text: 'Karşılaştırma listesi dolu',
                     icon: 'warning',
                     showConfirmButton: false,
                     timer: 2500,
-                  })
+                })
                 return;
             }
 
@@ -212,23 +218,23 @@ const productsSlice = createSlice({
                 let arr = state.products.find(item => item.id === parseInt(id))
                 state.compare.push(arr)
                 Swal.fire({
-                    title: 'Success!',
-                    text: 'Successfully added to Compare List',
+                    title: 'Başarılı!',
+                    text: 'Karşılaştırma listesine eklendi',
                     icon: 'success',
                     showConfirmButton: false,
                     timer: 2500,
-                  })
-            }else{
-                    Swal.fire({
-                        title: 'Failed!',
-                        text: 'Already Added in Compare List',
-                        imageUrl: item.img,
-                        imageWidth: 200,
-                        imageAlt: item.title,
-                        showConfirmButton: false,
-                        timer: 5000,
-                    })
-              }
+                })
+            } else {
+                Swal.fire({
+                    title: 'Başarısız!',
+                    text: 'Zaten karşılaştırma listesinde',
+                    imageUrl: item.img,
+                    imageWidth: 200,
+                    imageAlt: item.title,
+                    showConfirmButton: false,
+                    timer: 5000,
+                })
+            }
         },
         // Update Cart
         updateCart: (state, action) =>{
@@ -237,6 +243,11 @@ const productsSlice = createSlice({
             state.carts.forEach(item => {
                 if(item.id === numericId){
                     item.quantity = quantity || 1
+        updateCart: (state, action) => {
+            let { val, id } = action.payload;
+            state.carts.forEach(item => {
+                if (item.id === parseInt(id)) {
+                    item.quantity = val
                 }
             })
             saveCartToStorage(state.carts)
@@ -246,7 +257,7 @@ const productsSlice = createSlice({
             });
         },
         // Remove Cart
-        removeCart: (state, action) =>{
+        removeCart: (state, action) => {
             let { id } = action.payload;
             let arr = state.carts.filter(item => item.id !== parseInt(id))
             state.carts = arr
@@ -255,16 +266,17 @@ const productsSlice = createSlice({
             saveCartToFirebase(state.carts).catch(err => {
                 console.error('Firebase sepet silme hatası:', err);
             });
+
         },
         // Delete from Compare
-        delCompare: (state, action) =>{
+        delCompare: (state, action) => {
             let { id } = action.payload;
             let arr = state.compare.filter(item => item.id !== parseInt(id))
             state.compare = arr
-            
+
         },
         // Clear Cart
-        clearCart: (state) =>{
+        clearCart: (state) => {
             state.carts = []
             saveCartToStorage(state.carts)
             // Firebase'den temizle
@@ -273,7 +285,7 @@ const productsSlice = createSlice({
             });
         },
         // Add to Favorite / Wishlist
-        addToFav: (state, action) =>{
+        addToFav: (state, action) => {
             let { id } = action.payload;
 
             // Check existance
@@ -283,17 +295,21 @@ const productsSlice = createSlice({
                 let arr = state.products.find(item => item.id === parseInt(id))
                 arr.quantity = 1
                 state.favorites.push(arr)
-                Swal.fire('Success', "Added to Wishlist", 'success')
-            }else{
-                  Swal.fire('Failed', "Already Added in Wishlist", 'warning')
-              }
+                Swal.fire('Başarılı', "Favorilere eklendi", 'success')
+            } else {
+                Swal.fire('Başarısız', "Zaten favorilerde", 'warning')
+            }
         },
         // Remove from Favorite / Wishlist
-        removeFav: (state, action) =>{
+        removeFav: (state, action) => {
             let { id } = action.payload;
             let arr = state.favorites.filter(item => item.id !== id)
             state.favorites = arr
-            
+
+        },
+        // Set Cart (for persistence)
+        setCart: (state, action) => {
+            state.carts = action.payload.carts;
         },
     },
     extraReducers: (builder) => {
@@ -316,6 +332,18 @@ const productsSlice = createSlice({
 })
 
 const productsReducer = productsSlice.reducer
+export const {
+    getProductById,
+    addToCart,
+    addToComp,
+    updateCart,
+    removeCart,
+    delCompare,
+    clearCart,
+    addToFav,
+    removeFav,
+    setCart
+} = productsSlice.actions;
 export default productsReducer
 
 // Export actions

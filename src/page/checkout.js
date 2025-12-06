@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import Header from '../component/Common/Header'
 import Banner from '../component/Common/Banner'
 import Footer from '../component/Common/Footer'
@@ -23,10 +23,11 @@ const Checkout = () => {
     const [loading, setLoading] = useState(true);
     const [showAddAddressForm, setShowAddAddressForm] = useState(false);
     const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
+    const carts = useSelector((state) => state.products.carts);
 
     const [formData, setFormData] = useState({
-        fullName: user.name || '',
-        email: user.email || '',
+        fullName: (user && user.name) || '',
+        email: (user && user.email) || '',
         phone: '',
         address: '',
         city: '',
@@ -202,6 +203,14 @@ const Checkout = () => {
     const shipping = 0; // Free shipping
     const tax = 0; // No tax
     const total = subtotal + shipping + tax;
+    // Calculate Totals
+    const calculateSubtotal = () => {
+        return carts.reduce((total, item) => total + (item.price * item.quantity), 0);
+    }
+
+    const subtotal = calculateSubtotal();
+    const shipping = subtotal > 0 ? 29.90 : 0;
+    const total = subtotal + shipping;
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -466,14 +475,15 @@ const Checkout = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         // Basic validation
-        if (!formData.fullName || !formData.email || !formData.phone || 
+        if (!formData.fullName || !formData.email || !formData.phone ||
             !formData.address || !formData.city || !formData.zipCode) {
             Swal.fire({
                 icon: 'error',
                 title: 'Eksik Bilgi',
                 text: 'Lütfen tüm teslimat bilgilerini doldurun'
+                text: 'Lütfen tüm teslimat bilgilerini doldurunuz'
             });
             return;
         }
@@ -483,6 +493,17 @@ const Checkout = () => {
                 icon: 'error',
                 title: 'Eksik Bilgi',
                 text: 'Lütfen tüm ödeme bilgilerini doldurun'
+                title: 'Eksik Ödeme Bilgisi',
+                text: 'Lütfen tüm ödeme bilgilerini doldurunuz'
+            });
+            return;
+        }
+
+        if (carts.length === 0) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Sepet Boş',
+                text: 'Lütfen ödeme yapmadan önce sepetinize ürün ekleyin'
             });
             return;
         }
@@ -810,7 +831,12 @@ const Checkout = () => {
                     <p><strong>Tahmini Teslimat:</strong> ${orderData.estimatedDeliveryString}</p>
                 `,
                 confirmButtonText: 'Ana Sayfaya Dön'
+            title: 'Sipariş Başarıyla Alındı!',
+            text: 'Siparişiniz alındı. Bizi tercih ettiğiniz için teşekkür ederiz!',
+            confirmButtonText: 'Anasayfaya Dön'
         }).then(() => {
+            // Clear cart after successful order
+            dispatch({ type: "products/clearCart" });
             history.push('/');
         });
 
@@ -991,6 +1017,14 @@ const Checkout = () => {
                                                 <input 
                                                     type="text" 
                                                     className="form-control" 
+                                        <h4 className="mb-4">Teslimat Bilgileri</h4>
+
+                                        <div className="row">
+                                            <div className="col-md-6 mb-3">
+                                                <label className="form-label">Ad Soyad *</label>
+                                                <input
+                                                    type="text"
+                                                    className="form-control"
                                                     name="fullName"
                                                     value={formData.fullName}
                                                     onChange={handleInputChange}
@@ -998,10 +1032,10 @@ const Checkout = () => {
                                                 />
                                             </div>
                                             <div className="col-md-6 mb-3">
-                                                <label className="form-label">Email *</label>
-                                                <input 
-                                                    type="email" 
-                                                    className="form-control" 
+                                                <label className="form-label">E-posta *</label>
+                                                <input
+                                                    type="email"
+                                                    className="form-control"
                                                     name="email"
                                                     value={formData.email}
                                                     onChange={handleInputChange}
@@ -1016,6 +1050,9 @@ const Checkout = () => {
                                                 <input 
                                                     type="tel" 
                                                     className="form-control" 
+                                                <input
+                                                    type="tel"
+                                                    className="form-control"
                                                     name="phone"
                                                     value={formData.phone}
                                                     onChange={handleInputChange}
@@ -1027,6 +1064,9 @@ const Checkout = () => {
                                                 <input 
                                                     type="text" 
                                                     className="form-control" 
+                                                <input
+                                                    type="text"
+                                                    className="form-control"
                                                     name="city"
                                                     value={formData.city}
                                                     onChange={handleInputChange}
@@ -1041,6 +1081,9 @@ const Checkout = () => {
                                                 <input 
                                                     type="text" 
                                                     className="form-control" 
+                                                <input
+                                                    type="text"
+                                                    className="form-control"
                                                     name="address"
                                                     value={formData.address}
                                                     onChange={handleInputChange}
@@ -1052,6 +1095,9 @@ const Checkout = () => {
                                                 <input 
                                                     type="text" 
                                                     className="form-control" 
+                                                <input
+                                                    type="text"
+                                                    className="form-control"
                                                     name="zipCode"
                                                     value={formData.zipCode}
                                                     onChange={handleInputChange}
@@ -1073,6 +1119,13 @@ const Checkout = () => {
                                                 <input 
                                                     type="text" 
                                                     className="form-control" 
+
+                                        <div className="row">
+                                            <div className="col-md-12 mb-3">
+                                                <label className="form-label">Kart Numarası *</label>
+                                                <input
+                                                    type="text"
+                                                    className="form-control"
                                                     name="cardNumber"
                                                     value={formData.cardNumber}
                                                     onChange={handleInputChange}
@@ -1089,6 +1142,10 @@ const Checkout = () => {
                                                 <input 
                                                     type="text" 
                                                     className="form-control" 
+                                                <label className="form-label">Kart Sahibi *</label>
+                                                <input
+                                                    type="text"
+                                                    className="form-control"
                                                     name="cardName"
                                                     value={formData.cardName}
                                                     onChange={handleInputChange}
@@ -1104,6 +1161,9 @@ const Checkout = () => {
                                                 <input 
                                                     type="text" 
                                                     className="form-control" 
+                                                <input
+                                                    type="text"
+                                                    className="form-control"
                                                     name="expiryDate"
                                                     value={formData.expiryDate}
                                                     onChange={handleInputChange}
@@ -1114,9 +1174,9 @@ const Checkout = () => {
                                             </div>
                                             <div className="col-md-6 mb-3">
                                                 <label className="form-label">CVV *</label>
-                                                <input 
-                                                    type="text" 
-                                                    className="form-control" 
+                                                <input
+                                                    type="text"
+                                                    className="form-control"
                                                     name="cvv"
                                                     value={formData.cvv}
                                                     onChange={handleInputChange}
@@ -1132,7 +1192,7 @@ const Checkout = () => {
 
                             <div className="col-lg-4">
                                 {/* Order Summary */}
-                                <div className="card shadow-sm sticky-top" style={{top: '20px'}}>
+                                <div className="card shadow-sm sticky-top" style={{ top: '20px' }}>
                                     <div className="card-body p-4">
                                         <h4 className="mb-4">Sipariş Özeti</h4>
                                         
@@ -1161,6 +1221,27 @@ const Checkout = () => {
                                                         );
                                                     })}
                                             </div>
+
+                                        <div className="order-items mb-4" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                                            {carts.length === 0 ? (
+                                                <div className="alert alert-info">
+                                                    <p className="mb-0">Sepette ürün yok</p>
+                                                </div>
+                                            ) : (
+                                                <ul className="list-group list-group-flush">
+                                                    {carts.map((item) => (
+                                                        <li key={item.id} className="list-group-item d-flex justify-content-between align-items-center px-0">
+                                                            <div className="d-flex align-items-center">
+                                                                <img src={item.img || item.image} alt={item.title} style={{ width: '40px', marginRight: '10px' }} />
+                                                                <div>
+                                                                    <h6 className="my-0" style={{ fontSize: '0.9rem' }}>{item.title}</h6>
+                                                                    <small className="text-muted">Qty: {item.quantity}</small>
+                                                                </div>
+                                                            </div>
+                                                            <span className="text-muted">₺{(item.price * item.quantity).toLocaleString()}</span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
                                             )}
                                         </div>
 
@@ -1176,15 +1257,21 @@ const Checkout = () => {
                                             <div className="d-flex justify-content-between mb-2">
                                                 <span>KDV:</span>
                                                 <strong>{tax.toFixed(2)} ₺</strong>
+                                                <strong>₺{subtotal.toLocaleString()}</strong>
+                                            </div>
+                                            <div className="d-flex justify-content-between mb-2">
+                                                <span>Kargo:</span>
+                                                <strong>₺{shipping.toLocaleString()}</strong>
                                             </div>
                                             <hr />
                                             <div className="d-flex justify-content-between mb-4">
                                                 <h5>Toplam:</h5>
                                                 <h5><strong>{total.toFixed(2)} ₺</strong></h5>
+                                                <h5><strong>₺{total.toLocaleString()}</strong></h5>
                                             </div>
 
-                                            <button 
-                                                type="submit" 
+                                            <button
+                                                type="submit"
                                                 className="theme-btn-one btn-black-overlay btn_md w-100"
                                                 disabled={cartItems.length === 0}
                                             >

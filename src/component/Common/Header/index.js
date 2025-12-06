@@ -179,6 +179,10 @@ const Header = () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, [show]);
+import { useSelector } from "react-redux";
+
+const Header = () => {
+    const status = useSelector((state) => state.user.status);
 
     return (
         <>
@@ -188,7 +192,7 @@ const Header = () => {
                     <div className="header-bottom header-bottom-color--golden section-fluid sticky-header sticky-color--golden">
                         <div className="container">
                             <div className="row">
-                                <div className="col-12 d-flex align-items-center">
+                                <div className="col-12 d-flex align-items-center justify-content-center position-relative">
                                     <div className="header-logo">
                                         <div className="logo">
                                             <Link to="/"><img src={logo} alt="logo" /></Link>
@@ -211,85 +215,14 @@ const Header = () => {
                                                 {carts.length > 0 && (
                                                     <span className="cart-count">{carts.length}</span>
                                                 )}
+                                    {status && (
+                                        <div style={{position: 'absolute', right: '0', top: '50%', transform: 'translateY(-50%)'}}>
+                                            <Link to="/profile" className="d-flex align-items-center text-decoration-none">
+                                                <i className="fa fa-user-circle" style={{fontSize: '28px', color: '#333', marginRight: '8px'}}></i>
+                                                <span style={{fontSize: '16px', color: '#333', fontWeight: '500'}}>Profile</span>
                                             </Link>
-                                        </li>
-                                        {userStatus ? (
-                                            <li className="user-profile-dropdown">
-                                                <a 
-                                                    href="#!" 
-                                                    className="user-profile-link"
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        handleShow('user-menu');
-                                                    }}
-                                                >
-                                                    <i className="fa fa-user-circle"></i>
-                                                    <span>{userData.name || 'Kullanıcı'}</span>
-                                                </a>
-                                                {show === 'user-menu' && (
-                                                    <div className="user-dropdown-menu">
-                                                        <Link 
-                                                            to="/profile"
-                                                            onClick={() => setShow('')}
-                                                        >
-                                                            <i className="fa fa-user"></i>
-                                                            Profilim
-                                                        </Link>
-                                                        <Link 
-                                                            to="/my-account"
-                                                            onClick={() => setShow('')}
-                                                        >
-                                                            <i className="fa fa-cog"></i>
-                                                            Hesabım
-                                                        </Link>
-                                                        <a 
-                                                            href="#!"
-                                                            onClick={(e) => {
-                                                                e.preventDefault();
-                                                                handleLogout();
-                                                                setShow('');
-                                                            }}
-                                                        >
-                                                            <i className="fa fa-sign-out"></i>
-                                                            Çıkış Yap
-                                                        </a>
-                                                    </div>
-                                                )}
-                                            </li>
-                                        ) : (
-                                            <>
-                                                <li>
-                                                    <Link 
-                                                        to="/login"
-                                                        className="header-login-btn"
-                                                    >
-                                                        <i className="fa fa-sign-in"></i>
-                                                        <span>Giriş Yap</span>
-                                                    </Link>
-                                                </li>
-                                                <li>
-                                                    <Link 
-                                                        to="/register"
-                                                        className="header-register-btn"
-                                                    >
-                                                        <i className="fa fa-user-plus"></i>
-                                                        <span>Kayıt Ol</span>
-                                                    </Link>
-                                                </li>
-                                            </>
-                                        )}
-                                        <li>
-                                            <a 
-                                                href="https://wa.me/905393973949?text=Merhaba, Malikane Electronics ürünleriniz hakkında bilgi almak istiyorum." 
-                                                target="_blank" 
-                                                rel="noopener noreferrer"
-                                                className="whatsapp-btn-header"
-                                                title="WhatsApp ile İletişim"
-                                            >
-                                                <i className="fab fa-whatsapp" style={{fontSize: '28px', color: '#25D366'}}></i>
-                                            </a>
-                                        </li>
-                                    </ul>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

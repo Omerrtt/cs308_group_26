@@ -105,8 +105,7 @@ const TopHeader = () => {
                                         <ul className="right_list_fix">
                                             <li className="after_login"><img src={avater} alt="avater" /> {user.name || 'Jhon Doe'} <i className="fa fa-angle-down"></i>
                                                 <ul className="custom_dropdown">
-                                                    <li><Link to="/my-account"><i className="fa fa-tachometer"></i> Dashboard</Link></li>
-                                                    <li><Link to="/my-account/customer-order"><i className="fa fa-cubes"></i> My Orders</Link></li>
+                                                    <li><Link to="/profile"><i className="fa fa-user"></i> Profilim</Link></li>
                                                     <li><Link to="#!" onClick={() => { logout() }} ><i className="fa fa-sign-out"></i> Logout</Link></li>
                                                 </ul>
                                             </li>

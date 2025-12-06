@@ -235,13 +235,6 @@ const Header = () => {
                                                             <i className="fa fa-user"></i>
                                                             Profilim
                                                         </Link>
-                                                        <Link 
-                                                            to="/my-account"
-                                                            onClick={() => setShow('')}
-                                                        >
-                                                            <i className="fa fa-cog"></i>
-                                                            Hesabım
-                                                        </Link>
                                                         <a 
                                                             href="#!"
                                                             onClick={(e) => {
@@ -452,12 +445,6 @@ const Header = () => {
                                             <Link to="/profile" className="mobile-user-link">
                                                 <i className="fa fa-user-circle"></i>
                                                 <span>Profilim</span>
-                                            </Link>
-                                        </li>
-                                        <li>
-                                            <Link to="/my-account" className="mobile-user-link">
-                                                <i className="fa fa-cog"></i>
-                                                <span>Hesabım</span>
                                             </Link>
                                         </li>
                                         <li>

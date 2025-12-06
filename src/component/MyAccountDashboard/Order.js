@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useSelector } from 'react-redux'
 import { auth, db } from '../../firebaseConfig'
 import { generateInvoicePDF } from '../../utils/invoiceGenerator'
@@ -9,24 +9,31 @@ const Order = () => {
     const [orders, setOrders] = useState([])
     const [invoices, setInvoices] = useState([])
     const [loading, setLoading] = useState(true)
+    const [error, setError] = useState(null)
 
+    // Body scroll'u kontrol et ve düzelt
     useEffect(() => {
-        if (status) {
-            loadOrders()
-        } else {
-            setLoading(false)
+        // Component mount olduğunda body scroll'u aktif et
+        document.body.style.overflow = 'auto'
+        
+        return () => {
+            // Component unmount olduğunda da scroll'u aktif et
+            document.body.style.overflow = 'auto'
         }
-    }, [status])
+    }, [])
 
-    const loadOrders = async () => {
+    const loadOrders = useCallback(async () => {
         try {
+            setLoading(true)
+            setError(null)
+            
             const currentUser = auth.currentUser
             if (!currentUser) {
+                setOrders([])
+                setInvoices([])
                 setLoading(false)
                 return
             }
-
-            console.log('📦 Kullanıcı order\'ları yükleniyor...')
             
             // Users collection'ından order'ları çek
             const userDoc = await db.collection('users').doc(currentUser.uid).get()
@@ -45,25 +52,32 @@ const Order = () => {
                 
                 setOrders(sortedOrders)
                 setInvoices(userInvoices)
-                console.log(`✅ ${sortedOrders.length} sipariş yüklendi`)
             } else {
                 setOrders([])
                 setInvoices([])
             }
         } catch (error) {
             console.error('❌ Order yükleme hatası:', error)
-            Swal.fire({
-                title: 'Hata',
-                text: 'Siparişler yüklenirken bir hata oluştu.',
-                icon: 'error'
-            })
+            setError('Siparişler yüklenirken bir hata oluştu.')
+            setOrders([])
+            setInvoices([])
         } finally {
             setLoading(false)
         }
-    }
+    }, [])
 
-    // Format date
-    const formatDate = (dateString) => {
+    useEffect(() => {
+        if (status) {
+            loadOrders()
+        } else {
+            setLoading(false)
+            setOrders([])
+            setInvoices([])
+        }
+    }, [status, loadOrders])
+
+    // Format date - memoized
+    const formatDate = useCallback((dateString) => {
         if (!dateString) return 'Tarih yok'
         try {
             const date = new Date(dateString)
@@ -77,45 +91,49 @@ const Order = () => {
         } catch (error) {
             return dateString
         }
-    }
+    }, [])
 
-    // Format price
-    const formatPrice = (price) => {
+    // Format price - memoized
+    const formatPrice = useCallback((price) => {
         return new Intl.NumberFormat('tr-TR', {
             style: 'currency',
             currency: 'TRY'
         }).format(price || 0)
-    }
+    }, [])
 
-    // Get status text
-    const getStatusText = (status) => {
-        const statusMap = {
+    // Status map - memoized
+    const statusMap = useMemo(() => ({
+        text: {
             'processing': 'İşleniyor',
             'in-transit': 'Yolda',
             'delivered': 'Teslim Edildi'
-        }
-        return statusMap[status] || status || 'Bilinmiyor'
-    }
-
-    // Get status badge class
-    const getStatusClass = (status) => {
-        const statusMap = {
+        },
+        class: {
             'processing': 'badge-warning',
             'in-transit': 'badge-info',
             'delivered': 'badge-success'
         }
-        return statusMap[status] || 'badge-secondary'
-    }
+    }), [])
+
+    // Get status text
+    const getStatusText = useCallback((status) => {
+        return statusMap.text[status] || status || 'Bilinmiyor'
+    }, [statusMap])
+
+    // Get status badge class
+    const getStatusClass = useCallback((status) => {
+        return statusMap.class[status] || 'badge-secondary'
+    }, [statusMap])
 
     // Get status badge (React component)
-    const getStatusBadge = (status) => {
+    const getStatusBadge = useCallback((status) => {
         const statusText = getStatusText(status)
         const statusClass = getStatusClass(status)
         return <span className={`badge ${statusClass}`}>{statusText}</span>
-    }
+    }, [getStatusText, getStatusClass])
 
-    // Invoice indir
-    const downloadInvoice = (orderId) => {
+    // Invoice indir - memoized
+    const downloadInvoice = useCallback((orderId) => {
         try {
             // İlgili invoice'u bul
             const invoice = invoices.find(inv => inv.orderId === orderId)
@@ -125,11 +143,12 @@ const Order = () => {
                     title: 'Fatura Bulunamadı',
                     text: 'Bu sipariş için fatura bulunamadı.',
                     icon: 'warning'
+                }).then(() => {
+                    // Modal kapandıktan sonra body scroll'u aktif et
+                    document.body.style.overflow = 'auto'
                 })
                 return
             }
-
-            console.log('📄 Invoice PDF oluşturuluyor...', invoice)
             
             // PDF oluştur
             const invoicePDFBlob = generateInvoicePDF(invoice)
@@ -148,14 +167,15 @@ const Order = () => {
                 URL.revokeObjectURL(pdfUrl)
             }, 100)
             
-            console.log('✅ Invoice indirildi')
-            
             Swal.fire({
                 title: 'Başarılı',
                 text: 'Fatura indirildi.',
                 icon: 'success',
                 timer: 2000,
                 showConfirmButton: false
+            }).then(() => {
+                // Modal kapandıktan sonra body scroll'u aktif et
+                document.body.style.overflow = 'auto'
             })
         } catch (error) {
             console.error('❌ Invoice indirme hatası:', error)
@@ -163,13 +183,17 @@ const Order = () => {
                 title: 'Hata',
                 text: 'Fatura indirilirken bir hata oluştu.',
                 icon: 'error'
+            }).then(() => {
+                // Modal kapandıktan sonra body scroll'u aktif et
+                document.body.style.overflow = 'auto'
             })
         }
-    }
+    }, [invoices])
 
-    // Order detaylarını göster
-    const showOrderDetails = (order) => {
+    // Order detaylarını göster - memoized
+    const showOrderDetails = useCallback((order) => {
         const invoice = invoices.find(inv => inv.orderId === order.orderId)
+        const orderStatus = order.status || 'processing'
         
         Swal.fire({
             title: 'Sipariş Detayları',
@@ -178,7 +202,7 @@ const Order = () => {
                     <p><strong>Sipariş ID:</strong> ${order.orderId || 'N/A'}</p>
                     <p><strong>Fatura No:</strong> ${invoice?.invoiceNumber || invoice?.invoiceId || 'N/A'}</p>
                     <p><strong>Tarih:</strong> ${formatDate(order.orderDate || order.createdAt)}</p>
-                    <p><strong>Durum:</strong> <span class="badge ${getStatusClass(order.status)}">${getStatusText(order.status)}</span></p>
+                    <p><strong>Durum:</strong> <span class="badge ${getStatusClass(orderStatus)}">${getStatusText(orderStatus)}</span></p>
                     <p><strong>Ara Toplam:</strong> ${formatPrice(order.subtotal)}</p>
                     <p><strong>Kargo:</strong> ${formatPrice(order.shipping || 0)}</p>
                     <p><strong>Vergi:</strong> ${formatPrice(order.tax || 0)}</p>
@@ -206,13 +230,20 @@ const Order = () => {
             showCancelButton: true,
             confirmButtonText: 'Faturayı İndir',
             cancelButtonText: 'Kapat',
-            confirmButtonColor: '#007bff'
+            confirmButtonColor: '#007bff',
+            didClose: () => {
+                // Modal kapandıktan sonra body scroll'u aktif et
+                document.body.style.overflow = 'auto'
+            }
         }).then((result) => {
             if (result.isConfirmed) {
                 downloadInvoice(order.orderId)
+            } else {
+                // Modal kapandıktan sonra body scroll'u aktif et
+                document.body.style.overflow = 'auto'
             }
         })
-    }
+    }, [invoices, formatDate, formatPrice, getStatusText, getStatusClass, downloadInvoice])
 
     if (loading) {
         return (
@@ -228,6 +259,22 @@ const Order = () => {
             <div className="myaccount-content">
                 <h4 className="title">Siparişlerim</h4>
                 <p>Lütfen giriş yapın.</p>
+            </div>
+        )
+    }
+
+    if (error) {
+        return (
+            <div className="myaccount-content">
+                <h4 className="title">Siparişlerim</h4>
+                <p style={{ color: 'red' }}>{error}</p>
+                <button 
+                    className="btn btn-primary" 
+                    onClick={loadOrders}
+                    style={{ marginTop: '10px' }}
+                >
+                    Tekrar Dene
+                </button>
             </div>
         )
     }

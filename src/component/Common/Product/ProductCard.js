@@ -28,35 +28,46 @@ const ProductCard = (props) => {
                         {props.data.inStock ? <span className="sale">Stokta</span> : <span className="hot">Tükendi</span>}
                     </span>
                     <div className="product-actions">
-                        <a 
-                            href={`https://wa.me/905393973949?text=Merhaba, ${props.data.title} ürünü hakkında bilgi almak istiyorum. Ürün Kodu: ${props.data.productCode} - Fiyat: ₺${props.data.price.toLocaleString()}`} 
-                            target="_blank" 
+                        <a
+                            href={`https://wa.me/905393973949?text=Merhaba, ${props.data.title} ürünü hakkında bilgi almak istiyorum. Ürün Kodu: ${props.data.productCode} - Fiyat: ₺${props.data.price.toLocaleString()}`}
+                            target="_blank"
                             rel="noopener noreferrer"
                             className="whatsapp-btn-small"
                             title="WhatsApp ile İletişim"
                             onClick={() => handleWhatsAppClick(props.data.id)}
                         >
-                            <i className="fab fa-whatsapp" style={{fontSize: '16px'}}></i>
+                            <i className="fab fa-whatsapp" style={{ fontSize: '16px' }}></i>
                         </a>
-                            <a 
-                                href="tel:+905393973949" 
-                                className="phone-btn-small"
-                                title="Telefon Et"
-                            >
-                                <i className="fa fa-phone"></i>
-                            </a>
+                        <a
+                            href="tel:+905393973949"
+                            className="phone-btn-small"
+                            title="Telefon Et"
+                        >
+                            <i className="fa fa-phone"></i>
+                        </a>
+                        <a
+                            href="#!"
+                            className="cart-btn-small"
+                            title="Sepete Ekle"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                addToCart(props.data.id);
+                            }}
+                        >
+                            <i className="fa fa-shopping-cart"></i>
+                        </a>
                     </div>
                 </div>
                 <div className="content">
                     <h5 className="title">
                         <Link to={`/product-details-one/${props.data.id}`}>{props.data.title}</Link>
                     </h5>
-                                    <div className="brand-info">
-                                        <small className="text-muted">{props.data.brand}</small>
-                                    </div>
-                                    <div className="product-code-info">
-                                        <small className="text-muted">Kod: <strong>{props.data.productCode}</strong></small>
-                                    </div>
+                    <div className="brand-info">
+                        <small className="text-muted">{props.data.brand}</small>
+                    </div>
+                    <div className="product-code-info">
+                        <small className="text-muted">Kod: <strong>{props.data.productCode}</strong></small>
+                    </div>
                     <div className="rating">
                         <div className="stars">
                             {[...Array(5)].map((_, i) => (

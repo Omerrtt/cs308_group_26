@@ -23,6 +23,12 @@ cd cs308_group_26
 
 **Önemli:** Bu proje React 17 kullanmaktadır ve bazı paketler React 16 gerektirdiği için `--legacy-peer-deps` flag'i ile yükleme yapmanız gerekmektedir.
 
+**Windows kullanıcıları için:**
+```bash
+npm install cross-env --legacy-peer-deps
+```
+
+**Mac/Linux kullanıcıları için:**
 ```bash
 npm install --legacy-peer-deps
 ```
@@ -42,6 +48,19 @@ Uygulama [http://localhost:3000](http://localhost:3000) adresinde açılacaktır
 
 İlk kez çalıştırmak için şu adımları takip edin:
 
+**Windows:**
+```bash
+# 1. Bağımlılıkları yükle (cross-env ile)
+npm install cross-env --legacy-peer-deps
+
+# 2. .env dosyası oluştur
+# echo SKIP_PREFLIGHT_CHECK=true > .env
+
+# 3. Uygulamayı başlat
+npm start
+```
+
+**Mac/Linux:**
 ```bash
 # 1. Bağımlılıkları yükle
 npm install --legacy-peer-deps

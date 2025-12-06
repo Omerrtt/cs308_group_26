@@ -19,18 +19,19 @@ service cloud.firestore {
     
     // Users koleksiyonu - Kullanıcılar sadece kendi verilerini okuyup yazabilir
     match /users/{userId} {
-      // Kullanıcılar kendi dokümanlarını okuyabilir
-      allow read: if request.auth != null && request.auth.uid == userId;
+      // Admin UID (admin tüm kullanıcıları görebilir ve güncelleyebilir)
+      function isAdmin() {
+        return request.auth != null && request.auth.uid == 'kcopWa6L3AZ5BbeHCokV7uKD6Pd2';
+      }
+      
+      // Kullanıcılar kendi dokümanlarını okuyabilir, admin tüm kullanıcıları okuyabilir
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
       
       // Kullanıcılar kendi dokümanlarını oluşturabilir
       allow create: if request.auth != null && request.auth.uid == userId;
       
-      // Kullanıcılar kendi dokümanlarını güncelleyebilir
-      allow update: if request.auth != null && request.auth.uid == userId;
-      
-      // ⚠️ GEÇİCİ: Admin sayfasından tüm kullanıcıları güncellemek için
-      // Bu satırı ekleyin (işlem bitince kaldırın):
-      allow update: if request.auth != null;
+      // Kullanıcılar kendi dokümanlarını güncelleyebilir, admin tüm kullanıcıları güncelleyebilir
+      allow update: if request.auth != null && (request.auth.uid == userId || isAdmin());
     }
     
     // Orders koleksiyonu

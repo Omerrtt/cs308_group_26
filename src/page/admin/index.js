@@ -165,30 +165,65 @@ const AdminPanel = () => {
 
             // Users collection'ındaki orders array'ini de güncelle (senkronizasyon için)
             try {
+                console.log(`🔄 Users collection güncelleniyor...`);
+                console.log(`   User ID: ${userId}`);
+                console.log(`   Order ID: ${orderId}`);
+                
                 const userRef = db.collection('users').doc(userId);
                 const userDoc = await userRef.get();
                 
-                if (userDoc.exists) {
-                    const userData = userDoc.data();
-                    const orders = userData.orders || [];
-                    
-                    // Order'ı bul ve güncelle
-                    const updatedOrders = orders.map(order => {
-                        if (order.orderId === orderId) {
-                            return {
-                                ...order,
-                                ...updateData
-                            };
-                        }
-                        return order;
-                    });
-
-                    await userRef.update({ orders: updatedOrders });
-                    console.log(`✅ Users collection'daki order güncellendi: ${orderId}`);
+                if (!userDoc.exists) {
+                    console.warn(`⚠️ User document bulunamadı: ${userId}`);
+                    throw new Error(`User document bulunamadı: ${userId}`);
                 }
+
+                const userData = userDoc.data();
+                const orders = userData.orders || [];
+                
+                console.log(`   Mevcut orders sayısı: ${orders.length}`);
+                
+                // Order'ı bul
+                let orderFound = false;
+                const updatedOrders = orders.map((order, index) => {
+                    const orderIdMatch = order.orderId === orderId;
+                    if (orderIdMatch) {
+                        orderFound = true;
+                        console.log(`   ✅ Order bulundu (index: ${index}), güncelleniyor...`);
+                        console.log(`   Eski status: ${order.status}`);
+                        console.log(`   Yeni status: ${newStatus}`);
+                        return {
+                            ...order,
+                            ...updateData
+                        };
+                    }
+                    return order;
+                });
+
+                if (!orderFound) {
+                    console.error(`❌ Order bulunamadı! Order ID: ${orderId}`);
+                    console.error(`   Mevcut order ID'leri:`, orders.map(o => o.orderId));
+                    throw new Error(`Order bulunamadı: ${orderId}`);
+                }
+
+                console.log(`   Güncellenmiş orders sayısı: ${updatedOrders.length}`);
+                await userRef.update({ orders: updatedOrders });
+                console.log(`✅ Users collection'daki order güncellendi: ${orderId}`);
             } catch (userUpdateError) {
-                console.warn('Users collection güncelleme hatası (orders collection güncellendi):', userUpdateError);
+                console.error('❌ Users collection güncelleme hatası:', userUpdateError);
+                console.error('   Hata detayları:', {
+                    message: userUpdateError.message,
+                    code: userUpdateError.code,
+                    stack: userUpdateError.stack
+                });
                 // Users collection güncelleme hatası kritik değil, orders collection güncellendi
+                // Ancak kullanıcıya bilgi verelim
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Kısmi Güncelleme',
+                    text: 'Orders collection güncellendi ancak users collection güncellenirken bir hata oluştu. Lütfen console loglarını kontrol edin.',
+                    timer: 5000,
+                    showConfirmButton: true
+                });
             }
             
             // Local state'i güncelle
@@ -287,22 +322,28 @@ const AdminPanel = () => {
 
                             {/* İstatistikler */}
                             <div className="row mb-4">
-                                <div className="col-md-4">
+                                <div className="col-md-3">
                                     <div className="card text-center" style={{ padding: '20px', background: '#f8f9fa', borderRadius: '8px' }}>
                                         <h3>{allOrders.length}</h3>
                                         <p className="mb-0">Toplam Sipariş</p>
                                     </div>
                                 </div>
-                                <div className="col-md-4">
-                                    <div className="card text-center" style={{ padding: '20px', background: '#f8f9fa', borderRadius: '8px' }}>
-                                        <h3>{allOrders.filter(o => o.status === 'pending').length}</h3>
-                                        <p className="mb-0">Bekleyen Sipariş</p>
+                                <div className="col-md-3">
+                                    <div className="card text-center" style={{ padding: '20px', background: '#fff3cd', borderRadius: '8px' }}>
+                                        <h3>{allOrders.filter(o => o.status === 'processing').length}</h3>
+                                        <p className="mb-0">İşleniyor</p>
                                     </div>
                                 </div>
-                                <div className="col-md-4">
-                                    <div className="card text-center" style={{ padding: '20px', background: '#f8f9fa', borderRadius: '8px' }}>
-                                        <h3>{allOrders.filter(o => o.status === 'completed').length}</h3>
-                                        <p className="mb-0">Tamamlanan Sipariş</p>
+                                <div className="col-md-3">
+                                    <div className="card text-center" style={{ padding: '20px', background: '#cfe2ff', borderRadius: '8px' }}>
+                                        <h3>{allOrders.filter(o => o.status === 'in-transit').length}</h3>
+                                        <p className="mb-0">Yolda</p>
+                                    </div>
+                                </div>
+                                <div className="col-md-3">
+                                    <div className="card text-center" style={{ padding: '20px', background: '#d4edda', borderRadius: '8px' }}>
+                                        <h3>{allOrders.filter(o => o.status === 'delivered').length}</h3>
+                                        <p className="mb-0">Teslim Edildi</p>
                                     </div>
                                 </div>
                             </div>
@@ -369,20 +410,18 @@ const AdminPanel = () => {
                                                     <td>
                                                         <select
                                                             className="form-control form-control-sm"
-                                                            value={order.status || 'pending'}
+                                                            value={order.status || 'processing'}
                                                             onChange={(e) => updateOrderStatus(order.userId, order.orderId, e.target.value)}
                                                             style={{
-                                                                minWidth: '120px',
-                                                                background: order.status === 'completed' ? '#d4edda' :
-                                                                           order.status === 'cancelled' ? '#f8d7da' :
+                                                                minWidth: '140px',
+                                                                background: order.status === 'delivered' ? '#d4edda' :
+                                                                           order.status === 'in-transit' ? '#cfe2ff' :
                                                                            '#fff3cd'
                                                             }}
                                                         >
-                                                            <option value="pending">Beklemede</option>
                                                             <option value="processing">İşleniyor</option>
-                                                            <option value="shipped">Kargoya Verildi</option>
-                                                            <option value="completed">Tamamlandı</option>
-                                                            <option value="cancelled">İptal Edildi</option>
+                                                            <option value="in-transit">Yolda</option>
+                                                            <option value="delivered">Teslim Edildi</option>
                                                         </select>
                                                     </td>
                                                     <td>
@@ -413,7 +452,7 @@ const AdminPanel = () => {
                                                                             <p><strong>Kargo:</strong> ${formatPrice(order.shipping || 0)}</p>
                                                                             <p><strong>Vergi:</strong> ${formatPrice(order.tax || 0)}</p>
                                                                             <p><strong>Toplam:</strong> ${formatPrice(order.total)}</p>
-                                                                            <p><strong>Durum:</strong> ${order.status || 'pending'}</p>
+                                                                            <p><strong>Durum:</strong> ${order.status === 'processing' ? 'İşleniyor' : order.status === 'in-transit' ? 'Yolda' : order.status === 'delivered' ? 'Teslim Edildi' : order.status || 'İşleniyor'}</p>
                                                                             <p><strong>Ödeme Durumu:</strong> ${order.paymentStatus || 'N/A'}</p>
                                                                             <p><strong>Ödeme Yöntemi:</strong> ${order.paymentMethod || 'N/A'}</p>
                                                                             ${order.comment ? `<p><strong>Yorum/Not:</strong> ${order.comment}</p>` : ''}

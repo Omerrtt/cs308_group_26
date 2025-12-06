@@ -568,7 +568,7 @@ const Checkout = () => {
                     month: 'long', 
                     day: 'numeric' 
                 }),
-                status: 'pending', // Sipariş durumu: pending, processing, shipped, delivered, cancelled
+                status: 'processing', // Sipariş durumu: processing, in-transit, delivered
                 createdAt: orderDate.toISOString(), // ISO string formatında
                 createdAtTimestamp: orderDate.getTime(), // Timestamp (number)
                 updatedAt: orderDate.toISOString(), // ISO string formatında
@@ -636,7 +636,7 @@ const Checkout = () => {
                 paymentMethod: 'credit_card',
                 paymentDate: invoiceDate.toISOString(),
                 // Sipariş durumu
-                orderStatus: 'pending',
+                orderStatus: 'processing',
                 // Fatura durumu
                 invoiceStatus: 'issued', // issued, paid, cancelled
                 // Tarih bilgileri
@@ -689,7 +689,7 @@ const Checkout = () => {
                     month: 'long', 
                     day: 'numeric' 
                 }),
-                status: 'pending',
+                status: 'processing',
                 comment: formData.notes || '', // Kullanıcı notları/comment
                 createdAt: orderDate.toISOString(),
                 createdAtTimestamp: orderDate.getTime(),

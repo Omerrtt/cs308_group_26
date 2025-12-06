@@ -16,13 +16,6 @@ const Profile = () => {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
 
-    // Redirect to login if user is not authenticated
-    useEffect(() => {
-        if (!status) {
-            history.push('/login');
-        }
-    }, [status, history]);
-
     // Body scroll'u kontrol et ve düzelt
     useEffect(() => {
         document.body.style.overflow = 'auto'
@@ -31,12 +24,11 @@ const Profile = () => {
         }
     }, [])
 
-    const loadOrders = useCallback(async () => {
+    const loadOrders = useCallback(async (currentUser) => {
         try {
             setLoading(true)
             setError(null)
             
-            const currentUser = auth.currentUser
             if (!currentUser) {
                 setOrders([])
                 setInvoices([])
@@ -75,15 +67,24 @@ const Profile = () => {
         }
     }, [])
 
+    // Auth state'i bekle ve order'ları yükle
     useEffect(() => {
-        if (status) {
-            loadOrders()
-        } else {
-            setLoading(false)
-            setOrders([])
-            setInvoices([])
-        }
-    }, [status, loadOrders])
+        // Firebase auth state'i bekleyelim
+        const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
+            if (!currentUser) {
+                // Kullanıcı giriş yapmamış - login sayfasına yönlendir
+                history.push('/login')
+                setLoading(false)
+                return
+            }
+
+            // Kullanıcı giriş yapmış - order'ları yükle
+            await loadOrders(currentUser)
+        })
+
+        // Cleanup
+        return () => unsubscribe()
+    }, [history, loadOrders])
 
     // Format date
     const formatDate = useCallback((dateString) => {

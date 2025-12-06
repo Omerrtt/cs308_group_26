@@ -1,0 +1,15 @@
+{
+  "short_name": "Malikane Electronics",
+  "name": "Malikane - Teknoloji Sarayı",
+  "icons": [
+    {
+      "src": "malikane-electronics-logo-tek.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
+}

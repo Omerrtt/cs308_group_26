@@ -1,8 +1,8 @@
-import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import firebase from "firebase/app";
+import "firebase/auth";
+import "firebase/firestore";
 
-// Firebase Configuration - Gerçek bilgiler
+// Firebase Conf iguration
 const firebaseConfig = {
   apiKey: "AIzaSyDClfGg2ANXmXGM2L4vGtYwNYIjIH0kLo8",
   authDomain: "malikane-18a27.firebaseapp.com",
@@ -14,6 +14,10 @@ const firebaseConfig = {
 };
 
 // Firebase'i başlat
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
+
+export const auth = firebase.auth();
+export const db = firebase.firestore();
+

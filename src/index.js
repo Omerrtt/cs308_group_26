@@ -164,12 +164,11 @@ auth.onAuthStateChanged(async (user) => {
           );
           
           if (existingItemIndex >= 0) {
-            // Aynı ürün varsa, quantity'leri topla
-            const existingQuantity = mergedCart[existingItemIndex].quantity || 1;
-            const reduxQuantity = reduxItem.quantity || 1;
-            const newQuantity = existingQuantity + reduxQuantity;
-            mergedCart[existingItemIndex].quantity = newQuantity;
-            console.log(`✅ Ürün birleştirildi: ${reduxItem.title} (Firebase: ${existingQuantity} + Redux: ${reduxQuantity} = ${newQuantity})`);
+            // Aynı ürün varsa, quantity'leri TOPLAMA
+            // Firebase'deki cart daha güncel ve doğru olduğu için onu koru
+            // Redux'taki quantity'yi görmezden gel (çünkü Firebase'deki zaten senkronize edilmiş)
+            console.log(`⚠️ Ürün zaten Firebase'de var, Redux quantity görmezden gelindi: ${reduxItem.title} (Firebase: ${mergedCart[existingItemIndex].quantity}, Redux: ${reduxItem.quantity})`);
+            // Firebase'deki quantity'yi koru, değiştirme
           } else {
             // Yeni ürün (sadece Redux'ta var), ekle
             mergedCart.push({

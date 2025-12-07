@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux'
 import { auth, db } from '../../firebaseConfig'
 import { generateInvoicePDF } from '../../utils/invoiceGenerator'
 import Swal from 'sweetalert2'
+import ReviewModal from './ReviewModal'
 
 const Order = () => {
     const status = useSelector((state) => state.user.status)
@@ -10,6 +11,7 @@ const Order = () => {
     const [invoices, setInvoices] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
+    const [selectedOrderForReview, setSelectedOrderForReview] = useState(null)
 
     // Body scroll'u kontrol et ve düzelt
     useEffect(() => {
@@ -190,6 +192,24 @@ const Order = () => {
         }
     }, [invoices])
 
+    // Review modal'ı aç - memoized
+    const openReviewModal = useCallback((order) => {
+        setSelectedOrderForReview(order)
+        document.body.style.overflow = 'hidden'
+    }, [])
+
+    // Review modal'ı kapat
+    const closeReviewModal = useCallback(() => {
+        setSelectedOrderForReview(null)
+        document.body.style.overflow = 'auto'
+    }, [])
+
+    // Review başarılı olduğunda
+    const handleReviewSuccess = useCallback(() => {
+        closeReviewModal()
+        loadOrders() // Order'ları yeniden yükle
+    }, [closeReviewModal, loadOrders])
+
     // Order detaylarını göster - memoized
     const showOrderDetails = useCallback((order) => {
         const invoice = invoices.find(inv => inv.orderId === order.orderId)
@@ -281,26 +301,37 @@ const Order = () => {
 
     return (
         <>
+            {selectedOrderForReview && (
+                <ReviewModal
+                    order={selectedOrderForReview}
+                    onClose={closeReviewModal}
+                    onSuccess={handleReviewSuccess}
+                />
+            )}
             <div className="myaccount-content">
                 <h4 className="title">Siparişlerim</h4>
                 {orders.length === 0 ? (
                     <p>Henüz siparişiniz bulunmuyor.</p>
                 ) : (
-                    <div className="table_page table-responsive">
-                        <table>
-                            <thead>
-                                <tr>
+                <div className="table_page table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
                                     <th>Sipariş No</th>
                                     <th>Tarih</th>
                                     <th>Durum</th>
                                     <th>Toplam</th>
                                     <th>İşlemler</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                            </tr>
+                        </thead>
+                        <tbody>
                                 {orders.map((order, index) => {
                                     const itemCount = order.items ? order.items.length : 0
                                     const orderStatus = order.status || 'processing' // Default status
+                                    
+                                    // Debug: Status kontrolü
+                                    const isDelivered = orderStatus === 'delivered' || orderStatus === 'Teslim Edildi'
+                                    
                                     return (
                                         <tr key={order.orderId || index}>
                                             <td>{order.orderId || 'N/A'}</td>
@@ -318,16 +349,26 @@ const Order = () => {
                                                 <button
                                                     className="btn btn-sm btn-success"
                                                     onClick={() => downloadInvoice(order.orderId)}
+                                                    style={{ marginRight: '5px' }}
                                                 >
                                                     Fatura İndir
                                                 </button>
+                                                {isDelivered && (
+                                                    <button
+                                                        className="btn btn-sm btn-warning"
+                                                        onClick={() => openReviewModal(order)}
+                                                        style={{ marginRight: '5px' }}
+                                                    >
+                                                        ⭐ Değerlendir
+                                                    </button>
+                                                )}
                                             </td>
                                         </tr>
                                     )
                                 })}
-                            </tbody>
-                        </table>
-                    </div>
+                        </tbody>
+                    </table>
+                </div>
                 )}
             </div>
         </>

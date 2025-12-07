@@ -6,6 +6,7 @@ import { useHistory } from "react-router-dom";
 import { auth, db } from '../firebaseConfig'
 import { generateInvoicePDF } from '../utils/invoiceGenerator'
 import Swal from 'sweetalert2'
+import ReviewModal from '../component/MyAccountDashboard/ReviewModal'
 
 const Profile = () => {
     const history = useHistory();
@@ -15,6 +16,7 @@ const Profile = () => {
     const [invoices, setInvoices] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
+    const [selectedOrderForReview, setSelectedOrderForReview] = useState(null)
 
     // Body scroll'u kontrol et ve düzelt
     useEffect(() => {
@@ -242,6 +244,28 @@ const Profile = () => {
         })
     }, [invoices, formatDate, formatPrice, getStatusText, getStatusClass, downloadInvoice])
 
+    // Review modal'ı aç
+    const openReviewModal = useCallback((order) => {
+        setSelectedOrderForReview(order)
+        document.body.style.overflow = 'hidden'
+    }, [])
+
+    // Review modal'ı kapat
+    const closeReviewModal = useCallback(() => {
+        setSelectedOrderForReview(null)
+        document.body.style.overflow = 'auto'
+    }, [])
+
+    // Review başarılı olduğunda
+    const handleReviewSuccess = useCallback(() => {
+        closeReviewModal()
+        // Order'ları yeniden yükle
+        const currentUser = auth.currentUser
+        if (currentUser) {
+            loadOrders(currentUser)
+        }
+    }, [closeReviewModal, loadOrders])
+
     // If user is not authenticated, don't render anything
     if (!status) {
         return null;
@@ -249,6 +273,13 @@ const Profile = () => {
 
     return (
         <>
+            {selectedOrderForReview && (
+                <ReviewModal
+                    order={selectedOrderForReview}
+                    onClose={closeReviewModal}
+                    onSuccess={handleReviewSuccess}
+                />
+            )}
             <Header />
             <section className="ptb-100" style={{ paddingTop: '120px' }}>
                 <div className="container">
@@ -312,6 +343,7 @@ const Profile = () => {
                                                         {orders.map((order, index) => {
                                                             const itemCount = order.items ? order.items.length : 0
                                                             const orderStatus = order.status || 'processing'
+                                                            const isDelivered = orderStatus === 'delivered' || orderStatus === 'Teslim Edildi'
                                                             return (
                                                                 <tr key={order.orderId || index}>
                                                                     <td>{order.orderId || 'N/A'}</td>
@@ -329,9 +361,19 @@ const Profile = () => {
                                                                         <button
                                                                             className="btn btn-sm btn-success"
                                                                             onClick={() => downloadInvoice(order.orderId)}
+                                                                            style={{ marginRight: '5px' }}
                                                                         >
                                                                             Fatura İndir
                                                                         </button>
+                                                                        {isDelivered && (
+                                                                            <button
+                                                                                className="btn btn-sm btn-warning"
+                                                                                onClick={() => openReviewModal(order)}
+                                                                                style={{ marginRight: '5px' }}
+                                                                            >
+                                                                                ⭐ Değerlendir
+                                                                            </button>
+                                                                        )}
                                                                     </td>
                                                                 </tr>
                                                             )

@@ -98,14 +98,18 @@ const Checkout = () => {
                 if (userDoc.exists) {
                     const userData = userDoc.data();
                     
-                    // Cart items'ı yükle
+                    // Cart items'ı yükle - SADECE Firebase'den al (birleştirme yapma)
+                    // Login olduğunda zaten Redux ve Firebase cart'ları birleştirilmiş ve Firebase'e kaydedilmiş
                     if (userData.cart && Array.isArray(userData.cart) && userData.cart.length > 0) {
+                        // Firebase'deki cart'ı direkt kullan (birleştirme yapma)
                         setCartItems(userData.cart);
+                        console.log('✅ Checkout: Firebase cart yüklendi:', userData.cart.length, 'ürün');
                     } else {
-                        // Eğer Firebase'de cart boşsa, Redux store'dan al
+                        // Firebase'de cart yoksa, Redux'tan al ama birleştirme yapma
                         const reduxCarts = store.getState()?.products?.carts || [];
                         if (reduxCarts.length > 0) {
                             setCartItems(reduxCarts);
+                            console.log('✅ Checkout: Redux cart yüklendi:', reduxCarts.length, 'ürün');
                         } else {
                             Swal.fire({
                                 icon: 'warning',

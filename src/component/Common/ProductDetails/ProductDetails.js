@@ -18,6 +18,8 @@ const ProductDetailsOne = () => {
     const [loading, setLoading] = useState(true);
     const [showAllComments, setShowAllComments] = useState(false);
     const [approvedComments, setApprovedComments] = useState([]);
+    const [realRating, setRealRating] = useState(null); // Firebase'den gelen gerçek rating
+    const [realRatingCount, setRealRatingCount] = useState(0); // Firebase'den gelen gerçek rating sayısı
     
     useEffect(() => {
         const fetchProduct = async () => {
@@ -85,10 +87,21 @@ const ProductDetailsOne = () => {
                     });
                     
                     setApprovedComments(commentsWithRatings);
+                    
+                    // Gerçek rating bilgilerini Firebase'den al
+                    const firebaseRating = firebaseData.rating; // Ortalama rating
+                    const firebaseRatingCount = firebaseData.ratingCount || ratings.length; // Rating sayısı
+                    
+                    setRealRating(firebaseRating);
+                    setRealRatingCount(firebaseRatingCount);
+                    
                     console.log(`✅ ${commentsWithRatings.length} onaylanmış yorum yüklendi`);
+                    console.log(`⭐ Gerçek rating: ${firebaseRating} (${firebaseRatingCount} değerlendirme)`);
                 } else {
                     console.warn(`⚠️ Product document bulunamadı: ${productIdStr}`);
                     setApprovedComments([]);
+                    setRealRating(null);
+                    setRealRatingCount(0);
                 }
             } catch (firebaseError) {
                 console.error('❌ Firebase comment yükleme hatası:', firebaseError);
@@ -380,8 +393,14 @@ const ProductDetailsOne = () => {
                                         </div>
                                     )}
                                 <div className="reviews_rating">
-                                    <RatingStar maxScore={5} rating={product.rating} id="rating-star-common" />
-                                    <span>({product.reviewCount} Müşteri Değerlendirmesi)</span>
+                                    <RatingStar 
+                                        maxScore={5} 
+                                        rating={realRating !== null ? realRating : (product.rating || 0)} 
+                                        id="rating-star-common" 
+                                    />
+                                    <span>
+                                        ({realRatingCount > 0 ? realRatingCount : (product.reviewCount || 0)} Müşteri Değerlendirmesi)
+                                    </span>
                                 </div>
                                 
                                 {/* WhatsApp İlgi Sayısı - Sadece 3 ve üzeri olduğunda göster */}

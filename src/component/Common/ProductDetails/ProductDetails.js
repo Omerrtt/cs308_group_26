@@ -37,15 +37,62 @@ const ProductDetailsOne = () => {
             
             // Firebase'den onaylanmış commentleri çek
             try {
-                const productRef = db.collection('products').doc(productData.id?.toString() || id.toString());
-                const productDoc = await productRef.get();
+                // Product ID'yi bul - farklı formatları dene
+                const productIdStr = (productData.id || productData.originalId || id).toString();
+                let productRef = db.collection('products').doc(productIdStr);
+                let productDoc = await productRef.get();
+                
+                // Eğer document bulunamazsa, farklı formatları dene
+                if (!productDoc.exists) {
+                    // Başına 0 ekle (örneğin 9142465 -> 09142465)
+                    if (!productIdStr.startsWith('0') && productIdStr.length < 9) {
+                        const paddedId = '0' + productIdStr;
+                        productRef = db.collection('products').doc(paddedId);
+                        productDoc = await productRef.get();
+                    }
+                    
+                    // Hala bulunamazsa, başındaki 0'ı kaldır (örneğin 09142465 -> 9142465)
+                    if (!productDoc.exists && productIdStr.startsWith('0')) {
+                        const unpaddedId = productIdStr.replace(/^0+/, '');
+                        productRef = db.collection('products').doc(unpaddedId);
+                        productDoc = await productRef.get();
+                    }
+                }
+                
                 if (productDoc.exists) {
                     const firebaseData = productDoc.data();
                     const comments = firebaseData.approvedComments || [];
-                    setApprovedComments(comments);
+                    
+                    // Her comment için rating'i bul (products collection'daki ratings array'inden)
+                    const ratings = firebaseData.ratings || [];
+                    const commentsWithRatings = comments.map(comment => {
+                        // Bu comment için rating'i bul (userId ve orderId ile eşleşen)
+                        const userRating = ratings.find(r => 
+                            r.userId === comment.userId && 
+                            r.orderId === comment.orderId
+                        );
+                        return {
+                            ...comment,
+                            rating: userRating ? userRating.rating : null
+                        };
+                    });
+                    
+                    // Tarihe göre sırala (en yeni önce)
+                    commentsWithRatings.sort((a, b) => {
+                        const dateA = new Date(a.createdAt || a.approvedAt || 0).getTime();
+                        const dateB = new Date(b.createdAt || b.approvedAt || 0).getTime();
+                        return dateB - dateA;
+                    });
+                    
+                    setApprovedComments(commentsWithRatings);
+                    console.log(`✅ ${commentsWithRatings.length} onaylanmış yorum yüklendi`);
+                } else {
+                    console.warn(`⚠️ Product document bulunamadı: ${productIdStr}`);
+                    setApprovedComments([]);
                 }
             } catch (firebaseError) {
                 console.error('❌ Firebase comment yükleme hatası:', firebaseError);
+                setApprovedComments([]);
             }
                 } else {
                     console.warn(`⚠️ ProductDetails: ID ${id} ile ürün bulunamadı`);
@@ -471,10 +518,7 @@ const ProductDetailsOne = () => {
                                             </h5>
                                             <div className="comments-list">
                                                 {/* Firebase'den gelen onaylanmış yorumlar */}
-                                                {approvedComments.length > 0 && approvedComments.map((comment, index) => {
-                                                    const displayComments = showAllComments ? approvedComments : approvedComments.slice(0, 3);
-                                                    if (!showAllComments && index >= 3) return null;
-                                                    
+                                                {(showAllComments ? approvedComments : approvedComments.slice(0, 3)).map((comment, index) => {
                                                     return (
                                                         <div key={comment.id || index} className="comment-item mb-3 p-3" style={{
                                                             border: '1px solid #e0e0e0',
@@ -496,19 +540,40 @@ const ProductDetailsOne = () => {
                                                                     }}>
                                                                         {(comment.userName || 'M').charAt(0).toUpperCase()}
                                                                     </div>
-                                                                    <div>
-                                                                        <strong className="comment-author">{comment.userName || 'Müşteri'}</strong>
-                                                                        <div className="comment-date" style={{fontSize: '0.75rem', color: '#999', marginTop: '2px'}}>
-                                                                            {comment.createdAt ? new Date(comment.createdAt).toLocaleDateString('tr-TR', {
+                                                                    <div style={{ flex: 1 }}>
+                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                                                                            <strong className="comment-author" style={{ fontSize: '16px' }}>
+                                                                                {comment.userName || 'Müşteri'}
+                                                                            </strong>
+                                                                            {comment.rating && (
+                                                                                <div className="comment-rating" style={{
+                                                                                    fontSize: '14px',
+                                                                                    color: '#ff8a00',
+                                                                                    display: 'flex',
+                                                                                    alignItems: 'center',
+                                                                                    gap: '2px'
+                                                                                }}>
+                                                                                    {'★'.repeat(comment.rating)}
+                                                                                    {'☆'.repeat(5 - comment.rating)}
+                                                                                    <span style={{ marginLeft: '5px', fontSize: '12px', color: '#666' }}>
+                                                                                        ({comment.rating}/5)
+                                                                                    </span>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="comment-date" style={{fontSize: '0.75rem', color: '#999'}}>
+                                                                            {comment.createdAt || comment.approvedAt ? new Date(comment.createdAt || comment.approvedAt).toLocaleDateString('tr-TR', {
                                                                                 year: 'numeric',
                                                                                 month: 'long',
-                                                                                day: 'numeric'
+                                                                                day: 'numeric',
+                                                                                hour: '2-digit',
+                                                                                minute: '2-digit'
                                                                             }) : ''}
                                                                         </div>
                                                                     </div>
                                                                 </div>
                                                             </div>
-                                                            <div className="comment-text" style={{color: '#555', lineHeight: '1.6'}}>
+                                                            <div className="comment-text" style={{color: '#555', lineHeight: '1.6', marginTop: '8px'}}>
                                                                 {comment.comment}
                                                             </div>
                                                         </div>

@@ -59,11 +59,26 @@ const ProductCard = (props) => {
                                     </div>
                     <div className="rating">
                         <div className="stars">
-                            {[...Array(5)].map((_, i) => (
-                                <i key={i} className={`fa fa-star ${i < Math.floor(props.data.rating) ? 'text-warning' : 'text-muted'}`}></i>
-                            ))}
+                            {[...Array(5)].map((_, i) => {
+                                // Firebase'den gelen gerçek rating'i öncelikli kullan, yoksa eski rating'i kullan
+                                // rating bir sayı olabilir veya { rate: number, count: number } objesi olabilir
+                                let realRating = 0;
+                                if (typeof props.data.rating === 'number') {
+                                    realRating = props.data.rating;
+                                } else if (props.data.rating && typeof props.data.rating === 'object' && props.data.rating.rate) {
+                                    realRating = props.data.rating.rate;
+                                } else if (props.data.rating !== undefined) {
+                                    realRating = props.data.rating;
+                                }
+                                
+                                return (
+                                    <i key={i} className={`fa fa-star ${i < Math.floor(realRating) ? 'text-warning' : 'text-muted'}`}></i>
+                                );
+                            })}
                         </div>
-                        <small className="text-muted">({props.data.reviewCount})</small>
+                        <small className="text-muted">
+                            ({props.data.ratingCount !== undefined ? props.data.ratingCount : (props.data.reviewCount || 0)})
+                        </small>
                     </div>
                     <span className="price">
                         <span className="new">₺{props.data.price.toLocaleString()}</span>

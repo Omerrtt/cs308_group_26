@@ -16,6 +16,8 @@ const AdminPanel = () => {
     const [isAdmin, setIsAdmin] = useState(false);
     const [allOrders, setAllOrders] = useState([]);
     const [users, setUsers] = useState({});
+    const [pendingComments, setPendingComments] = useState([]);
+    const [activeTab, setActiveTab] = useState('orders'); // 'orders' veya 'comments'
 
     useEffect(() => {
         // Admin kontrolü - Firebase auth state'i bekleyelim
@@ -55,6 +57,7 @@ const AdminPanel = () => {
             console.log('✅ Admin doğrulandı');
             setIsAdmin(true);
             await loadAllOrders();
+            await loadPendingComments();
             setLoading(false);
         });
 
@@ -277,6 +280,156 @@ const AdminPanel = () => {
         }).format(price || 0);
     };
 
+    // Bekleyen comment'leri yükle
+    const loadPendingComments = async () => {
+        try {
+            console.log('💬 Bekleyen yorumlar yükleniyor...');
+            const usersSnapshot = await db.collection('users').get();
+            const allPendingComments = [];
+
+            usersSnapshot.forEach((userDoc) => {
+                const userData = userDoc.data();
+                const notApprovedComments = userData.notApprovedComments || [];
+                
+                notApprovedComments.forEach((comment) => {
+                    allPendingComments.push({
+                        ...comment,
+                        userId: userDoc.id,
+                        userName: userData.name || 'İsimsiz',
+                        userEmail: userData.email || 'Email yok'
+                    });
+                });
+            });
+
+            // Tarihe göre sırala (en yeni önce)
+            allPendingComments.sort((a, b) => {
+                const dateA = new Date(a.createdAt).getTime();
+                const dateB = new Date(b.createdAt).getTime();
+                return dateB - dateA;
+            });
+
+            setPendingComments(allPendingComments);
+            console.log(`✅ ${allPendingComments.length} bekleyen yorum yüklendi`);
+        } catch (error) {
+            console.error('❌ Bekleyen yorumlar yüklenirken hata:', error);
+        }
+    };
+
+    // Comment'i onayla
+    const approveComment = async (comment, userId) => {
+        try {
+            Swal.fire({
+                title: 'Yorum Onaylanıyor...',
+                text: 'Lütfen bekleyin.',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            const batch = db.batch();
+            
+            // 1. Product'a comment ekle
+            const productRef = db.collection('products').doc(comment.productId);
+            const productDoc = await productRef.get();
+            const productData = productDoc.data() || {};
+            
+            const approvedComments = productData.approvedComments || [];
+            const newApprovedComment = {
+                id: comment.id,
+                userId: comment.userId,
+                userName: comment.userName,
+                productId: comment.productId,
+                orderId: comment.orderId,
+                comment: comment.comment,
+                createdAt: comment.createdAt,
+                approvedAt: new Date().toISOString()
+            };
+            
+            approvedComments.push(newApprovedComment);
+            batch.update(productRef, {
+                approvedComments: approvedComments,
+                updatedAt: new Date().toISOString()
+            });
+
+            // 2. User'dan notApprovedComments'ten kaldır
+            const userRef = db.collection('users').doc(userId);
+            const userDoc = await userRef.get();
+            const userData = userDoc.data() || {};
+            const notApprovedComments = userData.notApprovedComments || [];
+            const filteredComments = notApprovedComments.filter(c => c.id !== comment.id);
+            
+            batch.update(userRef, {
+                notApprovedComments: filteredComments
+            });
+
+            await batch.commit();
+
+            // Local state'i güncelle
+            setPendingComments(prev => prev.filter(c => c.id !== comment.id));
+
+            Swal.fire({
+                title: 'Başarılı',
+                text: 'Yorum onaylandı ve ürün sayfasında yayınlandı.',
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        } catch (error) {
+            console.error('❌ Yorum onaylama hatası:', error);
+            Swal.fire({
+                title: 'Hata',
+                text: 'Yorum onaylanırken bir hata oluştu.',
+                icon: 'error'
+            });
+        }
+    };
+
+    // Comment'i reddet
+    const rejectComment = async (comment, userId) => {
+        try {
+            const result = await Swal.fire({
+                title: 'Yorumu Reddet',
+                text: 'Bu yorumu silmek istediğinize emin misiniz?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Evet, Sil',
+                cancelButtonText: 'İptal'
+            });
+
+            if (!result.isConfirmed) return;
+
+            // User'dan notApprovedComments'ten kaldır
+            const userRef = db.collection('users').doc(userId);
+            const userDoc = await userRef.get();
+            const userData = userDoc.data() || {};
+            const notApprovedComments = userData.notApprovedComments || [];
+            const filteredComments = notApprovedComments.filter(c => c.id !== comment.id);
+            
+            await userRef.update({
+                notApprovedComments: filteredComments
+            });
+
+            // Local state'i güncelle
+            setPendingComments(prev => prev.filter(c => c.id !== comment.id));
+
+            Swal.fire({
+                title: 'Başarılı',
+                text: 'Yorum silindi.',
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        } catch (error) {
+            console.error('❌ Yorum silme hatası:', error);
+            Swal.fire({
+                title: 'Hata',
+                text: 'Yorum silinirken bir hata oluştu.',
+                icon: 'error'
+            });
+        }
+    };
+
     if (loading) {
         return (
             <>
@@ -313,13 +466,55 @@ const AdminPanel = () => {
                                     style={{
                                         padding: '12px 30px',
                                         fontSize: '16px',
-                                        fontWeight: 'bold'
+                                        fontWeight: 'bold',
+                                        marginRight: '10px'
                                     }}
                                 >
                                     📦 Ürün Yükle
                                 </button>
                             </div>
 
+                            {/* Tab Navigation */}
+                            <div className="mb-4">
+                                <ul className="nav nav-tabs" style={{ borderBottom: '2px solid #dee2e6' }}>
+                                    <li className="nav-item">
+                                        <button
+                                            className={`nav-link ${activeTab === 'orders' ? 'active' : ''}`}
+                                            onClick={() => setActiveTab('orders')}
+                                            style={{
+                                                border: 'none',
+                                                background: 'none',
+                                                padding: '10px 20px',
+                                                cursor: 'pointer',
+                                                borderBottom: activeTab === 'orders' ? '2px solid #007bff' : 'none',
+                                                color: activeTab === 'orders' ? '#007bff' : '#666'
+                                            }}
+                                        >
+                                            📦 Siparişler ({allOrders.length})
+                                        </button>
+                                    </li>
+                                    <li className="nav-item">
+                                        <button
+                                            className={`nav-link ${activeTab === 'comments' ? 'active' : ''}`}
+                                            onClick={() => setActiveTab('comments')}
+                                            style={{
+                                                border: 'none',
+                                                background: 'none',
+                                                padding: '10px 20px',
+                                                cursor: 'pointer',
+                                                borderBottom: activeTab === 'comments' ? '2px solid #007bff' : 'none',
+                                                color: activeTab === 'comments' ? '#007bff' : '#666'
+                                            }}
+                                        >
+                                            💬 Bekleyen Yorumlar ({pendingComments.length})
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            {/* Orders Tab Content */}
+                            {activeTab === 'orders' && (
+                                <>
                             {/* İstatistikler */}
                             <div className="row mb-4">
                                 <div className="col-md-3">
@@ -482,6 +677,72 @@ const AdminPanel = () => {
                                     </tbody>
                                 </table>
                             </div>
+                                </>
+                            )}
+
+                            {/* Comments Tab Content */}
+                            {activeTab === 'comments' && (
+                                <div>
+                                    <div className="table-responsive">
+                                        <table className="table table-striped table-bordered">
+                                            <thead className="thead-dark">
+                                                <tr>
+                                                    <th>Ürün ID</th>
+                                                    <th>Müşteri</th>
+                                                    <th>Email</th>
+                                                    <th>Sipariş ID</th>
+                                                    <th>Yorum</th>
+                                                    <th>Tarih</th>
+                                                    <th>İşlemler</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {pendingComments.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan="7" className="text-center">
+                                                            <p className="mb-0">Bekleyen yorum bulunmuyor.</p>
+                                                        </td>
+                                                    </tr>
+                                                ) : (
+                                                    pendingComments.map((comment, index) => (
+                                                        <tr key={comment.id || index}>
+                                                            <td>
+                                                                <strong>{comment.productId || 'N/A'}</strong>
+                                                            </td>
+                                                            <td>{comment.userName || 'İsimsiz'}</td>
+                                                            <td>{comment.userEmail || 'Email yok'}</td>
+                                                            <td>
+                                                                <small>{comment.orderId || 'N/A'}</small>
+                                                            </td>
+                                                            <td>
+                                                                <div style={{ maxWidth: '300px', wordWrap: 'break-word' }}>
+                                                                    {comment.comment}
+                                                                </div>
+                                                            </td>
+                                                            <td>{formatDate(comment.createdAt)}</td>
+                                                            <td>
+                                                                <button
+                                                                    className="btn btn-sm btn-success"
+                                                                    onClick={() => approveComment(comment, comment.userId)}
+                                                                    style={{ marginRight: '5px' }}
+                                                                >
+                                                                    ✓ Onayla
+                                                                </button>
+                                                                <button
+                                                                    className="btn btn-sm btn-danger"
+                                                                    onClick={() => rejectComment(comment, comment.userId)}
+                                                                >
+                                                                    ✗ Reddet
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

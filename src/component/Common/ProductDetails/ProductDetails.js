@@ -6,6 +6,7 @@ import { RatingStar } from "rating-star";
 import Swal from 'sweetalert2';
 import { getProductById } from '../../../app/data/productsData';
 import { incrementWhatsAppClick, getProductWhatsAppClicks } from '../../../utils/whatsappTracker';
+import { db } from '../../../firebaseConfig';
 
 const ProductDetailsOne = () => {
     let dispatch = useDispatch();
@@ -16,6 +17,7 @@ const ProductDetailsOne = () => {
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
     const [showAllComments, setShowAllComments] = useState(false);
+    const [approvedComments, setApprovedComments] = useState([]);
     
     useEffect(() => {
         const fetchProduct = async () => {
@@ -32,6 +34,19 @@ const ProductDetailsOne = () => {
             setProduct(updatedProduct);
             // Redux store'u da güncelle
             dispatch({ type: "products/getProductById", payload: { id } });
+            
+            // Firebase'den onaylanmış commentleri çek
+            try {
+                const productRef = db.collection('products').doc(productData.id?.toString() || id.toString());
+                const productDoc = await productRef.get();
+                if (productDoc.exists) {
+                    const firebaseData = productDoc.data();
+                    const comments = firebaseData.approvedComments || [];
+                    setApprovedComments(comments);
+                }
+            } catch (firebaseError) {
+                console.error('❌ Firebase comment yükleme hatası:', firebaseError);
+            }
                 } else {
                     console.warn(`⚠️ ProductDetails: ID ${id} ile ürün bulunamadı`);
                     setProduct(null);
@@ -448,14 +463,60 @@ const ProductDetailsOne = () => {
                                     </div>
                                     
                                     {/* Müşteri Yorumları */}
-                                    {product.all_comments && product.all_comments.length > 0 && (
+                                    {(approvedComments.length > 0 || (product.all_comments && product.all_comments.length > 0)) && (
                                         <div className="product-comments-section mt-4">
                                             <h5 className="comments-title mb-3">
                                                 <i className="fa fa-comments" style={{marginRight: '8px', color: '#ff8a00'}}></i>
-                                                Müşteri Yorumları ({product.commentCount || product.all_comments.length})
+                                                Müşteri Yorumları ({approvedComments.length > 0 ? approvedComments.length : (product.commentCount || product.all_comments.length)})
                                             </h5>
                                             <div className="comments-list">
-                                                {(showAllComments ? product.all_comments : product.all_comments.slice(0, 3)).map((comment, localIndex) => {
+                                                {/* Firebase'den gelen onaylanmış yorumlar */}
+                                                {approvedComments.length > 0 && approvedComments.map((comment, index) => {
+                                                    const displayComments = showAllComments ? approvedComments : approvedComments.slice(0, 3);
+                                                    if (!showAllComments && index >= 3) return null;
+                                                    
+                                                    return (
+                                                        <div key={comment.id || index} className="comment-item mb-3 p-3" style={{
+                                                            border: '1px solid #e0e0e0',
+                                                            borderRadius: '8px',
+                                                            backgroundColor: '#f9f9f9'
+                                                        }}>
+                                                            <div className="comment-header mb-2">
+                                                                <div className="d-flex align-items-center">
+                                                                    <div className="user-avatar me-2" style={{
+                                                                        width: '40px',
+                                                                        height: '40px',
+                                                                        borderRadius: '50%',
+                                                                        backgroundColor: '#ff8a00',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center',
+                                                                        color: '#fff',
+                                                                        fontWeight: 'bold'
+                                                                    }}>
+                                                                        {(comment.userName || 'M').charAt(0).toUpperCase()}
+                                                                    </div>
+                                                                    <div>
+                                                                        <strong className="comment-author">{comment.userName || 'Müşteri'}</strong>
+                                                                        <div className="comment-date" style={{fontSize: '0.75rem', color: '#999', marginTop: '2px'}}>
+                                                                            {comment.createdAt ? new Date(comment.createdAt).toLocaleDateString('tr-TR', {
+                                                                                year: 'numeric',
+                                                                                month: 'long',
+                                                                                day: 'numeric'
+                                                                            }) : ''}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="comment-text" style={{color: '#555', lineHeight: '1.6'}}>
+                                                                {comment.comment}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                                
+                                                {/* Eski random yorumlar (fallback) - sadece approvedComments yoksa göster */}
+                                                {approvedComments.length === 0 && product.all_comments && product.all_comments.length > 0 && (showAllComments ? product.all_comments : product.all_comments.slice(0, 3)).map((comment, localIndex) => {
                                                     const actualIndex = showAllComments ? localIndex : localIndex;
                                                     return (
                                                         <div key={actualIndex} className="comment-item mb-3 p-3" style={{
@@ -493,7 +554,39 @@ const ProductDetailsOne = () => {
                                                     );
                                                 })}
                                             </div>
-                                            {!showAllComments && product.all_comments.length > 3 && (
+                                            {approvedComments.length > 3 && !showAllComments && (
+                                                <div className="text-center mt-3">
+                                                    <button
+                                                        className="btn btn-outline-primary"
+                                                        onClick={() => setShowAllComments(true)}
+                                                        style={{
+                                                            padding: '8px 20px',
+                                                            borderRadius: '20px',
+                                                            borderColor: '#ff8a00',
+                                                            color: '#ff8a00'
+                                                        }}
+                                                    >
+                                                        Tüm Yorumları Gör ({approvedComments.length})
+                                                    </button>
+                                                </div>
+                                            )}
+                                            {showAllComments && approvedComments.length > 3 && (
+                                                <div className="text-center mt-3">
+                                                    <button
+                                                        className="btn btn-outline-primary"
+                                                        onClick={() => setShowAllComments(false)}
+                                                        style={{
+                                                            padding: '8px 20px',
+                                                            borderRadius: '20px',
+                                                            borderColor: '#ff8a00',
+                                                            color: '#ff8a00'
+                                                        }}
+                                                    >
+                                                        Daha Az Göster
+                                                    </button>
+                                                </div>
+                                            )}
+                                            {approvedComments.length === 0 && !showAllComments && product.all_comments && product.all_comments.length > 3 && (
                                                 <div className="text-center mt-3">
                                                     <button
                                                         className="btn btn-outline-primary"

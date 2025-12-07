@@ -59,6 +59,11 @@ const ReviewModal = ({ order, onClose, onSuccess }) => {
             // Tüm review'ları işle
             const batch = db.batch()
             const userRef = db.collection('users').doc(currentUser.uid)
+            
+            // Önce user document'ini bir kez al (tüm comment'ler için)
+            const userDoc = await userRef.get()
+            const userData = userDoc.data() || {}
+            let notApprovedComments = [...(userData.notApprovedComments || [])] // Kopyasını al
 
             for (const [productId, review] of Object.entries(reviews)) {
                 if (review.rating > 0) {
@@ -125,16 +130,12 @@ const ReviewModal = ({ order, onClose, onSuccess }) => {
                         updatedAt: new Date().toISOString()
                     })
 
-                    // Comment varsa users collection'ına ekle (onay bekliyor)
+                    // Comment varsa notApprovedComments array'ine ekle (döngü sonunda tek seferde kaydedilecek)
                     if (review.comment && review.comment.trim()) {
-                        const userDoc = await userRef.get()
-                        const userData = userDoc.data() || {}
-                        const notApprovedComments = userData.notApprovedComments || []
-                        
                         const newComment = {
-                            id: `comment_${Date.now()}_${productId}`,
+                            id: `comment_${Date.now()}_${productId}_${Math.random().toString(36).substr(2, 9)}`,
                             userId: currentUser.uid,
-                            productId: productId.toString(),
+                            productId: productIdStr,
                             orderId: order.orderId,
                             comment: review.comment.trim(),
                             createdAt: new Date().toISOString(),
@@ -142,11 +143,17 @@ const ReviewModal = ({ order, onClose, onSuccess }) => {
                         }
                         
                         notApprovedComments.push(newComment)
-                        batch.update(userRef, {
-                            notApprovedComments: notApprovedComments
-                        })
+                        console.log(`💬 Comment eklendi (memory): ${newComment.id} - ${productIdStr}`)
                     }
                 }
+            }
+            
+            // Tüm comment'leri tek seferde kaydet (eğer yeni comment varsa)
+            if (notApprovedComments.length > (userData.notApprovedComments || []).length) {
+                batch.update(userRef, {
+                    notApprovedComments: notApprovedComments
+                })
+                console.log(`✅ ${notApprovedComments.length - (userData.notApprovedComments || []).length} yeni comment kaydedilecek`)
             }
 
             // Batch commit

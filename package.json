@@ -62,5 +62,13 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "jest": {
+    "testMatch": [
+      "**/src/unittest/**/*.test.js"
+    ]
+  },
+  "devDependencies": {
+    "@babel/core": "^7.28.5"
   }
 }

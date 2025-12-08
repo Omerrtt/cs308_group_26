@@ -17,7 +17,7 @@ const CategoryPage = () => {
     const [categoryName, setCategoryName] = useState('')
     const [subcategories, setSubcategories] = useState([])
     const [selectedSubcategory, setSelectedSubcategory] = useState(null)
-    const [sortBy, setSortBy] = useState('popularity')
+    const [sortBy, setSortBy] = useState('')
     const [filterBy, setFilterBy] = useState('most-popular')
     const [itemsPerPage] = useState(50)
     const [currentPage, setCurrentPage] = useState(1)
@@ -84,7 +84,8 @@ const CategoryPage = () => {
     // Sıralama değiştiğinde
     const handleSortChange = (sortType) => {
         setSortBy(sortType)
-        const sorted = sortProducts(products, sortType)
+        // Sadece kullanıcı bir sıralama seçtiyse sırala
+        const sorted = sortType ? sortProducts(products, sortType) : products
         setFilteredProducts(sorted)
         setCurrentPage(1)
         setDisplayedProducts(sorted.slice(0, itemsPerPage))
@@ -341,6 +342,7 @@ const CategoryPage = () => {
                                         value={sortBy}
                                         onChange={(e) => handleSortChange(e.target.value)}
                                     >
+                                        <option value="">Choose</option>
                                         <option value="popularity">Sort By Popularity</option>
                                         <option value="newness">Sort By Newness</option>
                                         <option value="price-low">Price: Low to High</option>

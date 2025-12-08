@@ -25,7 +25,7 @@ const ProductCard = (props) => {
                     </Link>
                     <span className="badges">
                         <span className="new">Yeni</span>
-                        {props.data.inStock ? <span className="sale">Stokta</span> : <span className="hot">Tükendi</span>}
+                        {props.data.stock > 0 && <span className="sale">Stokta</span>}
                     </span>
                     <div className="product-actions">
                         <a 

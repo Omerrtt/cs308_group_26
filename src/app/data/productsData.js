@@ -14,7 +14,7 @@ try {
 }
 
 // Ürün adından benzersiz 6 haneli kod oluştur
-const generateProductCode = (productName) => {
+export const generateProductCode = (productName) => {
     const cleanName = productName.toLowerCase()
         .replace(/[^a-z0-9\s]/g, '')
         .replace(/\s+/g, '');

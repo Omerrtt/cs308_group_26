@@ -36,3 +36,4 @@ const settingsSlice = createSlice({
 
 const settingsReducer = settingsSlice.reducer
 export default settingsReducer
+export const { stopPromo, promoStatus, promoCenter, stopCookie, cookie } = settingsSlice.actions

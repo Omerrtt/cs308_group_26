@@ -70,7 +70,7 @@ const Footer = () => {
                                             </a>
                                         </li>
                                         <li>
-                                            <a href="mailto:mufasabozyel@gmail.com" title="E-posta Gönder">
+                                            <a href="mailto:info@malikanelectronics.com" title="E-posta Gönder">
                                                 <i className="fa fa-envelope" style={{color: '#dc3545'}}></i>
                                             </a>
                                         </li>
@@ -122,7 +122,7 @@ const Footer = () => {
                                 <h3>İLETİŞİM</h3>
                                 <div className="contact-info">
                                     <p><i className="fa fa-phone"></i> <a href="tel:+905393973949">+90 539 397 39 49</a></p>
-                                    <p><i className="fa fa-envelope"></i> <a href="mailto:mufasabozyel@gmail.com">mufasabozyel@gmail.com</a></p>
+                                    <p><i className="fa fa-envelope"></i> <a href="mailto:info@malikanelectronics.com">info@malikanelectronics.com</a></p>
                                     <p><i className="fa fa-map-marker"></i> Gültepe, Girne Sokak No1-3d, Küçükçekmece İstanbul</p>
                                     <div className="whatsapp-contact" style={{marginTop: '15px'}}>
                                         <a 

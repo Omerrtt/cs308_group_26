@@ -10,7 +10,7 @@ const Shop = () => {
     const [allProducts, setAllProducts] = useState([])
     const [filteredProducts, setFilteredProducts] = useState([])
     const [loading, setLoading] = useState(true)
-    const [sortBy, setSortBy] = useState('popularity')
+    const [sortBy, setSortBy] = useState('')
     const [filterBy, setFilterBy] = useState('most-popular')
     const [searchQuery, setSearchQuery] = useState('')
     const [currentPage, setCurrentPage] = useState(1)
@@ -76,12 +76,12 @@ const Shop = () => {
                     console.warn('⚠️ Shop: Ürünler boş! Lütfen console\'daki hata mesajlarını kontrol edin.');
                 }
                 
-                // İlk yüklemede default olarak popularity'ye göre sırala
-                const sortedProducts = sortProducts(products || [], 'popularity')
-                setAllProducts(sortedProducts)
-                setFilteredProducts(sortedProducts)
+                // İlk yüklemede sıralama yapma
+                const productsArray = products || []
+                setAllProducts(productsArray)
+                setFilteredProducts(productsArray)
                 
-                if (sortedProducts.length === 0) {
+                if (productsArray.length === 0) {
                     console.error('❌ Shop: Hiç ürün yüklenemedi!');
                 }
             } catch (error) {
@@ -110,7 +110,10 @@ const Shop = () => {
         }
 
         nextProducts = filterProducts(nextProducts, filterBy)
-        nextProducts = sortProducts(nextProducts, sortBy)
+        // Sadece kullanıcı bir sıralama seçtiyse sırala
+        if (sortBy) {
+            nextProducts = sortProducts(nextProducts, sortBy)
+        }
 
         setFilteredProducts(nextProducts)
         setCurrentPage(1)
@@ -225,6 +228,7 @@ const Shop = () => {
                                         value={sortBy}
                                         onChange={(e) => handleSortChange(e.target.value)}
                                     >
+                                        <option value="">Choose</option>
                                         <option value="popularity">Sort By Popularity</option>
                                         <option value="newness">Sort By Newness</option>
                                         <option value="price-low">Price: Low to High</option>

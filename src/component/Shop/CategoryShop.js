@@ -55,8 +55,7 @@ const CategoryShop = () => {
         setTimeout(() => {
             if (searchParam) {
                 const searchResults = filterProductsBySearch(allProducts, searchParam)
-                // Default olarak popularity'ye göre sırala
-                const sortedResults = sortByPopularity(searchResults)
+                // Varsayılan sıralama yapma
                 const searchTitle = `"${searchParam}" Arama Sonuçları`
                 setCategory({
                     name: searchTitle,
@@ -68,10 +67,10 @@ const CategoryShop = () => {
                     { name: 'Ana Sayfa', slug: '/' },
                     { name: 'Arama', slug: 'search' }
                 ])
-                setProducts(sortedResults)
-                setFilteredProducts(sortedResults)
+                setProducts(searchResults)
+                setFilteredProducts(searchResults)
                 setCurrentPage(1)
-                setDisplayedProducts(sortedResults.slice(0, itemsPerPage))
+                setDisplayedProducts(searchResults.slice(0, itemsPerPage))
             } else if (categoryParam) {
                 // Kategori ağacından kategoriyi bul
                 const categoryTree = getCategoryTree()
@@ -114,12 +113,11 @@ const CategoryShop = () => {
                                 const productCategory = product.category || ''
                                 return subcat.fullPaths.includes(productCategory)
                             })
-                            // Default olarak popularity'ye göre sırala
-                            const sorted = sortByPopularity(filtered)
-                            setProducts(sorted)
-                            setFilteredProducts(sorted)
+                            // Varsayılan sıralama yapma
+                            setProducts(filtered)
+                            setFilteredProducts(filtered)
                             setCurrentPage(1)
-                            setDisplayedProducts(sorted.slice(0, itemsPerPage))
+                            setDisplayedProducts(filtered.slice(0, itemsPerPage))
                         } else {
                             filterProductsByCategory(categoryParam)
                         }
@@ -133,12 +131,11 @@ const CategoryShop = () => {
                     setFilteredProducts([])
                 }
             } else {
-                // Tüm ürünleri göster - default olarak popularity'ye göre sırala
-                const sortedProducts = sortByPopularity(allProducts)
-                setProducts(sortedProducts)
-                setFilteredProducts(sortedProducts)
+                // Tüm ürünleri göster - varsayılan sıralama yapma
+                setProducts(allProducts)
+                setFilteredProducts(allProducts)
                 setCurrentPage(1)
-                setDisplayedProducts(sortedProducts.slice(0, itemsPerPage))
+                setDisplayedProducts(allProducts.slice(0, itemsPerPage))
                 setCategory({ name: "Tüm Ürünler", slug: "all" })
                 setSubcategories([])
             }
@@ -155,12 +152,11 @@ const CategoryShop = () => {
     const filterProductsByCategory = (categorySlug) => {
         // Gerçek ürün verilerini kullan
         const filteredProducts = getProductsByCategory(categorySlug)
-        // Default olarak popularity'ye göre sırala
-        const sorted = sortByPopularity(filteredProducts)
-        setProducts(sorted)
-        setFilteredProducts(sorted)
+        // Varsayılan sıralama yapma
+        setProducts(filteredProducts)
+        setFilteredProducts(filteredProducts)
         setCurrentPage(1)
-        setDisplayedProducts(sorted.slice(0, itemsPerPage))
+        setDisplayedProducts(filteredProducts.slice(0, itemsPerPage))
     }
     
     const filterProductsBySubcategory = (fullPaths) => {
@@ -168,11 +164,10 @@ const CategoryShop = () => {
             const productCategory = product.category || ''
             return fullPaths.includes(productCategory)
         })
-        // Default olarak popularity'ye göre sırala
-        const sorted = sortByPopularity(filtered)
-        setFilteredProducts(sorted)
+        // Varsayılan sıralama yapma
+        setFilteredProducts(filtered)
         setCurrentPage(1)
-        setDisplayedProducts(sorted.slice(0, itemsPerPage))
+        setDisplayedProducts(filtered.slice(0, itemsPerPage))
     }
     
     const handleSubcategoryClick = (subcategory) => {

@@ -221,7 +221,7 @@ const ProductDetailsOne = () => {
         if (count > 1) {
             setCount(count - 1)
         } else {
-            Swal.fire('Sorry!', "Minimun Quantity Reached",'warning')
+            Swal.fire('Üzgünüz!', "Minimum Adete Ulaşıldı",'warning')
             setCount(1)
         }
     }

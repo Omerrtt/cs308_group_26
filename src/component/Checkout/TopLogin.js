@@ -73,7 +73,7 @@ const TopLogin = () => {
                     </h3>
                     <div id="checkout_coupon" className="collapse checkout_coupon" data-parent="#checkout_coupon">
                         <div className="checkout_info">
-                            <form onSubmit={(e) => { e.preventDefault(); Swal.fire('Error!!', 'Invalid Cuppon Code', 'error') }}>
+                            <form onSubmit={(e) => { e.preventDefault(); Swal.fire('Hata!!', 'Geçersiz Kupon Kodu', 'error') }}>
                                 <input className="mb-2" placeholder="Coupon code" type="text" required />
                                 <button type="submit" className="theme-btn-one btn-black-overlay btn_sm">Apply coupon</button>
                             </form>

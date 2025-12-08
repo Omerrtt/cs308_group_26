@@ -13,7 +13,7 @@ const AddProduct = () => {
                         <div className="col-lg-12">
                             <div className="add_product_wrapper">
                                 <h4>Add Product</h4>
-                                <form className="add_product_form" onSubmit={(e)=> {e.preventDefault();Swal.fire('Success','Product Successfully Added', 'success'); history.push('/shop')}}>
+                                <form className="add_product_form" onSubmit={(e)=> {e.preventDefault();Swal.fire('Başarılı','Ürün Başarıyla Eklendi', 'success'); history.push('/shop')}}>
                                     <div className="row">
                                         <div className="col-lg-12">
                                             <div className="image-input">

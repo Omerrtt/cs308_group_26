@@ -616,9 +616,9 @@ const Header = () => {
                 <div className="mobile-contact-info">
                     <address className="address">
                         <img src={logoWhite} alt="logo" />
-                        <span>Address: Your address goes here.</span>
-                        <span>Call Us: 0123456789, 0123456789</span>
-                        <span>Email: demo@example.com</span>
+                        <span>Adres: Gültepe, Girne Sokak No1-3d, Küçükçekmece İstanbul</span>
+                        <span>Bizi Arayın: +90 539 397 39 49</span>
+                        <span>E-posta: mufasabozyel@gmail.com</span>
                     </address>
                     <ul className="social-link">
                         <li>
@@ -635,9 +635,9 @@ const Header = () => {
                         </li>
                     </ul>
                     <ul className="user-link">
-                        <li><Link to="/wishlist">Wishlist</Link></li>
-                        <li><Link to="/cart">Cart</Link></li>
-                        <li><Link to="/checkout-one">Checkout</Link></li>
+                        <li><Link to="/wishlist">Favoriler</Link></li>
+                        <li><Link to="/cart">Sepet</Link></li>
+                        <li><Link to="/checkout-one">Ödeme</Link></li>
                     </ul>
                 </div>
             </div>
@@ -649,7 +649,7 @@ const Header = () => {
                     </button>
                 </div>
                 <div className="offcanvas-add-cart-wrapper">
-                    <h4 className="offcanvas-title">Shopping Cart</h4>
+                    <h4 className="offcanvas-title">Alışveriş Sepeti</h4>
                     <ul className="offcanvas-cart">
                         {carts.map((data, index) => (
                             <li className="offcanvas-wishlist-item-single" key={index}>
@@ -674,7 +674,7 @@ const Header = () => {
                         ))}
                     </ul>
                     <div className="offcanvas-cart-total-price">
-                        <span className="offcanvas-cart-total-price-text">Subtotal:</span>
+                        <span className="offcanvas-cart-total-price-text">Ara Toplam:</span>
                         <span className="offcanvas-cart-total-price-value">${cartTotal()}.00</span>
                     </div>
                     <ul className="offcanvas-cart-action-button">
@@ -695,7 +695,7 @@ const Header = () => {
                     </button>
                 </div>
                 <div className="offcanvas-wishlist-wrapper">
-                    <h4 className="offcanvas-title">Wishlist</h4>
+                    <h4 className="offcanvas-title">Favoriler</h4>
 
                     <ul className="offcanvas-wishlist">
                         {favorites.map((data, index) => (
@@ -722,7 +722,7 @@ const Header = () => {
                     </ul>
                     <ul className="offcanvas-wishlist-action-button">
                         <li>
-                            <Link to="/wishlist" className="theme-btn-one btn-black-overlay btn_md">View wishlist</Link>
+                            <Link to="/wishlist" className="theme-btn-one btn-black-overlay btn_md">Favorileri Gör</Link>
                         </li>
                     </ul>
                 </div>
@@ -730,9 +730,9 @@ const Header = () => {
 
             <div id="search" className="search-modal">
                 <button type="button" className="close" onClick={handleSearch}><img src={svg} alt="icon" /></button>
-                <form onSubmit={(e) => { e.preventDefault(); handleSearch(); Swal.fire('Success', 'Check out the Results', 'success'); history.push('/shop') }}>
-                    <input type="search" placeholder="type keyword(s) here" required />
-                    <button type="submit" className="btn btn-lg btn-main-search">Search</button>
+                <form onSubmit={(e) => { e.preventDefault(); handleSearch(); Swal.fire('Başarılı', 'Sonuçları kontrol edin', 'success'); history.push('/shop') }}>
+                    <input type="search" placeholder="Anahtar kelime(leri) buraya yazın" required />
+                    <button type="submit" className="btn btn-lg btn-main-search">Ara</button>
                 </form>
             </div>
         </>

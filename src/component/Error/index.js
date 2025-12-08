@@ -11,7 +11,7 @@ const ErrorArea = () => {
                             <div className="erorr_wrapper">
                                 <h1>404</h1>
                                 <h3>We are sorry, the page you've requested is not available</h3>
-                                <form onSubmit={(e)=> {e.preventDefault(); Swal.fire('Search Error', 'No Results Found', 'warning')}}>
+                                <form onSubmit={(e)=> {e.preventDefault(); Swal.fire('Arama Hatası', 'Sonuç Bulunamadı', 'warning')}}>
                                     <div className="input-group">
                                         <input type="text" className="form-control" required/>
                                         <button><i className="fa fa-search"></i></button>

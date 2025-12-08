@@ -29,8 +29,8 @@ const TopHeader = () => {
             
         Swal.fire({
             icon: 'success',
-            title: 'Logout Sucessfull',
-            text: 'Thank You'
+            title: 'Çıkış Başarılı',
+            text: 'Teşekkürler'
         })
             
         history.push("/login");
@@ -129,7 +129,7 @@ const TopHeader = () => {
                                                             <i className="fa fa-user"></i> Profilim
                                                         </Link>
                                                     </li>
-                                                    <li><Link to="#!" onClick={() => { logout() }} ><i className="fa fa-sign-out"></i> Logout</Link></li>
+                                                    <li><Link to="#!" onClick={() => { logout() }} ><i className="fa fa-sign-out"></i> Çıkış Yap</Link></li>
                                                 </ul>
                                             </li>
                                         </ul>

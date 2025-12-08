@@ -111,8 +111,8 @@ const productsSlice = createSlice({
             const product = state.products.find(item => item.id === numericId)
             if (!product) {
                 Swal.fire({
-                    title: 'Failed!',
-                    text: 'Product could not be found.',
+                    title: 'Başarısız!',
+                    text: 'Ürün bulunamadı.',
                     icon: 'error',
                     showConfirmButton: false,
                     timer: 3000
@@ -180,8 +180,8 @@ const productsSlice = createSlice({
 
             }else{
                 Swal.fire({
-                    title: 'Failed!',
-                    text: 'This product is already added in your Cart',
+                    title: 'Başarısız!',
+                    text: 'Bu ürün zaten sepetinizde',
                     imageUrl: item.img,
                     imageWidth: 200,
                     imageAlt: item.title,
@@ -194,8 +194,8 @@ const productsSlice = createSlice({
         addToComp: (state, action) =>{
             if (state.compare.length >= 3) {
                 Swal.fire({
-                    title: 'Failed!',
-                    text: 'Compare List is Full',
+                    title: 'Başarısız!',
+                    text: 'Karşılaştırma listesi dolu',
                     icon: 'warning',
                     showConfirmButton: false,
                     timer: 2500,
@@ -212,16 +212,16 @@ const productsSlice = createSlice({
                 let arr = state.products.find(item => item.id === parseInt(id))
                 state.compare.push(arr)
                 Swal.fire({
-                    title: 'Success!',
-                    text: 'Successfully added to Compare List',
+                    title: 'Başarılı!',
+                    text: 'Karşılaştırma listesine eklendi',
                     icon: 'success',
                     showConfirmButton: false,
                     timer: 2500,
                   })
             }else{
                     Swal.fire({
-                        title: 'Failed!',
-                        text: 'Already Added in Compare List',
+                        title: 'Başarısız!',
+                        text: 'Zaten karşılaştırma listesinde',
                         imageUrl: item.img,
                         imageWidth: 200,
                         imageAlt: item.title,
@@ -292,9 +292,9 @@ const productsSlice = createSlice({
                 let arr = state.products.find(item => item.id === parseInt(id))
                 arr.quantity = 1
                 state.favorites.push(arr)
-                Swal.fire('Success', "Added to Wishlist", 'success')
+                Swal.fire('Başarılı', "Favorilere eklendi", 'success')
             }else{
-                  Swal.fire('Failed', "Already Added in Wishlist", 'warning')
+                  Swal.fire('Başarısız', "Zaten favorilerde", 'warning')
               }
         },
         // Remove from Favorite / Wishlist

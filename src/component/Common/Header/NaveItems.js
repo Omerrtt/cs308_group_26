@@ -24,6 +24,7 @@ const NaveItems = (props) => {
                 <Link 
                     to={props.item.href || "#!"}
                     onClick={(e) => props.item.href && handleLinkClick(e, props.item.href)}
+                    style={props.item.name === "İLETİŞİM" ? { padding: '25px 15px' } : {}}
                 >
                     {props.item.name}
                 </Link>

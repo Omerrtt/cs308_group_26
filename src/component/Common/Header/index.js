@@ -224,6 +224,7 @@ const Header = () => {
                                                 to="/cart" 
                                                 className="cart-link" 
                                                 title="Sepetim"
+                                                style={{ padding: '15px' }}
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                 }}
@@ -239,13 +240,14 @@ const Header = () => {
                                                 <a 
                                                     href="#!" 
                                                     className="user-profile-link"
+                                                    style={{ color: 'black', fontWeight: 'bold' }}
                                                     onClick={(e) => {
                                                         e.preventDefault();
                                                         handleShow('user-menu');
                                                     }}
                                                 >
-                                                    <i className="fa fa-user-circle"></i>
-                                                    <span>{userData.name || 'Kullanıcı'}</span>
+                                                    <i className="fa fa-user-circle" style={{ color: 'black' }}></i>
+                                                    <span style={{ color: 'black', fontWeight: 'bold' }}>{userData.name || 'Kullanıcı'}</span>
                                                 </a>
                                                 {show === 'user-menu' && (
                                                     <div className="user-dropdown-menu">

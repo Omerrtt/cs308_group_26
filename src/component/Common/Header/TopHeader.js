@@ -1,48 +1,10 @@
 import React, { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
-import avater from '../../../assets/img/common/avater.png'
-import { useSelector } from "react-redux";
 import { useHistory } from "react-router-dom"
 import Swal from 'sweetalert2';
-import { auth } from '../../../firebaseConfig';
 
 const TopHeader = () => {
     const history = useHistory()
-    const location = useLocation()
     const [searchTerm, setSearchTerm] = useState('');
-    
-    // Aynı sayfaya tıklandığında sayfayı yenile
-    const handleLinkClick = (e, targetPath) => {
-        if (location.pathname === targetPath) {
-            e.preventDefault();
-            window.location.reload();
-        }
-    }
-
-    let status = useSelector((state) => state.user.status);
-    let user = useSelector((state) => state.user.user);
-
-    const logout = async () => {
-        try {
-            // Firebase auth state listener zaten logout ve clearCart yapacak
-            await auth.signOut()
-            
-        Swal.fire({
-            icon: 'success',
-            title: 'Çıkış Başarılı',
-            text: 'Teşekkürler'
-        })
-            
-        history.push("/login");
-        } catch (error) {
-            console.error('Logout error:', error)
-            Swal.fire({
-                icon: 'error',
-                title: 'Hata',
-                text: 'Çıkış yapılırken bir hata oluştu'
-            })
-        }
-    }
 
     const handleSearchSubmit = (e) => {
         e.preventDefault();
@@ -63,7 +25,7 @@ const TopHeader = () => {
             <section id="top_header">
                 <div className="container">
                     <div className="row">
-                        <div className="col-lg-8 col-md-8 col-sm-12 col-12">
+                        <div className="col-12">
                             <div className="top_header_left">
                                 <form 
                                     className="top-search-form" 
@@ -101,39 +63,6 @@ const TopHeader = () => {
                                         Ara
                                     </button>
                                 </form>
-                            </div>
-                        </div>
-                        <div className="col-lg-4 col-md-4 col-sm-12 col-12">
-                            <div className="top_header_right">
-                                {
-                                    !status ?
-                                        <ul className="right_list_fix">
-                                            <li>
-                                                <Link 
-                                                    to="/login"
-                                                    onClick={(e) => handleLinkClick(e, '/login')}
-                                                >
-                                                    <i className="fa fa-user"></i> Giriş Yap
-                                                </Link>
-                                            </li>
-                                        </ul>
-                                        :
-                                        <ul className="right_list_fix">
-                                            <li className="after_login"><img src={avater} alt="avater" /> {user.name || 'Jhon Doe'} <i className="fa fa-angle-down"></i>
-                                                <ul className="custom_dropdown">
-                                                    <li>
-                                                        <Link 
-                                                            to="/profile"
-                                                            onClick={(e) => handleLinkClick(e, '/profile')}
-                                                        >
-                                                            <i className="fa fa-user"></i> Profilim
-                                                        </Link>
-                                                    </li>
-                                                    <li><Link to="#!" onClick={() => { logout() }} ><i className="fa fa-sign-out"></i> Çıkış Yap</Link></li>
-                                                </ul>
-                                            </li>
-                                        </ul>
-                                }
                             </div>
                         </div>
                     </div>

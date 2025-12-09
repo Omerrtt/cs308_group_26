@@ -33,7 +33,7 @@ const Home = () => {
             {isAdmin && (
                 <div style={{
                     position: 'fixed',
-                    top: '100px',
+                    top: '60px',
                     right: '20px',
                     zIndex: 9999,
                     backgroundColor: '#007bff',

@@ -22,104 +22,120 @@ const ProductDetailsOne = () => {
     const [realRatingCount, setRealRatingCount] = useState(0); // Firebase'den gelen gerçek rating sayısı
     
     useEffect(() => {
-        const fetchProduct = async () => {
+        let unsubscribe = null;
+
+        const fetchProductAndSetupListener = async () => {
             setLoading(true);
             try {
-                const productData = await getProductById(id); // await eklendi
-        if (productData) {
-            // WhatsApp tıklama sayısını local storage'dan al
-            const whatsappClicks = getProductWhatsAppClicks(productData.id);
-            const updatedProduct = {
-                ...productData,
-                whatsappClicks: whatsappClicks
-            };
-            setProduct(updatedProduct);
-            // Redux store'u da güncelle
-            dispatch({ type: "products/getProductById", payload: { id } });
-            
-            // Firebase'den onaylanmış commentleri çek
-            try {
+                // İlk olarak static veriyi al (varsa) veya temel bilgileri kur
+                let productData = await getProductById(id);
+                
                 // Product ID'yi bul - farklı formatları dene
-                const productIdStr = (productData.id || productData.originalId || id).toString();
+                const productIdStr = (id || (productData && (productData.id || productData.originalId))).toString();
+                
+                // Firestore referansını bul
                 let productRef = db.collection('products').doc(productIdStr);
                 let productDoc = await productRef.get();
                 
                 // Eğer document bulunamazsa, farklı formatları dene
                 if (!productDoc.exists) {
-                    // Başına 0 ekle (örneğin 9142465 -> 09142465)
                     if (!productIdStr.startsWith('0') && productIdStr.length < 9) {
                         const paddedId = '0' + productIdStr;
                         productRef = db.collection('products').doc(paddedId);
                         productDoc = await productRef.get();
                     }
                     
-                    // Hala bulunamazsa, başındaki 0'ı kaldır (örneğin 09142465 -> 9142465)
                     if (!productDoc.exists && productIdStr.startsWith('0')) {
                         const unpaddedId = productIdStr.replace(/^0+/, '');
                         productRef = db.collection('products').doc(unpaddedId);
                         productDoc = await productRef.get();
                     }
                 }
-                
-                if (productDoc.exists) {
-                    const firebaseData = productDoc.data();
-                    const comments = firebaseData.approvedComments || [];
-                    
-                    // Her comment için rating'i bul (products collection'daki ratings array'inden)
-                    const ratings = firebaseData.ratings || [];
-                    const commentsWithRatings = comments.map(comment => {
-                        // Bu comment için rating'i bul (userId ve orderId ile eşleşen)
-                        const userRating = ratings.find(r => 
-                            r.userId === comment.userId && 
-                            r.orderId === comment.orderId
-                        );
-                        return {
-                            ...comment,
-                            rating: userRating ? userRating.rating : null
-                        };
+
+                // Listener kur
+                if (productRef) {
+                    unsubscribe = productRef.onSnapshot((doc) => {
+                        if (doc.exists) {
+                            const firebaseData = doc.data();
+                            
+                            // Eğer productData null ise (örneğin JSON'da yoksa), Firebase verisiyle oluştur
+                            if (!productData) {
+                                productData = { ...firebaseData, id: doc.id };
+                            }
+
+                            // Stok bilgisini Firebase'den güncelle
+                            const updatedProduct = {
+                                ...productData,
+                                ...firebaseData, // Firebase'deki tüm güncel verileri al (stok dahil)
+                                id: productData.id // ID'yi koru
+                            };
+
+                            // WhatsApp tıklama sayısını local storage'dan al
+                            const whatsappClicks = getProductWhatsAppClicks(updatedProduct.id);
+                            updatedProduct.whatsappClicks = whatsappClicks;
+
+                            // Commentleri işle
+                            const comments = firebaseData.approvedComments || [];
+                            const ratings = firebaseData.ratings || [];
+                            
+                            const commentsWithRatings = comments.map(comment => {
+                                const userRating = ratings.find(r => 
+                                    r.userId === comment.userId && 
+                                    r.orderId === comment.orderId
+                                );
+                                return {
+                                    ...comment,
+                                    rating: userRating ? userRating.rating : null
+                                };
+                            });
+                            
+                            commentsWithRatings.sort((a, b) => {
+                                const dateA = new Date(a.createdAt || a.approvedAt || 0).getTime();
+                                const dateB = new Date(b.createdAt || b.approvedAt || 0).getTime();
+                                return dateB - dateA;
+                            });
+                            
+                            setApprovedComments(commentsWithRatings);
+                            setRealRating(firebaseData.rating);
+                            setRealRatingCount(firebaseData.ratingCount || ratings.length);
+                            setProduct(updatedProduct);
+                            
+                            // Redux store'u da güncelle (opsiyonel, eğer redux kullanılıyorsa)
+                            // dispatch({ type: "products/updateProductStock", payload: { id: updatedProduct.id, stock: updatedProduct.stock } });
+                        }
+                    }, (error) => {
+                        console.error("Firebase listen error:", error);
                     });
-                    
-                    // Tarihe göre sırala (en yeni önce)
-                    commentsWithRatings.sort((a, b) => {
-                        const dateA = new Date(a.createdAt || a.approvedAt || 0).getTime();
-                        const dateB = new Date(b.createdAt || b.approvedAt || 0).getTime();
-                        return dateB - dateA;
-                    });
-                    
-                    setApprovedComments(commentsWithRatings);
-                    
-                    // Gerçek rating bilgilerini Firebase'den al
-                    const firebaseRating = firebaseData.rating; // Ortalama rating
-                    const firebaseRatingCount = firebaseData.ratingCount || ratings.length; // Rating sayısı
-                    
-                    setRealRating(firebaseRating);
-                    setRealRatingCount(firebaseRatingCount);
-                    
-                    console.log(`✅ ${commentsWithRatings.length} onaylanmış yorum yüklendi`);
-                    console.log(`⭐ Gerçek rating: ${firebaseRating} (${firebaseRatingCount} değerlendirme)`);
-                } else {
-                    console.warn(`⚠️ Product document bulunamadı: ${productIdStr}`);
-                    setApprovedComments([]);
-                    setRealRating(null);
-                    setRealRatingCount(0);
                 }
-            } catch (firebaseError) {
-                console.error('❌ Firebase comment yükleme hatası:', firebaseError);
-                setApprovedComments([]);
-            }
-                } else {
-                    console.warn(`⚠️ ProductDetails: ID ${id} ile ürün bulunamadı`);
-                    setProduct(null);
-        }
+
+                if (productData) {
+                     // WhatsApp tıklama sayısını local storage'dan al (ilk render için)
+                    const whatsappClicks = getProductWhatsAppClicks(productData.id);
+                    setProduct({
+                        ...productData,
+                        whatsappClicks: whatsappClicks
+                    });
+                } else if (!productDoc.exists) {
+                     console.warn(`⚠️ ProductDetails: ID ${id} ile ürün bulunamadı`);
+                     setProduct(null);
+                }
+
             } catch (error) {
                 console.error('❌ ProductDetails: Ürün yüklenirken hata:', error);
                 setProduct(null);
             } finally {
-        setLoading(false);
+                setLoading(false);
             }
         };
         
-        fetchProduct();
+        fetchProductAndSetupListener();
+
+        // Cleanup listener
+        return () => {
+            if (unsubscribe) {
+                unsubscribe();
+            }
+        };
     }, [id, dispatch]);
     
     // Product yüklendiğinde ana görseli ata - image attribute'unu öncelikli kullan

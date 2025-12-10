@@ -1,7 +1,7 @@
 import React from 'react'
 import logo from '../../../assets/img/malikane-electronics-logo-removebg-preview.png'
 import payment from '../../../assets/img/common/payment.png'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import Swal from 'sweetalert2'
 
 const FooterData = [
@@ -24,6 +24,15 @@ const FooterData = [
 ]
 
 const Footer = () => {
+    const location = useLocation();
+    
+    // Aynı sayfaya tıklandığında sayfayı yenile
+    const handleLinkClick = (e, targetPath) => {
+        if (location.pathname === targetPath) {
+            e.preventDefault();
+            window.location.reload();
+        }
+    }
 
     return (
         <>
@@ -32,7 +41,12 @@ const Footer = () => {
                     <div className="row">
                         <div className="col-lg-4 col-md-12 col-sm-12 col-12">
                             <div className="footer_left_side">
-                                <Link to="/" ><img src={logo} alt="Malikane Electronics Logo" style={{maxHeight: '80px'}} /></Link>
+                                <Link 
+                                    to="/"
+                                    onClick={(e) => handleLinkClick(e, '/')}
+                                >
+                                    <img src={logo} alt="Malikane Electronics Logo" style={{maxHeight: '80px'}} />
+                                </Link>
                                 <p>
                                     <strong>Malikane Electronics</strong> - Teknoloji Sarayı olarak, en kaliteli elektronik ürünleri 
                                     uygun fiyatlarla müşterilerimize sunuyoruz. Stokta bulunan veya bulunmayan tüm ürünlerimiz 
@@ -56,7 +70,7 @@ const Footer = () => {
                                             </a>
                                         </li>
                                         <li>
-                                            <a href="mailto:mufasabozyel@gmail.com" title="E-posta Gönder">
+                                            <a href="mailto:info@malikanelectronics.com" title="E-posta Gönder">
                                                 <i className="fa fa-envelope" style={{color: '#dc3545'}}></i>
                                             </a>
                                         </li>
@@ -70,7 +84,14 @@ const Footer = () => {
                                     <h3>{data.title}</h3>
                                     <ul>
                                         {data.links.map((link, index) => (
-                                            <li key={index}><Link to={link.link}>{link.linkTitle}</Link></li>
+                                            <li key={index}>
+                                                <Link 
+                                                    to={link.link}
+                                                    onClick={(e) => handleLinkClick(e, link.link)}
+                                                >
+                                                    {link.linkTitle}
+                                                </Link>
+                                            </li>
                                         ))}
                                     </ul>
                                 </div>
@@ -83,7 +104,14 @@ const Footer = () => {
                                     <h3>{data.title}</h3>
                                     <ul>
                                         {data.links.map((link, index) => (
-                                            <li key={index}><Link to={link.link}>{link.linkTitle}</Link></li>
+                                            <li key={index}>
+                                                <Link 
+                                                    to={link.link}
+                                                    onClick={(e) => handleLinkClick(e, link.link)}
+                                                >
+                                                    {link.linkTitle}
+                                                </Link>
+                                            </li>
                                         ))}
                                     </ul>
                                 </div>
@@ -94,7 +122,7 @@ const Footer = () => {
                                 <h3>İLETİŞİM</h3>
                                 <div className="contact-info">
                                     <p><i className="fa fa-phone"></i> <a href="tel:+905393973949">+90 539 397 39 49</a></p>
-                                    <p><i className="fa fa-envelope"></i> <a href="mailto:mufasabozyel@gmail.com">mufasabozyel@gmail.com</a></p>
+                                    <p><i className="fa fa-envelope"></i> <a href="mailto:info@malikanelectronics.com">info@malikanelectronics.com</a></p>
                                     <p><i className="fa fa-map-marker"></i> Gültepe, Girne Sokak No1-3d, Küçükçekmece İstanbul</p>
                                     <div className="whatsapp-contact" style={{marginTop: '15px'}}>
                                         <a 

@@ -11,13 +11,15 @@ const TrendingProducts = () => {
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
+        const fetchProducts = async () => {
         try {
+                setLoading(true)
             // En çok yorumlanan 100 ürünü al
-            const allProducts = getProductsData()
-            console.log('Toplam ürün sayısı:', allProducts.length)
-            console.log('İlk ürün:', allProducts[0])
+                const allProducts = await getProductsData() // await eklendi
+                console.log('Toplam ürün sayısı:', allProducts?.length || 0)
+                console.log('İlk ürün:', allProducts?.[0])
             
-            if (!allProducts || allProducts.length === 0) {
+                if (!allProducts || !Array.isArray(allProducts) || allProducts.length === 0) {
                 console.log('Ürün bulunamadı!')
                 setLoading(false)
                 return
@@ -38,11 +40,14 @@ const TrendingProducts = () => {
             // İlk 12 ürünü göster
             const initialProducts = shuffled.slice(0, Math.min(12, shuffled.length))
             setTrendingProducts(initialProducts)
-            setLoading(false)
         } catch (error) {
             console.error('TrendingProducts hatası:', error)
+            } finally {
             setLoading(false)
+            }
         }
+        
+        fetchProducts()
     }, [])
 
     const loadMoreProducts = () => {

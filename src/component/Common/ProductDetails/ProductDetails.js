@@ -1,35 +1,141 @@
 import React, { useState, useEffect, useRef } from 'react'
 import RelatedProduct from './RelatedProduct'
-import { Link } from 'react-router-dom'
+import { Link, useHistory, useParams } from 'react-router-dom'
 import { useSelector, useDispatch } from "react-redux";
-import { useParams } from 'react-router-dom';
 import { RatingStar } from "rating-star";
 import Swal from 'sweetalert2';
 import { getProductById } from '../../../app/data/productsData';
 import { incrementWhatsAppClick, getProductWhatsAppClicks } from '../../../utils/whatsappTracker';
+import { db } from '../../../firebaseConfig';
 
 const ProductDetailsOne = () => {
     let dispatch = useDispatch();
     let { id } = useParams();
+    const history = useHistory();
     
     // Gerçek ürün verilerini al
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [showAllComments, setShowAllComments] = useState(false);
+    const [approvedComments, setApprovedComments] = useState([]);
+    const [realRating, setRealRating] = useState(null); // Firebase'den gelen gerçek rating
+    const [realRatingCount, setRealRatingCount] = useState(0); // Firebase'den gelen gerçek rating sayısı
     
     useEffect(() => {
-        const productData = getProductById(id);
-        if (productData) {
-            // WhatsApp tıklama sayısını local storage'dan al
-            const whatsappClicks = getProductWhatsAppClicks(productData.id);
-            const updatedProduct = {
-                ...productData,
-                whatsappClicks: whatsappClicks
-            };
-            setProduct(updatedProduct);
-            // Redux store'u da güncelle
-            dispatch({ type: "products/getProductById", payload: { id } });
-        }
-        setLoading(false);
+        let unsubscribe = null;
+
+        const fetchProductAndSetupListener = async () => {
+            setLoading(true);
+            try {
+                // İlk olarak static veriyi al (varsa) veya temel bilgileri kur
+                let productData = await getProductById(id);
+                
+                // Product ID'yi bul - farklı formatları dene
+                const productIdStr = (id || (productData && (productData.id || productData.originalId))).toString();
+                
+                // Firestore referansını bul
+                let productRef = db.collection('products').doc(productIdStr);
+                let productDoc = await productRef.get();
+                
+                // Eğer document bulunamazsa, farklı formatları dene
+                if (!productDoc.exists) {
+                    if (!productIdStr.startsWith('0') && productIdStr.length < 9) {
+                        const paddedId = '0' + productIdStr;
+                        productRef = db.collection('products').doc(paddedId);
+                        productDoc = await productRef.get();
+                    }
+                    
+                    if (!productDoc.exists && productIdStr.startsWith('0')) {
+                        const unpaddedId = productIdStr.replace(/^0+/, '');
+                        productRef = db.collection('products').doc(unpaddedId);
+                        productDoc = await productRef.get();
+                    }
+                }
+
+                // Listener kur
+                if (productRef) {
+                    unsubscribe = productRef.onSnapshot((doc) => {
+                        if (doc.exists) {
+                            const firebaseData = doc.data();
+                            
+                            // Eğer productData null ise (örneğin JSON'da yoksa), Firebase verisiyle oluştur
+                            if (!productData) {
+                                productData = { ...firebaseData, id: doc.id };
+                            }
+
+                            // Stok bilgisini Firebase'den güncelle
+                            const updatedProduct = {
+                                ...productData,
+                                ...firebaseData, // Firebase'deki tüm güncel verileri al (stok dahil)
+                                id: productData.id // ID'yi koru
+                            };
+
+                            // WhatsApp tıklama sayısını local storage'dan al
+                            const whatsappClicks = getProductWhatsAppClicks(updatedProduct.id);
+                            updatedProduct.whatsappClicks = whatsappClicks;
+
+                            // Commentleri işle
+                            const comments = firebaseData.approvedComments || [];
+                            const ratings = firebaseData.ratings || [];
+                            
+                            const commentsWithRatings = comments.map(comment => {
+                                const userRating = ratings.find(r => 
+                                    r.userId === comment.userId && 
+                                    r.orderId === comment.orderId
+                                );
+                                return {
+                                    ...comment,
+                                    rating: userRating ? userRating.rating : null
+                                };
+                            });
+                            
+                            commentsWithRatings.sort((a, b) => {
+                                const dateA = new Date(a.createdAt || a.approvedAt || 0).getTime();
+                                const dateB = new Date(b.createdAt || b.approvedAt || 0).getTime();
+                                return dateB - dateA;
+                            });
+                            
+                            setApprovedComments(commentsWithRatings);
+                            setRealRating(firebaseData.rating);
+                            setRealRatingCount(firebaseData.ratingCount || ratings.length);
+                            setProduct(updatedProduct);
+                            
+                            // Redux store'u da güncelle (opsiyonel, eğer redux kullanılıyorsa)
+                            // dispatch({ type: "products/updateProductStock", payload: { id: updatedProduct.id, stock: updatedProduct.stock } });
+                        }
+                    }, (error) => {
+                        console.error("Firebase listen error:", error);
+                    });
+                }
+
+                if (productData) {
+                     // WhatsApp tıklama sayısını local storage'dan al (ilk render için)
+                    const whatsappClicks = getProductWhatsAppClicks(productData.id);
+                    setProduct({
+                        ...productData,
+                        whatsappClicks: whatsappClicks
+                    });
+                } else if (!productDoc.exists) {
+                     console.warn(`⚠️ ProductDetails: ID ${id} ile ürün bulunamadı`);
+                     setProduct(null);
+                }
+
+            } catch (error) {
+                console.error('❌ ProductDetails: Ürün yüklenirken hata:', error);
+                setProduct(null);
+            } finally {
+                setLoading(false);
+            }
+        };
+        
+        fetchProductAndSetupListener();
+
+        // Cleanup listener
+        return () => {
+            if (unsubscribe) {
+                unsubscribe();
+            }
+        };
     }, [id, dispatch]);
     
     // Product yüklendiğinde ana görseli ata - image attribute'unu öncelikli kullan
@@ -46,11 +152,6 @@ const ProductDetailsOne = () => {
             setImg(null);
         }
     }, [product]);
-
-    // Add to cart
-    const addToCart = async (id) => {
-        dispatch({ type: "products/addToCart", payload: { id } })
-    }
 
     // Add to Favorite
     const addToFav = async (id) => {
@@ -125,15 +226,37 @@ const ProductDetailsOne = () => {
     }, [])
 
     const incNum = () => {
+        if (product?.stock && count >= product.stock) {
+            Swal.fire('Stok Sınırı', `Stokta sadece ${product.stock} adet var.`, 'warning')
+            setCount(product.stock)
+            return
+        }
         setCount(count + 1)
     }
     const decNum = () => {
         if (count > 1) {
             setCount(count - 1)
         } else {
-            Swal.fire('Sorry!', "Minimun Quantity Reached",'warning')
+            Swal.fire('Üzgünüz!', "Minimum Adete Ulaşıldı",'warning')
             setCount(1)
         }
+    }
+
+    const handleAddToCartClick = () => {
+        if (!product) return;
+
+        if (!product.stock || product.stock <= 0) {
+            Swal.fire('Stok Yok', 'Bu ürün stokta olmadığı için sepete eklenemez.', 'warning')
+            return
+        }
+
+        if (count > product.stock) {
+            Swal.fire('Stok Sınırı', `En fazla ${product.stock} adet seçebilirsiniz.`, 'info')
+            setCount(product.stock)
+            return
+        }
+
+        dispatch({ type: "products/addToCart", payload: { id: product.id, quantity: count } })
     }
     if (loading) {
         return (
@@ -168,6 +291,33 @@ const ProductDetailsOne = () => {
         ? product.description.split(/\n+/).map(paragraph => paragraph.trim()).filter(Boolean)
         : [];
 
+    // Tüm görselleri birleştir: image + images array'i
+    const getAllImages = () => {
+        const allImages = [];
+        
+        // Önce ana görseli ekle (image)
+        if (product?.image) {
+            allImages.push(product.image);
+        } else if (product?.img) {
+            allImages.push(product.img);
+        } else if (product?.mainImage) {
+            allImages.push(product.mainImage);
+        }
+        
+        // Sonra images array'indeki görselleri ekle (tekrar edenleri hariç tut)
+        if (product?.images && Array.isArray(product.images)) {
+            product.images.forEach(img => {
+                if (img && !allImages.includes(img)) {
+                    allImages.push(img);
+                }
+            });
+        }
+        
+        return allImages;
+    };
+
+    const allImages = getAllImages();
+
     return (
         <>
             <section id="product_single_one" className="ptb-100">
@@ -194,11 +344,11 @@ const ProductDetailsOne = () => {
                                 </div>
                                 
                                 {/* Thumbnail Galerisi */}
-                                {product.images && product.images.length > 0 && (
+                                {allImages.length > 0 && (
                                     <div className="product-gallery mt-4">
                                         <h6 className="gallery-title">Ürün Görselleri</h6>
                                         <div className="gallery-thumbnails">
-                                            {product.images.map((image, index) => (
+                                            {allImages.map((image, index) => (
                                                 <div 
                                                     key={index} 
                                                     className={`thumbnail-item ${img === image ? 'active' : ''} ${isHovering && hoveredImage === image ? 'hovering' : ''}`}
@@ -232,17 +382,41 @@ const ProductDetailsOne = () => {
                                     <div className="brand-info mb-2">
                                         <small className="text-muted">Marka: {product.brand}</small>
                                     </div>
-                                    <div className="product-code-info mb-2">
-                                        <small className="text-muted">Ürün Kodu: <strong>{product.productCode}</strong></small>
+                                    <div className="product-id-info mb-2">
+                                        <small className="text-muted">
+                                            Product ID: <strong>{product.originalId || product.id}</strong>
+                                        </small>
                                     </div>
                                     {product.ean && (
-                                        <div className="product-ean-info mb-3">
+                                        <div className="product-ean-info mb-2">
                                             <small className="text-muted">EAN: <strong>{product.ean}</strong></small>
                                         </div>
                                     )}
+                                    {product.warrantyStatus && (
+                                        <div className="product-warranty-info mb-2">
+                                            <small className="text-muted">
+                                                <i className="fa fa-shield-alt" style={{marginRight: '5px', color: '#28a745'}}></i>
+                                                Garanti: <strong>{product.warrantyStatus}</strong>
+                                            </small>
+                                        </div>
+                                    )}
+                                    {product.distributor && (
+                                        <div className="product-distributor-info mb-3">
+                                            <small className="text-muted">
+                                                <i className="fa fa-building" style={{marginRight: '5px', color: '#007bff'}}></i>
+                                                Distribütör: <strong>{product.distributor}</strong>
+                                            </small>
+                                        </div>
+                                    )}
                                 <div className="reviews_rating">
-                                    <RatingStar maxScore={5} rating={product.rating} id="rating-star-common" />
-                                    <span>({product.reviewCount} Müşteri Değerlendirmesi)</span>
+                                    <RatingStar 
+                                        maxScore={5} 
+                                        rating={realRating !== null ? realRating : (product.rating || 0)} 
+                                        id="rating-star-common" 
+                                    />
+                                    <span>
+                                        ({realRatingCount > 0 ? realRatingCount : (product.reviewCount || 0)} Müşteri Değerlendirmesi)
+                                    </span>
                                 </div>
                                 
                                 {/* WhatsApp İlgi Sayısı - Sadece 3 ve üzeri olduğunda göster */}
@@ -259,6 +433,14 @@ const ProductDetailsOne = () => {
                                     {product.originalPrice && product.originalPrice !== product.price && (
                                         <span className="original-price">Orijinal: ₺{product.originalPrice.toLocaleString()}</span>
                                     )}
+                                    <div className="stock-status mt-2">
+                                        <small 
+                                            className={`badge ${product.stock > 3 ? 'bg-success' : 'bg-warning text-dark'}`}
+                                            title="Stok durumu"
+                                        >
+                                            {product.stock ? `Stokta ${product.stock} adet var` : 'Stok bilgisi yakında'}
+                                        </small>
+                                    </div>
                                     <div className="price-info mt-2">
                                         <small className="text-muted">
                                             <i className="fa fa-info-circle" style={{marginRight: '5px'}}></i>
@@ -329,6 +511,21 @@ const ProductDetailsOne = () => {
                                             </div>
                                         </div>
                                     </form>
+                                    <div className="add-to-cart-section mt-3">
+                                        <button 
+                                            type="button" 
+                                            className="btn btn-primary theme-btn-one"
+                                            onClick={handleAddToCartClick}
+                                            disabled={!product.stock || product.stock <= 0}
+                                        >
+                                            Sepete Ekle
+                                        </button>
+                                        {(!product.stock || product.stock <= 0) && (
+                                            <small className="text-danger d-block mt-2">
+                                                Bu ürün şu anda stokta yok.
+                                            </small>
+                                        )}
+                                    </div>
                                     
                                     {/* Ürün Açıklaması - Color bilgisinin altında */}
                                     <div className="product-description-section mt-4">
@@ -346,6 +543,183 @@ const ProductDetailsOne = () => {
                                             )}
                                         </div>
                                     </div>
+                                    
+                                    {/* Müşteri Yorumları */}
+                                    {(approvedComments.length > 0 || (product.all_comments && product.all_comments.length > 0)) && (
+                                        <div className="product-comments-section mt-4">
+                                            <h5 className="comments-title mb-3">
+                                                <i className="fa fa-comments" style={{marginRight: '8px', color: '#ff8a00'}}></i>
+                                                Müşteri Yorumları ({approvedComments.length > 0 ? approvedComments.length : (product.commentCount || product.all_comments.length)})
+                                            </h5>
+                                            <div className="comments-list">
+                                                {/* Firebase'den gelen onaylanmış yorumlar */}
+                                                {(showAllComments ? approvedComments : approvedComments.slice(0, 3)).map((comment, index) => {
+                                                    return (
+                                                        <div key={comment.id || index} className="comment-item mb-3 p-3" style={{
+                                                            border: '1px solid #e0e0e0',
+                                                            borderRadius: '8px',
+                                                            backgroundColor: '#f9f9f9'
+                                                        }}>
+                                                            <div className="comment-header mb-2">
+                                                                <div className="d-flex align-items-center">
+                                                                    <div className="user-avatar me-2" style={{
+                                                                        width: '40px',
+                                                                        height: '40px',
+                                                                        borderRadius: '50%',
+                                                                        backgroundColor: '#ff8a00',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center',
+                                                                        color: '#fff',
+                                                                        fontWeight: 'bold'
+                                                                    }}>
+                                                                        {(comment.userName || 'M').charAt(0).toUpperCase()}
+                                                                    </div>
+                                                                    <div style={{ flex: 1 }}>
+                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                                                                            <strong className="comment-author" style={{ fontSize: '16px' }}>
+                                                                                {comment.userName || 'Müşteri'}
+                                                                            </strong>
+                                                                            {comment.rating && (
+                                                                                <div className="comment-rating" style={{
+                                                                                    fontSize: '14px',
+                                                                                    color: '#ff8a00',
+                                                                                    display: 'flex',
+                                                                                    alignItems: 'center',
+                                                                                    gap: '2px'
+                                                                                }}>
+                                                                                    {'★'.repeat(comment.rating)}
+                                                                                    {'☆'.repeat(5 - comment.rating)}
+                                                                                    <span style={{ marginLeft: '5px', fontSize: '12px', color: '#666' }}>
+                                                                                        ({comment.rating}/5)
+                                                                                    </span>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="comment-date" style={{fontSize: '0.75rem', color: '#999'}}>
+                                                                            {comment.createdAt || comment.approvedAt ? new Date(comment.createdAt || comment.approvedAt).toLocaleDateString('tr-TR', {
+                                                                                year: 'numeric',
+                                                                                month: 'long',
+                                                                                day: 'numeric',
+                                                                                hour: '2-digit',
+                                                                                minute: '2-digit'
+                                                                            }) : ''}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="comment-text" style={{color: '#555', lineHeight: '1.6', marginTop: '8px'}}>
+                                                                {comment.comment}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                                
+                                                {/* Eski random yorumlar (fallback) - sadece approvedComments yoksa göster */}
+                                                {approvedComments.length === 0 && product.all_comments && product.all_comments.length > 0 && (showAllComments ? product.all_comments : product.all_comments.slice(0, 3)).map((comment, localIndex) => {
+                                                    const actualIndex = showAllComments ? localIndex : localIndex;
+                                                    return (
+                                                        <div key={actualIndex} className="comment-item mb-3 p-3" style={{
+                                                            border: '1px solid #e0e0e0',
+                                                            borderRadius: '8px',
+                                                            backgroundColor: '#f9f9f9'
+                                                        }}>
+                                                            <div className="comment-header mb-2">
+                                                                <div className="d-flex align-items-center">
+                                                                    <div className="user-avatar me-2" style={{
+                                                                        width: '40px',
+                                                                        height: '40px',
+                                                                        borderRadius: '50%',
+                                                                        backgroundColor: '#ff8a00',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center',
+                                                                        color: '#fff',
+                                                                        fontWeight: 'bold'
+                                                                    }}>
+                                                                        {String.fromCharCode(65 + (actualIndex % 26))}
+                                                                    </div>
+                                                                    <div>
+                                                                        <strong className="comment-author">Müşteri {actualIndex + 1}</strong>
+                                                                        <div className="comment-rating" style={{fontSize: '0.85rem', color: '#ff8a00'}}>
+                                                                            {'⭐'.repeat(Math.min(5, Math.floor(product.rating || 4)))}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="comment-text" style={{color: '#555', lineHeight: '1.6'}}>
+                                                                {comment}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                            {approvedComments.length > 3 && !showAllComments && (
+                                                <div className="text-center mt-3">
+                                                    <button
+                                                        className="btn btn-outline-primary"
+                                                        onClick={() => setShowAllComments(true)}
+                                                        style={{
+                                                            padding: '8px 20px',
+                                                            borderRadius: '20px',
+                                                            borderColor: '#ff8a00',
+                                                            color: '#ff8a00'
+                                                        }}
+                                                    >
+                                                        Tüm Yorumları Gör ({approvedComments.length})
+                                                    </button>
+                                                </div>
+                                            )}
+                                            {showAllComments && approvedComments.length > 3 && (
+                                                <div className="text-center mt-3">
+                                                    <button
+                                                        className="btn btn-outline-primary"
+                                                        onClick={() => setShowAllComments(false)}
+                                                        style={{
+                                                            padding: '8px 20px',
+                                                            borderRadius: '20px',
+                                                            borderColor: '#ff8a00',
+                                                            color: '#ff8a00'
+                                                        }}
+                                                    >
+                                                        Daha Az Göster
+                                                    </button>
+                                                </div>
+                                            )}
+                                            {approvedComments.length === 0 && !showAllComments && product.all_comments && product.all_comments.length > 3 && (
+                                                <div className="text-center mt-3">
+                                                    <button
+                                                        className="btn btn-outline-primary"
+                                                        onClick={() => setShowAllComments(true)}
+                                                        style={{
+                                                            borderRadius: '20px',
+                                                            padding: '8px 24px',
+                                                            borderColor: '#ff8a00',
+                                                            color: '#ff8a00'
+                                                        }}
+                                                    >
+                                                        <i className="fa fa-chevron-down" style={{marginRight: '5px'}}></i>
+                                                        Tüm Yorumları Gör ({product.all_comments.length - 3} yorum daha)
+                                                    </button>
+                                                </div>
+                                            )}
+                                            {showAllComments && product.all_comments.length > 3 && (
+                                                <div className="text-center mt-3">
+                                                    <button
+                                                        className="btn btn-outline-secondary"
+                                                        onClick={() => setShowAllComments(false)}
+                                                        style={{
+                                                            borderRadius: '20px',
+                                                            padding: '8px 24px'
+                                                        }}
+                                                    >
+                                                        <i className="fa fa-chevron-up" style={{marginRight: '5px'}}></i>
+                                                        Daha Az Göster
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                     
                                     <div className="links_Product_areas">
                                         

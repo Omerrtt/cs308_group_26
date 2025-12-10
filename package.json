@@ -19,6 +19,7 @@
     "firebase": "^8.10.1",
     "font-awesome": "^4.7.0",
     "google-map-react": "^2.1.10",
+    "jspdf": "^2.5.2",
     "p-min-delay": "^4.0.1",
     "rating-star": "^1.1.0",
     "react": "^17.0.2",
@@ -61,5 +62,13 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "jest": {
+    "testMatch": [
+      "**/src/unittest/**/*.test.js"
+    ]
+  },
+  "devDependencies": {
+    "@babel/core": "^7.28.5"
   }
 }

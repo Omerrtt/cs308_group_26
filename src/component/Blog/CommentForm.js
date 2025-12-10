@@ -8,7 +8,7 @@ const CommentForm = () => {
         <div className="content_title">
           <h3>Write a comment</h3>
         </div>
-        <form className="field_form" onSubmit={(e)=> {e.preventDefault(); Swal.fire('Success', 'Thank you for your Comment', 'success');document.querySelector("input").value = ""}}>
+        <form className="field_form" onSubmit={(e)=> {e.preventDefault(); Swal.fire('Başarılı', 'Yorumunuz İçin Teşekkürler', 'success');document.querySelector("input").value = ""}}>
           <div className="row">
             <div className="form-group col-md-4">
               <input name="name" className="form-control" placeholder="Your Name" required="required" type="text" />

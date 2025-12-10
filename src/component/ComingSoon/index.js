@@ -65,7 +65,7 @@ const ComingSoonArea = () => {
                                 </div>
                                 <div className="coming_soon_newsletter">
                                     <h3>Subscribe for our next update</h3>
-                                    <form onSubmit={(e)=> {e.preventDefault(); Swal.fire('Success', 'Thank you for your Subscribtion', 'success')}}>
+                                    <form onSubmit={(e)=> {e.preventDefault(); Swal.fire('Başarılı', 'Aboneliğiniz İçin Teşekkürler', 'success')}}>
                                         <div className="input-group">
                                             <input type="text" className="form-control" placeholder="Your Email" required />
                                             <button className="theme-btn-one btn-black-overlay btn_md">subscrib</button>

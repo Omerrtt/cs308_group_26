@@ -25,11 +25,11 @@ const ProductCard = (props) => {
                     </Link>
                     <span className="badges">
                         <span className="new">Yeni</span>
-                        {props.data.inStock ? <span className="sale">Stokta</span> : <span className="hot">Tükendi</span>}
+                        {props.data.stock > 0 && <span className="sale">Stokta</span>}
                     </span>
                     <div className="product-actions">
                         <a 
-                            href={`https://wa.me/905393973949?text=Merhaba, ${props.data.title} ürünü hakkında bilgi almak istiyorum. Ürün Kodu: ${props.data.productCode} - Fiyat: ₺${props.data.price.toLocaleString()}`} 
+                            href={`https://wa.me/905393973949?text=Merhaba, ${props.data.title} ürünü hakkında bilgi almak istiyorum. Product ID: ${props.data.originalId || props.data.id} - Fiyat: ₺${props.data.price.toLocaleString()}`} 
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="whatsapp-btn-small"
@@ -61,16 +61,31 @@ const ProductCard = (props) => {
                                     <div className="brand-info">
                                         <small className="text-muted">{props.data.brand}</small>
                                     </div>
-                                    <div className="product-code-info">
-                                        <small className="text-muted">Kod: <strong>{props.data.productCode}</strong></small>
+                                    <div className="product-id-info">
+                                        <small className="text-muted">Product ID: <strong>{props.data.originalId || props.data.id}</strong></small>
                                     </div>
                     <div className="rating">
                         <div className="stars">
-                            {[...Array(5)].map((_, i) => (
-                                <i key={i} className={`fa fa-star ${i < Math.floor(props.data.rating) ? 'text-warning' : 'text-muted'}`}></i>
-                            ))}
+                            {[...Array(5)].map((_, i) => {
+                                // Firebase'den gelen gerçek rating'i öncelikli kullan, yoksa eski rating'i kullan
+                                // rating bir sayı olabilir veya { rate: number, count: number } objesi olabilir
+                                let realRating = 0;
+                                if (typeof props.data.rating === 'number') {
+                                    realRating = props.data.rating;
+                                } else if (props.data.rating && typeof props.data.rating === 'object' && props.data.rating.rate) {
+                                    realRating = props.data.rating.rate;
+                                } else if (props.data.rating !== undefined) {
+                                    realRating = props.data.rating;
+                                }
+                                
+                                return (
+                                    <i key={i} className={`fa fa-star ${i < Math.floor(realRating) ? 'text-warning' : 'text-muted'}`}></i>
+                                );
+                            })}
                         </div>
-                        <small className="text-muted">({props.data.reviewCount})</small>
+                        <small className="text-muted">
+                            ({props.data.ratingCount !== undefined ? props.data.ratingCount : (props.data.reviewCount || 0)})
+                        </small>
                     </div>
                     <span className="price">
                         <span className="new">₺{props.data.price.toLocaleString()}</span>

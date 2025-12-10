@@ -82,7 +82,7 @@ const CartViewTwo = () => {
                                     </div>
                                 </div>
                                 <div className="coupon_inner_two">
-                                    <form onSubmit={(e) => { e.preventDefault(); Swal.fire('Error!!', 'Invalid Cuppon Code', 'error') }}>
+                                    <form onSubmit={(e) => { e.preventDefault(); Swal.fire('Hata!!', 'Geçersiz Kupon Kodu', 'error') }}>
                                         <input className="mb-2" placeholder="Coupon code" type="text" required />
                                         <button type="submit" className="theme-btn-one btn-black-overlay btn_sm">Apply coupon</button>
                                     </form>

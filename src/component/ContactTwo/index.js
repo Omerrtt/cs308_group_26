@@ -11,7 +11,7 @@ const ContactTwoArea = () => {
                         <div className="col-lg-6">
                             <div className="contact_form_one contact_info_wrapper">
                                 <h3 className="text-center">Get In Touch</h3>
-                                <form onSubmit={(e)=> {e.preventDefault(); Swal.fire('Thank You', 'We Got Your Message', 'success')}}>
+                                <form onSubmit={(e)=> {e.preventDefault(); Swal.fire('Teşekkürler', 'Mesajınız Alındı', 'success')}}>
                                     <div className="row">
                                         <div className="col-lg-6 col-md-6 col-sm-6 col-12">
                                             <div className="form-group">

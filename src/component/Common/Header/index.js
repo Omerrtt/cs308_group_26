@@ -17,6 +17,7 @@ import { auth } from '../../../firebaseConfig'
 const Header = () => {
     const [click, setClick] = useState(false);
     const [show, setShow] = useState();
+    const [searchQuery, setSearchQuery] = useState('');
     const history = useHistory()
     let carts = useSelector((state) => state.products.carts);
     let favorites = useSelector((state) => state.products.favorites);
@@ -86,6 +87,22 @@ const Header = () => {
         }
         setClick(!click);
     }
+    
+    const handleSearchSubmit = (e) => {
+        e.preventDefault();
+        
+        const trimmedQuery = searchQuery.trim();
+        
+        if (!trimmedQuery) {
+            Swal.fire('Uyarı', 'Lütfen arama yapmak için bir şeyler yazın', 'warning');
+            return;
+        }
+        
+        handleSearch(e);
+        history.push(`/shop?search=${encodeURIComponent(trimmedQuery)}`);
+        setSearchQuery('');
+    }
+
     const handleabout = () => {
         if (click) {
             document.querySelector("#offcanvas-about").style = ("transform: translateX(100%);")
@@ -163,15 +180,15 @@ const Header = () => {
                                         </nav>
                                     </div>
 
-                                    <ul className="header-action-link action-color--black action-hover-color--golden">
+                                    <ul className="header-action-link action-color--black action-hover-color--golden" style={{gap: '15px', display: 'flex', alignItems: 'center'}}>
                                         <li>
-                                            <a href="#search" className="search_width" onClick={handleSearch} >
-                                                <img src={svgsearch} alt="img" />
+                                            <a href="#search" className="search_width" onClick={handleSearch} title="Ara">
+                                                <i className="fa fa-search" style={{fontSize: '20px'}}></i>
                                             </a>
                                         </li>
                                         <li>
                                             <Link to="/cart" className="cart-link" title="Sepetim">
-                                                <i className="fa fa-shopping-cart"></i>
+                                                <i className="fa fa-shopping-cart" style={{fontSize: '20px'}}></i>
                                                 {carts.length > 0 && (
                                                     <span className="cart-count">{carts.length}</span>
                                                 )}
@@ -186,9 +203,9 @@ const Header = () => {
                                                         e.preventDefault();
                                                         handleShow('user-menu');
                                                     }}
+                                                    title={userData.name || 'Kullanıcı'}
                                                 >
-                                                    <i className="fa fa-user-circle"></i>
-                                                    <span>{userData.name || 'Kullanıcı'}</span>
+                                                    <i className="fa fa-user-circle" style={{fontSize: '20px'}}></i>
                                                 </a>
                                                 {show === 'user-menu' && (
                                                     <div className="user-dropdown-menu">
@@ -226,18 +243,18 @@ const Header = () => {
                                                     <Link 
                                                         to="/login"
                                                         className="header-login-btn"
+                                                        title="Giriş Yap"
                                                     >
-                                                        <i className="fa fa-sign-in"></i>
-                                                        <span>Giriş Yap</span>
+                                                        <i className="fa fa-sign-in" style={{fontSize: '20px'}}></i>
                                                     </Link>
                                                 </li>
                                                 <li>
                                                     <Link 
                                                         to="/register"
                                                         className="header-register-btn"
+                                                        title="Kayıt Ol"
                                                     >
-                                                        <i className="fa fa-user-plus"></i>
-                                                        <span>Kayıt Ol</span>
+                                                        <i className="fa fa-user-plus" style={{fontSize: '20px'}}></i>
                                                     </Link>
                                                 </li>
                                             </>
@@ -250,7 +267,7 @@ const Header = () => {
                                                 className="whatsapp-btn-header"
                                                 title="WhatsApp ile İletişim"
                                             >
-                                                <i className="fab fa-whatsapp" style={{fontSize: '28px', color: '#25D366'}}></i>
+                                                <i className="fab fa-whatsapp" style={{fontSize: '24px', color: '#25D366'}}></i>
                                             </a>
                                         </li>
                                     </ul>
@@ -647,9 +664,15 @@ const Header = () => {
 
             <div id="search" className="search-modal">
                 <button type="button" className="close" onClick={handleSearch}><img src={svg} alt="icon" /></button>
-                <form onSubmit={(e) => { e.preventDefault(); handleSearch(); Swal.fire('Success', 'Check out the Results', 'success'); history.push('/shop') }}>
-                    <input type="search" placeholder="type keyword(s) here" required />
-                    <button type="submit" className="btn btn-lg btn-main-search">Search</button>
+                <form onSubmit={handleSearchSubmit}>
+                    <input 
+                        type="search" 
+                        placeholder="Ürün adı, marka, kategori veya ürün kodu ara..." 
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        required 
+                    />
+                    <button type="submit" className="btn btn-lg btn-main-search">Ara</button>
                 </form>
             </div>
         </>

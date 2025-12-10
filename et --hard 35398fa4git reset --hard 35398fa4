@@ -1,0 +1,10 @@
+[33md5c469cf[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Merge branch 'fix/rating-placeholder-reset' git push origin main# Please enter a commit message to explain why this merge is necessary,
+[33mc1556df3[m[33m ([m[1;31morigin/fix/rating-placeholder-reset[m[33m, [m[1;32mfix/rating-placeholder-reset[m[33m)[m Merge branch 'main' into fix/rating-placeholder-reset
+[33m290e0695[m[33m ([m[1;32mfeature/rating-comment-system[m[33m)[m merge: bring header fixes from main into rating branch
+[33m35398fa4[m fix: header button spacing and hover animations (CG2-41)
+[33m7e4d70aa[m fix: prevent rating placeholder reset on re-render (CG2-39)
+[33ma86f9e0d[m[33m ([m[1;31morigin/feature/rating-comment-system[m[33m)[m feat: implement rating and comment system
+[33m680b362e[m Merge pull request #17 from Omerrtt/feature-adminPanel
+[33me7eba74d[m Improve login form UX and accessibility
+[33mc00cf08d[m[33m ([m[1;31morigin/feature-adminPanel[m[33m)[m Admin panel button place updated
+[33m1f8fd24d[m Merge pull request #16 from Omerrtt/bugfix/decrease_stock

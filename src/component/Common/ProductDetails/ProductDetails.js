@@ -545,17 +545,17 @@ const ProductDetailsOne = () => {
                                     </div>
                                     
                                     {/* Müşteri Yorumları */}
-                                    {(approvedComments.length > 0 || (product.all_comments && product.all_comments.length > 0)) && (
+                                    {((approvedComments.length > 0) || (product.all_comments && product.all_comments.length > 0)) && (
                                         <div className="product-comments-section mt-4">
                                             <h5 className="comments-title mb-3">
                                                 <i className="fa fa-comments" style={{marginRight: '8px', color: '#ff8a00'}}></i>
-                                                Müşteri Yorumları ({approvedComments.length > 0 ? approvedComments.length : (product.commentCount || product.all_comments.length)})
+                                                Müşteri Yorumları ({approvedComments.length + (product.all_comments ? Math.min(10 - approvedComments.length, product.all_comments.length) : 0)})
                                             </h5>
                                             <div className="comments-list">
-                                                {/* Firebase'den gelen onaylanmış yorumlar */}
+                                                {/* Gerçek kullanıcı yorumları - EN ÜSTTE */}
                                                 {(showAllComments ? approvedComments : approvedComments.slice(0, 3)).map((comment, index) => {
                                                     return (
-                                                        <div key={comment.id || index} className="comment-item mb-3 p-3" style={{
+                                                        <div key={comment.id || `real-${index}`} className="comment-item mb-3 p-3" style={{
                                                             border: '1px solid #e0e0e0',
                                                             borderRadius: '8px',
                                                             backgroundColor: '#f9f9f9'
@@ -580,6 +580,7 @@ const ProductDetailsOne = () => {
                                                                             <strong className="comment-author" style={{ fontSize: '16px' }}>
                                                                                 {comment.userName || 'Müşteri'}
                                                                             </strong>
+                                                                            <span className="badge bg-success" style={{fontSize: '0.7rem'}}>Doğrulanmış</span>
                                                                             {comment.rating && (
                                                                                 <div className="comment-rating" style={{
                                                                                     fontSize: '14px',
@@ -615,46 +616,53 @@ const ProductDetailsOne = () => {
                                                     );
                                                 })}
                                                 
-                                                {/* Eski random yorumlar (fallback) - sadece approvedComments yoksa göster */}
-                                                {approvedComments.length === 0 && product.all_comments && product.all_comments.length > 0 && (showAllComments ? product.all_comments : product.all_comments.slice(0, 3)).map((comment, localIndex) => {
-                                                    const actualIndex = showAllComments ? localIndex : localIndex;
-                                                    return (
-                                                        <div key={actualIndex} className="comment-item mb-3 p-3" style={{
-                                                            border: '1px solid #e0e0e0',
-                                                            borderRadius: '8px',
-                                                            backgroundColor: '#f9f9f9'
-                                                        }}>
-                                                            <div className="comment-header mb-2">
-                                                                <div className="d-flex align-items-center">
-                                                                    <div className="user-avatar me-2" style={{
-                                                                        width: '40px',
-                                                                        height: '40px',
-                                                                        borderRadius: '50%',
-                                                                        backgroundColor: '#ff8a00',
-                                                                        display: 'flex',
-                                                                        alignItems: 'center',
-                                                                        justifyContent: 'center',
-                                                                        color: '#fff',
-                                                                        fontWeight: 'bold'
-                                                                    }}>
-                                                                        {String.fromCharCode(65 + (actualIndex % 26))}
-                                                                    </div>
-                                                                    <div>
-                                                                        <strong className="comment-author">Müşteri {actualIndex + 1}</strong>
-                                                                        <div className="comment-rating" style={{fontSize: '0.85rem', color: '#ff8a00'}}>
-                                                                            {'⭐'.repeat(Math.min(5, Math.floor(product.rating || 4)))}
+                                                {/* Placeholder yorumlar - Max 10 total (user comments + placeholders) */}
+                                                {product.all_comments && product.all_comments.length > 0 && (
+                                                    (showAllComments 
+                                                        ? product.all_comments.slice(0, Math.max(0, 10 - approvedComments.length))
+                                                        : product.all_comments.slice(0, Math.max(0, 3 - approvedComments.length))
+                                                    ).map((comment, localIndex) => {
+                                                        return (
+                                                            <div key={`placeholder-${localIndex}`} className="comment-item mb-3 p-3" style={{
+                                                                border: '1px solid #e0e0e0',
+                                                                borderRadius: '8px',
+                                                                backgroundColor: '#f9f9f9'
+                                                            }}>
+                                                                <div className="comment-header mb-2">
+                                                                    <div className="d-flex align-items-center">
+                                                                        <div className="user-avatar me-2" style={{
+                                                                            width: '40px',
+                                                                            height: '40px',
+                                                                            borderRadius: '50%',
+                                                                            backgroundColor: '#6c757d',
+                                                                            display: 'flex',
+                                                                            alignItems: 'center',
+                                                                            justifyContent: 'center',
+                                                                            color: '#fff',
+                                                                            fontWeight: 'bold'
+                                                                        }}>
+                                                                            {String.fromCharCode(65 + (localIndex % 26))}
+                                                                        </div>
+                                                                        <div>
+                                                                            <strong className="comment-author">Müşteri {localIndex + 1}</strong>
+                                                                            <div className="comment-rating" style={{fontSize: '0.85rem', color: '#ff8a00', display: 'flex', alignItems: 'center', gap: '2px'}}>
+                                                                                {'★'.repeat([5, 5, 4, 5, 4, 5, 5, 4, 5, 5][localIndex % 10])}
+                                                                                {'☆'.repeat(5 - [5, 5, 4, 5, 4, 5, 5, 4, 5, 5][localIndex % 10])}
+                                                                            </div>
                                                                         </div>
                                                                     </div>
                                                                 </div>
+                                                                <div className="comment-text" style={{color: '#555', lineHeight: '1.6'}}>
+                                                                    {comment}
+                                                                </div>
                                                             </div>
-                                                            <div className="comment-text" style={{color: '#555', lineHeight: '1.6'}}>
-                                                                {comment}
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
+                                                        );
+                                                    })
+                                                )}
                                             </div>
-                                            {approvedComments.length > 3 && !showAllComments && (
+                                            
+                                            {/* Tüm Yorumları Gör butonu */}
+                                            {(approvedComments.length + (product.all_comments ? product.all_comments.length : 0)) > 3 && !showAllComments && (
                                                 <div className="text-center mt-3">
                                                     <button
                                                         className="btn btn-outline-primary"
@@ -666,11 +674,11 @@ const ProductDetailsOne = () => {
                                                             color: '#ff8a00'
                                                         }}
                                                     >
-                                                        Tüm Yorumları Gör ({approvedComments.length})
+                                                        Tüm Yorumları Gör
                                                     </button>
                                                 </div>
                                             )}
-                                            {showAllComments && approvedComments.length > 3 && (
+                                            {showAllComments && (
                                                 <div className="text-center mt-3">
                                                     <button
                                                         className="btn btn-outline-primary"
@@ -682,38 +690,6 @@ const ProductDetailsOne = () => {
                                                             color: '#ff8a00'
                                                         }}
                                                     >
-                                                        Daha Az Göster
-                                                    </button>
-                                                </div>
-                                            )}
-                                            {approvedComments.length === 0 && !showAllComments && product.all_comments && product.all_comments.length > 3 && (
-                                                <div className="text-center mt-3">
-                                                    <button
-                                                        className="btn btn-outline-primary"
-                                                        onClick={() => setShowAllComments(true)}
-                                                        style={{
-                                                            borderRadius: '20px',
-                                                            padding: '8px 24px',
-                                                            borderColor: '#ff8a00',
-                                                            color: '#ff8a00'
-                                                        }}
-                                                    >
-                                                        <i className="fa fa-chevron-down" style={{marginRight: '5px'}}></i>
-                                                        Tüm Yorumları Gör ({product.all_comments.length - 3} yorum daha)
-                                                    </button>
-                                                </div>
-                                            )}
-                                            {showAllComments && product.all_comments.length > 3 && (
-                                                <div className="text-center mt-3">
-                                                    <button
-                                                        className="btn btn-outline-secondary"
-                                                        onClick={() => setShowAllComments(false)}
-                                                        style={{
-                                                            borderRadius: '20px',
-                                                            padding: '8px 24px'
-                                                        }}
-                                                    >
-                                                        <i className="fa fa-chevron-up" style={{marginRight: '5px'}}></i>
                                                         Daha Az Göster
                                                     </button>
                                                 </div>

@@ -15,6 +15,7 @@ const LoginArea = () => {
     const [showForgotPassword, setShowForgotPassword] = useState(false)
     const [forgotPasswordEmail, setForgotPasswordEmail] = useState('')
     const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false)
+    const [showPassword, setShowPassword] = useState(false)   // 👈 YENİ: şifre göster/gizle
 
     // Forgot Password
     const handleForgotPassword = async () => {
@@ -175,10 +176,12 @@ const LoginArea = () => {
                                             placeholder="ornek@email.com"
                                         />
                                     </div>
-                                    <div className="default-form-box">
+
+                                    {/* ŞİFRE ALANI + SHOW/HIDE TOGGLE */}
+                                    <div className="default-form-box" style={{ position: 'relative' }}>
                                         <label>Şifre<span className="text-danger">*</span></label>
                                         <input
-                                            type="password"
+                                            type={showPassword ? 'text' : 'password'}
                                             className="form-control"
                                             required
                                             value={pass}
@@ -186,11 +189,30 @@ const LoginArea = () => {
                                             minLength="6"
                                             autoComplete="current-password"
                                             placeholder="••••••"
+                                            style={{ paddingRight: '40px' }}
                                         />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            style={{
+                                                position: 'absolute',
+                                                right: '10px',
+                                                top: '38px',
+                                                background: 'none',
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                                fontSize: '16px',
+                                                color: '#666'
+                                            }}
+                                            aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                        >
+                                            {showPassword ? '🙈' : '👁️'}
+                                        </button>
                                         <small className="text-muted">
                                             Şifreniz en az 6 karakter olmalıdır.
                                         </small>
                                     </div>
+
                                     <div className="login_submit">
                                         <button
                                             className="theme-btn-one btn-black-overlay btn_md"

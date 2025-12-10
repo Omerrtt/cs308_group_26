@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { useSelector } from 'react-redux'
 import ReviewForm from './ReviewForm'
 import user1 from '../../../assets/img/user/user1.png'
@@ -8,6 +8,7 @@ import user3 from '../../../assets/img/user/user3.png'
 // Placeholder reviews (limited to 10)
 const PlaceholderReviews = [
     {
+        id: 'placeholder-1',
         img: user1,
         name: "Sara Anela",
         date: "5 days ago",
@@ -15,6 +16,7 @@ const PlaceholderReviews = [
         para: `Cras sit amet nibh libero, in gravida nulla. Nulla vel metus scelerisque Praesent sapien massa, convallis a pellentesque nec.`
     },
     {
+        id: 'placeholder-2',
         img: user2,
         name: "John Doe",
         date: "1 week ago",
@@ -22,6 +24,7 @@ const PlaceholderReviews = [
         para: `Great product! Really satisfied with the quality and performance.`
     },
     {
+        id: 'placeholder-3',
         img: user3,
         name: "Jane Smith",
         date: "2 weeks ago",
@@ -33,19 +36,22 @@ const PlaceholderReviews = [
 const ProductInfo = ({ productId }) => {
     const userReviews = useSelector((state) => state.reviews.reviews[productId]) || []
     
-    // Combine user reviews (at top) + placeholder reviews (limited to 10 total)
-    const remainingSlots = Math.max(0, 10 - userReviews.length)
-    const placeholdersToShow = PlaceholderReviews.slice(0, remainingSlots)
-    const allReviews = [...userReviews, ...placeholdersToShow]
-    
-    // Calculate average rating
-    const calculateAverageRating = () => {
-        if (allReviews.length === 0) return 0
-        const totalRating = allReviews.reduce((sum, review) => sum + (review.rating || 0), 0)
-        return (totalRating / allReviews.length).toFixed(1)
-    }
-    
-    const averageRating = calculateAverageRating()
+    // Use useMemo to prevent unnecessary recalculations
+    const { allReviews, averageRating } = useMemo(() => {
+        // Combine user reviews (at top) + placeholder reviews (limited to 10 total)
+        const remainingSlots = Math.max(0, 10 - userReviews.length)
+        const placeholdersToShow = PlaceholderReviews.slice(0, remainingSlots)
+        const reviews = [...userReviews, ...placeholdersToShow]
+        
+        // Calculate average rating
+        let avgRating = 0
+        if (reviews.length > 0) {
+            const totalRating = reviews.reduce((sum, review) => sum + (review.rating || 0), 0)
+            avgRating = (totalRating / reviews.length).toFixed(1)
+        }
+        
+        return { allReviews: reviews, averageRating: avgRating }
+    }, [userReviews])
     
     const formatDate = (dateString) => {
         const date = new Date(dateString)
@@ -132,7 +138,7 @@ const ProductInfo = ({ productId }) => {
                                     <h5>Kullanıcı Yorumları</h5>
                                     <ul>
                                         {allReviews.map((review, index) => (
-                                            <li className="media" key={index}>
+                                            <li className="media" key={review.id || review.userName || index}>
                                                 <div className="media-img">
                                                     <img src={review.img || user1} alt="user" />
                                                 </div>

@@ -218,45 +218,119 @@ const Header = () => {
                                         </nav>
                                     </div>
 
-                                    <ul className="header-action-link action-color--black action-hover-color--golden">
-                                        <li>
+                                    <ul style={{
+                                        display: 'flex', 
+                                        gap: '30px', 
+                                        alignItems: 'center',
+                                        listStyle: 'none',
+                                        margin: 0,
+                                        padding: 0
+                                    }}>
+                                        <li style={{display: 'inline-block'}}>
                                             <Link 
                                                 to="/cart" 
-                                                className="cart-link" 
                                                 title="Sepetim"
-                                                style={{ padding: '15px' }}
+                                                style={{
+                                                    display: 'inline-flex', 
+                                                    alignItems: 'center', 
+                                                    textDecoration: 'none', 
+                                                    color: '#333', 
+                                                    position: 'relative',
+                                                    transition: 'color 0.3s ease'
+                                                }}
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                 }}
+                                                onMouseOver={(e) => {
+                                                    e.currentTarget.style.color = '#ff8a00';
+                                                }}
+                                                onMouseOut={(e) => {
+                                                    e.currentTarget.style.color = '#333';
+                                                }}
                                             >
-                                                <i className="fa fa-shopping-cart"></i>
+                                                <i className="fa fa-shopping-cart" style={{fontSize: '22px'}}></i>
                                                 {carts.length > 0 && (
-                                                    <span className="cart-count">{carts.length}</span>
+                                                    <span style={{
+                                                        position: 'absolute',
+                                                        top: '-8px',
+                                                        right: '-8px',
+                                                        background: '#ff8a00',
+                                                        color: 'white',
+                                                        borderRadius: '50%',
+                                                        width: '20px',
+                                                        height: '20px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        fontSize: '12px',
+                                                        fontWeight: 'bold'
+                                                    }}>{carts.length}</span>
                                                 )}
                                             </Link>
                                         </li>
                                         {userStatus ? (
-                                            <li className="user-profile-dropdown">
+                                            <li style={{display: 'inline-block', position: 'relative'}} className="user-profile-dropdown">
                                                 <a 
                                                     href="#!" 
                                                     className="user-profile-link"
-                                                    style={{ color: 'black', fontWeight: 'bold' }}
+                                                    style={{ 
+                                                        color: '#333', 
+                                                        fontWeight: '600', 
+                                                        display: 'inline-flex', 
+                                                        alignItems: 'center', 
+                                                        gap: '8px', 
+                                                        textDecoration: 'none',
+                                                        transition: 'color 0.3s ease'
+                                                    }}
                                                     onClick={(e) => {
                                                         e.preventDefault();
                                                         handleShow('user-menu');
                                                     }}
+                                                    onMouseOver={(e) => {
+                                                        e.currentTarget.style.color = '#ff8a00';
+                                                    }}
+                                                    onMouseOut={(e) => {
+                                                        e.currentTarget.style.color = '#333';
+                                                    }}
                                                 >
-                                                    <i className="fa fa-user-circle" style={{ color: 'black' }}></i>
-                                                    <span style={{ color: 'black', fontWeight: 'bold' }}>{userData.name || 'Kullanıcı'}</span>
+                                                    <i className="fa fa-user-circle" style={{ fontSize: '22px' }}></i>
+                                                    <span>{userData.name || 'Kullanıcı'}</span>
                                                 </a>
                                                 {show === 'user-menu' && (
-                                                    <div className="user-dropdown-menu">
+                                                    <div className="user-dropdown-menu" style={{
+                                                        position: 'absolute',
+                                                        top: '100%',
+                                                        right: 0,
+                                                        background: 'white',
+                                                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                                        borderRadius: '8px',
+                                                        minWidth: '180px',
+                                                        marginTop: '10px',
+                                                        zIndex: 1000,
+                                                        overflow: 'hidden'
+                                                    }}>
                                                         <Link 
                                                             to="/profile"
                                                             onClick={() => setShow('')}
+                                                            style={{
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: '10px',
+                                                                padding: '12px 20px',
+                                                                textDecoration: 'none',
+                                                                color: '#333',
+                                                                borderBottom: '1px solid #eee',
+                                                                transition: 'background 0.2s ease'
+                                                            }}
+                                                            onMouseOver={(e) => {
+                                                                e.currentTarget.style.background = '#f8f9fa';
+                                                            }}
+                                                            onMouseOut={(e) => {
+                                                                e.currentTarget.style.background = 'white';
+                                                            }}
                                                         >
                                                             <i className="fa fa-user"></i>
-                                                            Profilim
+                                                            <span>Profilim</span>
                                                         </Link>
                                                         <a 
                                                             href="#!"
@@ -265,28 +339,90 @@ const Header = () => {
                                                                 handleLogout();
                                                                 setShow('');
                                                             }}
+                                                            style={{
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: '10px',
+                                                                padding: '12px 20px',
+                                                                textDecoration: 'none',
+                                                                color: '#dc3545',
+                                                                transition: 'background 0.2s ease',
+                                                                cursor: 'pointer'
+                                                            }}
+                                                            onMouseOver={(e) => {
+                                                                e.currentTarget.style.background = '#f8f9fa';
+                                                            }}
+                                                            onMouseOut={(e) => {
+                                                                e.currentTarget.style.background = 'white';
+                                                            }}
                                                         >
                                                             <i className="fa fa-sign-out"></i>
-                                                            Çıkış Yap
+                                                            <span>Çıkış Yap</span>
                                                         </a>
                                                     </div>
                                                 )}
                                             </li>
                                         ) : (
                                             <>
-                                                <li>
+                                                <li style={{display: 'inline-block'}}>
                                                     <Link 
                                                         to="/login"
-                                                        className="header-login-btn"
+                                                        style={{
+                                                            display: 'inline-flex',
+                                                            alignItems: 'center',
+                                                            gap: '6px',
+                                                            padding: '8px 16px',
+                                                            background: '#007bff',
+                                                            color: 'white',
+                                                            textDecoration: 'none',
+                                                            borderRadius: '4px',
+                                                            fontWeight: '500',
+                                                            fontSize: '14px',
+                                                            transition: 'all 0.3s ease',
+                                                            transform: 'scale(1)'
+                                                        }}
+                                                        onMouseOver={(e) => {
+                                                            e.currentTarget.style.background = '#0056b3';
+                                                            e.currentTarget.style.transform = 'scale(1.05)';
+                                                            e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+                                                        }}
+                                                        onMouseOut={(e) => {
+                                                            e.currentTarget.style.background = '#007bff';
+                                                            e.currentTarget.style.transform = 'scale(1)';
+                                                            e.currentTarget.style.boxShadow = 'none';
+                                                        }}
                                                     >
                                                         <i className="fa fa-sign-in"></i>
                                                         <span>Giriş Yap</span>
                                                     </Link>
                                                 </li>
-                                                <li>
+                                                <li style={{display: 'inline-block'}}>
                                                     <Link 
                                                         to="/register"
-                                                        className="header-register-btn"
+                                                        style={{
+                                                            display: 'inline-flex',
+                                                            alignItems: 'center',
+                                                            gap: '6px',
+                                                            padding: '8px 16px',
+                                                            background: '#28a745',
+                                                            color: 'white',
+                                                            textDecoration: 'none',
+                                                            borderRadius: '4px',
+                                                            fontWeight: '500',
+                                                            fontSize: '14px',
+                                                            transition: 'all 0.3s ease',
+                                                            transform: 'scale(1)'
+                                                        }}
+                                                        onMouseOver={(e) => {
+                                                            e.currentTarget.style.background = '#1e7e34';
+                                                            e.currentTarget.style.transform = 'scale(1.05)';
+                                                            e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+                                                        }}
+                                                        onMouseOut={(e) => {
+                                                            e.currentTarget.style.background = '#28a745';
+                                                            e.currentTarget.style.transform = 'scale(1)';
+                                                            e.currentTarget.style.boxShadow = 'none';
+                                                        }}
                                                     >
                                                         <i className="fa fa-user-plus"></i>
                                                         <span>Kayıt Ol</span>
@@ -294,13 +430,22 @@ const Header = () => {
                                                 </li>
                                             </>
                                         )}
-                                        <li>
+                                        <li style={{display: 'inline-block'}}>
                                             <a 
                                                 href="https://wa.me/905393973949?text=Merhaba, Malikane Electronics ürünleriniz hakkında bilgi almak istiyorum." 
                                                 target="_blank" 
                                                 rel="noopener noreferrer"
-                                                className="whatsapp-btn-header"
-                                                title="WhatsApp ile İletişim"
+                                                title="WhatsApp"
+                                                style={{
+                                                    display: 'inline-block',
+                                                    transition: 'transform 0.3s ease'
+                                                }}
+                                                onMouseOver={(e) => {
+                                                    e.currentTarget.style.transform = 'scale(1.1)';
+                                                }}
+                                                onMouseOut={(e) => {
+                                                    e.currentTarget.style.transform = 'scale(1)';
+                                                }}
                                             >
                                                 <i className="fab fa-whatsapp" style={{fontSize: '28px', color: '#25D366'}}></i>
                                             </a>

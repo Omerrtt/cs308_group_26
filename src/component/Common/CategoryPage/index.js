@@ -83,6 +83,9 @@ const CategoryPage = () => {
 
     // Sıralama değiştiğinde
     const handleSortChange = (sortType) => {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/67e2e45d-e2d0-4eec-88e2-0c404d5839a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H1',location:'CategoryPage/index.js:85',message:'handleSortChange invoked',data:{sortType,previousSortBy:sortBy,totalProducts:products.length},timestamp:Date.now()})}).catch(()=>{})
+        // #endregion
         setSortBy(sortType)
         // Sadece kullanıcı bir sıralama seçtiyse sırala
         const sorted = sortType ? sortProducts(products, sortType) : products
@@ -93,6 +96,9 @@ const CategoryPage = () => {
 
     // Filtre değiştiğinde
     const handleFilterChange = (filterType) => {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/67e2e45d-e2d0-4eec-88e2-0c404d5839a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H2',location:'CategoryPage/index.js:95',message:'handleFilterChange invoked',data:{filterType,previousFilterBy:filterBy,totalProducts:products.length},timestamp:Date.now()})}).catch(()=>{})
+        // #endregion
         setFilterBy(filterType)
         const filtered = filterProducts(products, filterType)
         setFilteredProducts(filtered)
@@ -226,6 +232,13 @@ const CategoryPage = () => {
 
         fetchProducts()
     }, [categorySlug, location.search, itemsPerPage])
+
+    useEffect(() => {
+        if (!products.length) return
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/67e2e45d-e2d0-4eec-88e2-0c404d5839a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H3',location:'CategoryPage/index.js:237',message:'current sort/filter state',data:{sortBy,filterBy,filteredCount:filteredProducts.length,displayedCount:displayedProducts.length},timestamp:Date.now()})}).catch(()=>{})
+        // #endregion
+    }, [products.length, sortBy, filterBy, filteredProducts.length, displayedProducts.length])
     
     const handleSubcategoryClick = (subcategory) => {
         setSelectedSubcategory(subcategory)
@@ -311,25 +324,8 @@ const CategoryPage = () => {
                         </div>
                     )}
 
-                    {/* Filter Bileşeni */}
-                    <div className="row mb-4">
-                        <div className="col-lg-6 col-md-12">
-                            <div className="product_filter">
-                                <div className="customs_selects">
-                                    <select 
-                                        name="filter" 
-                                        className="customs_sel_box" 
-                                        value={filterBy}
-                                        onChange={(e) => handleFilterChange(e.target.value)}
-                                    >
-                                        <option value="most-popular">Most Popular</option>
-                                        <option value="best-seller">Best Seller</option>
-                                        <option value="trending">Trending</option>
-                                        <option value="featured">Featured</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
+                    {/* Sadece sıralama */}
+                    <div className="row mb-4 justify-content-end">
                         <div className="col-lg-6 col-md-12">
                             <div className="product_shot">
                                 <div className="product_shot_title">

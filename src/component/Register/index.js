@@ -15,6 +15,14 @@ const RegisterArea = () => {
     let status = useSelector((state) => state.user.status);
     let userData = useSelector((state) => state.user.user);
 
+    // ENTER ile submit için ortak handler
+    const handleEnter = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            register();
+        }
+    };
+
     // Register
     const register = async () => {
         if(status){
@@ -26,10 +34,10 @@ const RegisterArea = () => {
                     '<b>Hesabım</b> sayfasına gidebilir veya <b>Alışveriş</b> yapabilirsiniz',
             }).then((result) => {
                 if(result.isConfirmed) {
-                    history.push('/my-account')
+                  history.push('/my-account')
                 }
-            });
-        } else {
+              });
+        }else{
             if(!email || !pass || !user){
                 Swal.fire({
                     icon: 'warning',
@@ -129,6 +137,7 @@ const RegisterArea = () => {
                                             className="form-control"
                                             value={user}
                                             onChange={e => setUserName(e.currentTarget.value)}
+                                            onKeyDown={handleEnter}
                                             required
                                         />
                                         <small className="text-muted">
@@ -143,6 +152,7 @@ const RegisterArea = () => {
                                             className="form-control"
                                             value={email}
                                             onChange={e => setEmail(e.currentTarget.value)}
+                                            onKeyDown={handleEnter}
                                             required
                                         />
                                         <small className="text-muted">
@@ -157,6 +167,7 @@ const RegisterArea = () => {
                                             className="form-control"
                                             value={pass}
                                             onChange={e => setPass(e.currentTarget.value)}
+                                            onKeyDown={handleEnter}
                                             required
                                             minLength="6"
                                             placeholder="••••••"
@@ -166,32 +177,17 @@ const RegisterArea = () => {
                                         </small>
                                     </div>
 
-                                    {/* BUTON ORTALANDI ve ALTA BOŞLUK EKLENDİ */}
-                                    <div
-                                        className="login_submit"
-                                        style={{
-                                            marginTop: '24px',
-                                            marginBottom: '24px',
-                                            textAlign: 'center'
-                                        }}
-                                    >
+                                    <div className="login_submit">
                                         <button 
                                             className="theme-btn-one btn-black-overlay btn_md" 
                                             type="submit"
                                             disabled={loading}
-                                            style={{ minWidth: '160px' }}
                                         >
                                             {loading ? 'Kaydediliyor...' : 'Kayıt Ol'}
                                         </button>
                                     </div>
 
-                                    <div
-                                        style={{
-                                            marginTop: '8px',
-                                            textAlign: 'center',
-                                            fontSize: '14px'
-                                        }}
-                                    >
+                                    <div style={{ marginTop: '16px', textAlign: 'center', fontSize: '14px' }}>
                                         <span style={{ marginRight: '4px' }}>Zaten hesabınız var mı?</span>
                                         <Link to="/login" className="active">
                                             Giriş Yap

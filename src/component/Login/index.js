@@ -15,6 +15,7 @@ const LoginArea = () => {
     const [showForgotPassword, setShowForgotPassword] = useState(false)
     const [forgotPasswordEmail, setForgotPasswordEmail] = useState('')
     const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false)
+    const [showPassword, setShowPassword] = useState(false)   // 👈 YENİ: şifre göster/gizle
 
     // Forgot Password
     const handleForgotPassword = async () => {
@@ -175,10 +176,12 @@ const LoginArea = () => {
                                             placeholder="ornek@email.com"
                                         />
                                     </div>
-                                    <div className="default-form-box">
+
+                                    {/* ŞİFRE ALANI + SHOW/HIDE TOGGLE */}
+                                    <div className="default-form-box" style={{ position: 'relative' }}>
                                         <label>Şifre<span className="text-danger">*</span></label>
                                         <input
-                                            type="password"
+                                            type={showPassword ? 'text' : 'password'}
                                             className="form-control"
                                             required
                                             value={pass}
@@ -186,11 +189,30 @@ const LoginArea = () => {
                                             minLength="6"
                                             autoComplete="current-password"
                                             placeholder="••••••"
+                                            style={{ paddingRight: '40px' }}
                                         />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            style={{
+                                                position: 'absolute',
+                                                right: '10px',
+                                                top: '38px',
+                                                background: 'none',
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                                fontSize: '16px',
+                                                color: '#666'
+                                            }}
+                                            aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                        >
+                                            {showPassword ? '🙈' : '👁️'}
+                                        </button>
                                         <small className="text-muted">
                                             Şifreniz en az 6 karakter olmalıdır.
                                         </small>
                                     </div>
+
                                     <div className="login_submit">
                                         <button
                                             className="theme-btn-one btn-black-overlay btn_md"
@@ -225,26 +247,35 @@ const LoginArea = () => {
 
                                 {/* Forgot Password Modal */}
                                 {showForgotPassword && (
-                                    <div className="forgot-password-modal" style={{
-                                        position: 'fixed',
-                                        top: 0,
-                                        left: 0,
-                                        right: 0,
-                                        bottom: 0,
-                                        backgroundColor: 'rgba(0,0,0,0.5)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        zIndex: 9999
-                                    }}>
-                                        <div className="modal-content" style={{
-                                            backgroundColor: '#fff',
-                                            padding: '30px',
-                                            borderRadius: '10px',
-                                            maxWidth: '500px',
-                                            width: '90%',
-                                            position: 'relative'
-                                        }}>
+                                    <div
+                                        className="forgot-password-modal"
+                                        style={{
+                                            position: 'fixed',
+                                            top: 0,
+                                            left: 0,
+                                            right: 0,
+                                            bottom: 0,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            zIndex: 9999,
+                                            backgroundColor: 'rgba(0,0,0,0.35)',
+                                            backdropFilter: 'blur(4px)',
+                                            padding: '16px'
+                                        }}
+                                    >
+                                        <div
+                                            className="modal-content"
+                                            style={{
+                                                backgroundColor: '#fff',
+                                                padding: '24px',
+                                                borderRadius: '12px',
+                                                maxWidth: '480px',
+                                                width: '100%',
+                                                position: 'relative',
+                                                boxShadow: '0 8px 24px rgba(0,0,0,0.18)'
+                                            }}
+                                        >
                                             <button
                                                 onClick={() => {
                                                     setShowForgotPassword(false)
@@ -258,19 +289,23 @@ const LoginArea = () => {
                                                     border: 'none',
                                                     fontSize: '24px',
                                                     cursor: 'pointer',
-                                                    color: '#666'
+                                                    color: '#666',
+                                                    lineHeight: 1
                                                 }}
+                                                aria-label="Kapat"
                                             >
                                                 ×
                                             </button>
                                             <h3 className="mb-3">Şifremi Unuttum</h3>
-                                            <p className="mb-4" style={{ color: '#666' }}>
+                                            <p className="mb-4" style={{ color: '#666', fontSize: '14px' }}>
                                                 Şifre sıfırlama linkini göndermek için email adresinizi girin.
                                             </p>
-                                            <form onSubmit={(e) => {
-                                                e.preventDefault()
-                                                handleForgotPassword()
-                                            }}>
+                                            <form
+                                                onSubmit={(e) => {
+                                                    e.preventDefault()
+                                                    handleForgotPassword()
+                                                }}
+                                            >
                                                 <div className="default-form-box mb-3">
                                                     <label>Email Adresi<span className="text-danger">*</span></label>
                                                     <input
@@ -281,8 +316,11 @@ const LoginArea = () => {
                                                         onChange={e => setForgotPasswordEmail(e.target.value)}
                                                         placeholder="ornek@email.com"
                                                     />
+                                                    <small className="text-muted">
+                                                        Şifre sıfırlama linki bu adrese gönderilecektir.
+                                                    </small>
                                                 </div>
-                                                <div className="d-flex gap-2">
+                                                <div className="d-flex flex-column flex-sm-row gap-2 mt-2">
                                                     <button
                                                         type="button"
                                                         className="btn btn-secondary"

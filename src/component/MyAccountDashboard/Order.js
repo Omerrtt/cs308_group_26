@@ -136,11 +136,17 @@ const Order = () => {
 
     // Invoice indir - memoized
     const downloadInvoice = useCallback((orderId) => {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/67e2e45d-e2d0-4eec-88e2-0c404d5839a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'INV0',location:'MyAccountDashboard/Order.js:138',message:'downloadInvoice invoked',data:{orderId,totalInvoices:invoices.length},timestamp:Date.now()})}).catch(()=>{})
+        // #endregion
         try {
             // İlgili invoice'u bul
             const invoice = invoices.find(inv => inv.orderId === orderId)
             
             if (!invoice) {
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/67e2e45d-e2d0-4eec-88e2-0c404d5839a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'INV3',location:'MyAccountDashboard/Order.js:145',message:'invoice not found',data:{orderId},timestamp:Date.now()})}).catch(()=>{})
+                // #endregion
                 Swal.fire({
                     title: 'Fatura Bulunamadı',
                     text: 'Bu sipariş için fatura bulunamadı.',
@@ -155,23 +161,27 @@ const Order = () => {
             // PDF oluştur
             const invoicePDFBlob = generateInvoicePDF(invoice)
             
-            // PDF'i indir
+            // PDF'i yeni sekmede aç
             const pdfUrl = URL.createObjectURL(invoicePDFBlob)
-            const link = document.createElement('a')
-            link.href = pdfUrl
-            link.download = `Fatura_${invoice.invoiceNumber || invoice.invoiceId || orderId}.pdf`
-            document.body.appendChild(link)
-            link.click()
-            document.body.removeChild(link)
-            
+
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/67e2e45d-e2d0-4eec-88e2-0c404d5839a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'INV1',location:'MyAccountDashboard/Order.js:159',message:'invoice PDF created',data:{orderId,invoiceNumber:invoice.invoiceNumber||invoice.invoiceId,blobSize:invoicePDFBlob.size},timestamp:Date.now()})}).catch(()=>{})
+            // #endregion
+
+            const openedWindow = window.open(pdfUrl, '_blank', 'noopener,noreferrer')
+
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/67e2e45d-e2d0-4eec-88e2-0c404d5839a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'INV2',location:'MyAccountDashboard/Order.js:165',message:'window.open result',data:{orderId,opened:!!openedWindow},timestamp:Date.now()})}).catch(()=>{})
+            // #endregion
+
             // Clean up
             setTimeout(() => {
                 URL.revokeObjectURL(pdfUrl)
-            }, 100)
+            }, 5000)
             
             Swal.fire({
                 title: 'Başarılı',
-                text: 'Fatura indirildi.',
+                text: openedWindow ? 'Fatura yeni sekmede açıldı.' : 'Fatura hazırlandı. Eğer sekme açılmadıysa tarayıcı açılır pencere engelini kontrol edin.',
                 icon: 'success',
                 timer: 2000,
                 showConfirmButton: false

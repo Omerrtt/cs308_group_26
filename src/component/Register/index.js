@@ -26,10 +26,10 @@ const RegisterArea = () => {
                     '<b>Hesabım</b> sayfasına gidebilir veya <b>Alışveriş</b> yapabilirsiniz',
             }).then((result) => {
                 if(result.isConfirmed) {
-                  history.push('/my-account')
+                    history.push('/my-account')
                 }
-              });
-        }else{
+            });
+        } else {
             if(!email || !pass || !user){
                 Swal.fire({
                     icon: 'warning',
@@ -77,8 +77,8 @@ const RegisterArea = () => {
 
                 setLoading(false)
             
-            Swal.fire({
-                icon: 'success',
+                Swal.fire({
+                    icon: 'success',
                     title: 'Kayıt Başarılı!',
                     text: 'Hesabınız oluşturuldu. Giriş sayfasına yönlendiriliyorsunuz...',
                     timer: 1500,
@@ -112,6 +112,7 @@ const RegisterArea = () => {
             }
         }
     }
+
     return (
         <>
             <section id="login_area" className="ptb-100">
@@ -123,26 +124,79 @@ const RegisterArea = () => {
                                 <form onSubmit={(e)=>{e.preventDefault();register()}}>
                                     <div className="default-form-box">
                                         <label>Kullanıcı Adı<span className="text-danger">*</span></label>
-                                        <input type="text" className="form-control" value={user} onChange={e => setUserName(e.currentTarget.value)} required/>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            value={user}
+                                            onChange={e => setUserName(e.currentTarget.value)}
+                                            required
+                                        />
+                                        <small className="text-muted">
+                                            Mağazada görünecek adınız (fatura ve siparişlerde kullanılacak).
+                                        </small>
                                     </div>
+
                                     <div className="default-form-box">
                                         <label>Email<span className="text-danger">*</span></label>
-                                        <input type="email" className="form-control" value={email} onChange={e => setEmail(e.currentTarget.value)} required/>
+                                        <input
+                                            type="email"
+                                            className="form-control"
+                                            value={email}
+                                            onChange={e => setEmail(e.currentTarget.value)}
+                                            required
+                                        />
+                                        <small className="text-muted">
+                                            Sipariş onayları ve bildirimler bu adrese gönderilecektir.
+                                        </small>
                                     </div>
+
                                     <div className="default-form-box">
                                         <label>Şifre<span className="text-danger">*</span></label>
-                                        <input type="password" className="form-control" value={pass} onChange={e => setPass(e.currentTarget.value)} required minLength="6"/>
+                                        <input
+                                            type="password"
+                                            className="form-control"
+                                            value={pass}
+                                            onChange={e => setPass(e.currentTarget.value)}
+                                            required
+                                            minLength="6"
+                                            placeholder="••••••"
+                                        />
+                                        <small className="text-muted">
+                                            En az 6 karakter olmalı. Daha güçlü bir şifre için harf ve rakam kombinasyonu kullanın.
+                                        </small>
                                     </div>
-                                    <div className="login_submit">
+
+                                    {/* BUTON ORTALANDI ve ALTA BOŞLUK EKLENDİ */}
+                                    <div
+                                        className="login_submit"
+                                        style={{
+                                            marginTop: '24px',
+                                            marginBottom: '24px',
+                                            textAlign: 'center'
+                                        }}
+                                    >
                                         <button 
                                             className="theme-btn-one btn-black-overlay btn_md" 
                                             type="submit"
                                             disabled={loading}
+                                            style={{ minWidth: '160px' }}
                                         >
                                             {loading ? 'Kaydediliyor...' : 'Kayıt Ol'}
                                         </button>
                                     </div>
-                                    <Link to="/login" className="active">Zaten hesabınız var mı? Giriş Yap</Link>
+
+                                    <div
+                                        style={{
+                                            marginTop: '8px',
+                                            textAlign: 'center',
+                                            fontSize: '14px'
+                                        }}
+                                    >
+                                        <span style={{ marginRight: '4px' }}>Zaten hesabınız var mı?</span>
+                                        <Link to="/login" className="active">
+                                            Giriş Yap
+                                        </Link>
+                                    </div>
                                 </form>
                             </div>
                         </div>

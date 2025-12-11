@@ -15,7 +15,16 @@ const LoginArea = () => {
     const [showForgotPassword, setShowForgotPassword] = useState(false)
     const [forgotPasswordEmail, setForgotPasswordEmail] = useState('')
     const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false)
-    const [showPassword, setShowPassword] = useState(false)   // 👈 YENİ: şifre göster/gizle
+    const [showPassword, setShowPassword] = useState(false)   // şifre göster/gizle
+    const [isCapsLockOn, setIsCapsLockOn] = useState(false)   // Caps Lock uyarısı
+
+    // Caps Lock durumunu güncelleyen helper
+    const handlePasswordKeyEvent = (e) => {
+        if (typeof e.getModifierState === 'function') {
+            const caps = e.getModifierState('CapsLock');
+            setIsCapsLockOn(!!caps);
+        }
+    };
 
     // Forgot Password
     const handleForgotPassword = async () => {
@@ -157,7 +166,15 @@ const LoginArea = () => {
                     <div className="row">
                         <div className="col-lg-6 offset-lg-3 col-md-12 col-sm-12 col-12">
                             <div className="account_form">
-                                <h3>Giriş Yap</h3>
+                                {/* 🔽 BURASI DEĞİŞTİ: başlık + açıklama */}
+                                <h3 className="mb-3 text-center">Giriş Yap</h3>
+                                <p
+                                    className="text-muted mb-4 text-center"
+                                    style={{ fontSize: '14px' }}
+                                >
+                                    Lütfen kayıt olduğunuz e-posta adresi ve şifrenizle giriş yapın.
+                                </p>
+
                                 <form
                                     onSubmit={(e) => {
                                         e.preventDefault();
@@ -177,7 +194,7 @@ const LoginArea = () => {
                                         />
                                     </div>
 
-                                    {/* ŞİFRE ALANI + SHOW/HIDE TOGGLE */}
+                                    {/* ŞİFRE ALANI + SHOW/HIDE TOGGLE + CAPS LOCK WARNING */}
                                     <div className="default-form-box" style={{ position: 'relative' }}>
                                         <label>Şifre<span className="text-danger">*</span></label>
                                         <input
@@ -190,6 +207,9 @@ const LoginArea = () => {
                                             autoComplete="current-password"
                                             placeholder="••••••"
                                             style={{ paddingRight: '40px' }}
+                                            onKeyDown={handlePasswordKeyEvent}
+                                            onKeyUp={handlePasswordKeyEvent}
+                                            onBlur={() => setIsCapsLockOn(false)}
                                         />
                                         <button
                                             type="button"
@@ -208,6 +228,14 @@ const LoginArea = () => {
                                         >
                                             {showPassword ? '🙈' : '👁️'}
                                         </button>
+                                        {isCapsLockOn && (
+                                            <small
+                                                className="text-danger"
+                                                style={{ display: 'block', marginTop: '4px' }}
+                                            >
+                                                Caps Lock açık olabilir, şifrenizi yazarken dikkat edin.
+                                            </small>
+                                        )}
                                         <small className="text-muted">
                                             Şifreniz en az 6 karakter olmalıdır.
                                         </small>

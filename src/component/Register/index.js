@@ -1,9 +1,10 @@
 import React, { useState } from 'react'
 import { Link, useHistory } from 'react-router-dom'
-import { useSelector } from "react-redux";
-import Swal from 'sweetalert2';
+import { useSelector } from "react-redux"
+import Swal from 'sweetalert2'
 import firebase from 'firebase/app'
-import { auth, db } from '../../firebaseConfig'
+import 'firebase/firestore' // serverTimestamp için garanti
+import { auth, db } from './../../firebaseConfig'
 
 const RegisterArea = () => {
   const history = useHistory()
@@ -12,110 +13,126 @@ const RegisterArea = () => {
   const [pass, setPass] = useState('')
   const [loading, setLoading] = useState(false)
 
-  let status = useSelector((state) => state.user.status);
-  let userData = useSelector((state) => state.user.user);
+  const status = useSelector((state) => state.user.status)
+  const userData = useSelector((state) => state.user.user)
+
+  const getFriendlyErrorMessage = (error) => {
+    if (!error) return 'Bir hata oluştu. Lütfen tekrar deneyin.'
+
+    if (error.code === 'auth/email-already-in-use') return 'Bu email adresi zaten kullanılıyor.'
+    if (error.code === 'auth/weak-password') return 'Şifre çok zayıf. En az 6 karakter olmalıdır.'
+    if (error.code === 'auth/invalid-email') return 'Geçersiz email adresi.'
+    if (error.code === 'auth/operation-not-allowed') return 'Email/şifre ile kayıt şu an kapalı.'
+
+    return error.message || 'Bir hata oluştu. Lütfen tekrar deneyin.'
+  }
 
   // ENTER ile submit (double submit korumalı)
   const handleEnter = (e) => {
-    if (loading) return;
+    if (loading) return
     if (e.key === 'Enter') {
-      e.preventDefault();
-      register();
+      e.preventDefault()
+      register()
     }
-  };
+  }
 
   const register = async () => {
-    if (loading) return;
+    if (loading) return
 
+    // Zaten login ise
     if (status) {
-      Swal.fire({
+      const res = await Swal.fire({
         icon: 'question',
-        title: 'Sayın ' + userData.name,
+        title: 'Sayın ' + (userData?.name || 'Kullanıcı'),
         html:
           'Zaten kayıtlısınız <br />' +
           '<b>Hesabım</b> sayfasına gidebilir veya <b>Alışveriş</b> yapabilirsiniz',
-      }).then((result) => {
-        if (result.isConfirmed) {
-          history.push('/my-account')
-        }
-      });
-    } else {
-      if (!email || !pass || !user) {
-        Swal.fire({
-          icon: 'warning',
-          title: 'Eksik Bilgi',
-          text: 'Lütfen tüm alanları doldurun'
-        })
-        return
-      }
+        showCancelButton: true,
+        confirmButtonText: 'Hesabım',
+        cancelButtonText: 'Kapat'
+      })
 
-      setLoading(true)
+      if (res.isConfirmed) history.push('/my-account')
+      return
+    }
+
+    // Basit validation
+    const trimmedName = user.trim()
+    const trimmedEmail = email.trim().toLowerCase()
+    const trimmedPass = pass
+
+    if (!trimmedName || !trimmedEmail || !trimmedPass) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Eksik Bilgi',
+        text: 'Lütfen tüm alanları doldurun'
+      })
+      return
+    }
+
+    if (trimmedPass.length < 6) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Şifre Zayıf',
+        text: 'Şifre en az 6 karakter olmalıdır.'
+      })
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      const userCredential = await auth.createUserWithEmailAndPassword(trimmedEmail, trimmedPass)
+      const uid = userCredential.user.uid
+
+      // displayName (fail etse bile kayıt devam etsin)
       try {
-        const userCredential = await auth.createUserWithEmailAndPassword(email, pass)
-        const uid = userCredential.user.uid
-
-        try {
-          await userCredential.user.updateProfile({ displayName: user })
-        } catch (e) {
-          console.warn('Display name update failed:', e)
-        }
-
-        try {
-          await db.collection('users').doc(uid).set({
-            name: user,
-            email: email,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            uid: uid,
-            orders: [],
-            cart: [],
-            addresses: [],
-            invoices: []
-          })
-        } catch (e) {
-          console.warn('Firestore write failed:', e)
-        }
-
-        try {
-          await auth.signOut()
-        } catch (e) {
-          console.warn('Firebase signOut failed:', e)
-        }
-
-        setLoading(false)
-
-        Swal.fire({
-          icon: 'success',
-          title: 'Kayıt Başarılı!',
-          text: 'Hesabınız oluşturuldu. Giriş sayfasına yönlendiriliyorsunuz...',
-          timer: 1500,
-          showConfirmButton: false
-        })
-
-        setTimeout(() => {
-          history.push("/login");
-        }, 100)
-
-      } catch (error) {
-        console.error('Registration error:', error)
-        setLoading(false)
-
-        let errorMessage = 'Bir hata oluştu. Lütfen tekrar deneyin.'
-        if (error.code === 'auth/email-already-in-use') {
-          errorMessage = 'Bu email adresi zaten kullanılıyor.'
-        } else if (error.code === 'auth/weak-password') {
-          errorMessage = 'Şifre çok zayıf. En az 6 karakter olmalıdır.'
-        } else if (error.code === 'auth/invalid-email') {
-          errorMessage = 'Geçersiz email adresi.'
-        } else if (error.message) {
-          errorMessage = error.message
-        }
-
-        Swal.fire({
-          icon: 'error',
-          title: 'Kayıt Başarısız',
-          text: errorMessage
-        })
+        await userCredential.user.updateProfile({ displayName: trimmedName })
+      } catch (e) {
+        console.warn('Display name update failed:', e)
       }
+
+      // Firestore user doc (fail etse bile kayıt devam etsin)
+      try {
+        await db.collection('users').doc(uid).set({
+          name: trimmedName,
+          email: trimmedEmail,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          uid,
+          orders: [],
+          cart: [],
+          addresses: [],
+          invoices: []
+        })
+      } catch (e) {
+        console.warn('Firestore write failed:', e)
+      }
+
+      // Temiz akış için signOut
+      try {
+        await auth.signOut()
+      } catch (e) {
+        console.warn('Firebase signOut failed:', e)
+      }
+
+      await Swal.fire({
+        icon: 'success',
+        title: 'Kayıt Başarılı!',
+        text: 'Hesabınız oluşturuldu. Giriş sayfasına yönlendiriliyorsunuz...',
+        timer: 1400,
+        showConfirmButton: false
+      })
+
+      history.push("/login")
+    } catch (error) {
+      console.error('Registration error:', error)
+      Swal.fire({
+        icon: 'error',
+        title: 'Kayıt Başarısız',
+        text: getFriendlyErrorMessage(error)
+      })
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -127,6 +144,7 @@ const RegisterArea = () => {
             <div className="col-lg-6 offset-lg-3 col-md-12 col-sm-12 col-12">
               <div className="account_form">
                 <h3>Kayıt Ol</h3>
+
                 <form onSubmit={(e) => { e.preventDefault(); register() }}>
                   <div className="default-form-box">
                     <label>Kullanıcı Adı<span className="text-danger">*</span></label>
@@ -138,6 +156,7 @@ const RegisterArea = () => {
                       onKeyDown={handleEnter}
                       disabled={loading}
                       required
+                      placeholder="Örn: cagdas"
                     />
                   </div>
 
@@ -151,6 +170,7 @@ const RegisterArea = () => {
                       onKeyDown={handleEnter}
                       disabled={loading}
                       required
+                      placeholder="ornek@mail.com"
                     />
                   </div>
 
@@ -164,9 +184,10 @@ const RegisterArea = () => {
                       onKeyDown={handleEnter}
                       disabled={loading}
                       required
-                      minLength="6"
+                      minLength={6}
                       placeholder="••••••"
                     />
+                    <small style={{ opacity: 0.75 }}>En az 6 karakter</small>
                   </div>
 
                   <div className="login_submit">
@@ -187,6 +208,7 @@ const RegisterArea = () => {
                     </Link>
                   </div>
                 </form>
+
               </div>
             </div>
           </div>

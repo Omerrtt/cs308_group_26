@@ -738,24 +738,22 @@ const Checkout = () => {
             console.log('✅ Fatura Firebase\'e kaydedildi');
 
             // Invoice PDF oluştur, indir ve email gönder
+            let invoicePdfUrl = null;
             try {
                 console.log('Invoice PDF oluşturuluyor...');
                 const invoicePDFBlob = generateInvoicePDF(invoiceData);
                 console.log('✅ PDF oluşturuldu');
                 
+                // PDF blob URL'i oluştur (modal'da göstermek için)
+                invoicePdfUrl = URL.createObjectURL(invoicePDFBlob);
+                
                 // PDF'i otomatik indir
-                const pdfUrl = URL.createObjectURL(invoicePDFBlob);
                 const link = document.createElement('a');
-                link.href = pdfUrl;
+                link.href = invoicePdfUrl;
                 link.download = `Fatura_${invoiceId}.pdf`;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
-                
-                // Clean up
-                setTimeout(() => {
-                    URL.revokeObjectURL(pdfUrl);
-                }, 100);
                 
                 console.log('✅ PDF indirildi');
                 
@@ -867,19 +865,54 @@ const Checkout = () => {
             // Redux store'dan sepeti temizle
             dispatch(clearCart());
 
-            // Başarı mesajı
-        Swal.fire({
-            icon: 'success',
-                title: 'Sipariş Başarılı!',
-                html: `
+            // Başarı mesajı - Fatura görüntüsü ile
+            const invoiceHtml = invoicePdfUrl ? `
+                <div style="text-align: left; margin-bottom: 20px;">
                     <p>Siparişiniz başarıyla alındı.</p>
                     <p><strong>Sipariş No:</strong> ${orderId}</p>
                     <p><strong>Fatura No:</strong> ${invoiceId}</p>
                     <p><strong>Tutar:</strong> ${total.toFixed(2)} ₺</p>
                     <p><strong>Tahmini Teslimat:</strong> ${orderData.estimatedDeliveryString}</p>
-                `,
-                confirmButtonText: 'Ana Sayfaya Dön'
+                </div>
+                <div style="margin-top: 20px; border-top: 1px solid #dee2e6; padding-top: 20px;">
+                    <h5 style="margin-bottom: 15px; color: #007bff;">
+                        <i class="fa fa-file-pdf" style="margin-right: 8px;"></i>Fatura Görüntüsü
+                    </h5>
+                    <iframe 
+                        src="${invoicePdfUrl}" 
+                        style="width: 100%; height: 600px; border: 1px solid #dee2e6; border-radius: 4px;"
+                        title="Fatura Görüntüsü"
+                    ></iframe>
+                </div>
+            ` : `
+                <p>Siparişiniz başarıyla alındı.</p>
+                <p><strong>Sipariş No:</strong> ${orderId}</p>
+                <p><strong>Fatura No:</strong> ${invoiceId}</p>
+                <p><strong>Tutar:</strong> ${total.toFixed(2)} ₺</p>
+                <p><strong>Tahmini Teslimat:</strong> ${orderData.estimatedDeliveryString}</p>
+            `;
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Sipariş Başarılı!',
+            html: invoiceHtml,
+            width: '90%',
+            customClass: {
+                popup: 'swal-wide',
+                htmlContainer: 'swal-html-container'
+            },
+            confirmButtonText: 'Ana Sayfaya Dön',
+            didClose: () => {
+                // Modal kapandığında blob URL'i temizle
+                if (invoicePdfUrl) {
+                    URL.revokeObjectURL(invoicePdfUrl);
+                }
+            }
         }).then(() => {
+            // Modal kapandıktan sonra blob URL'i temizle
+            if (invoicePdfUrl) {
+                URL.revokeObjectURL(invoicePdfUrl);
+            }
             history.push('/');
         });
 

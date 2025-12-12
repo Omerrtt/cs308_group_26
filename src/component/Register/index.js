@@ -12,6 +12,7 @@ const RegisterArea = () => {
   const [email, setEmail] = useState('')
   const [pass, setPass] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false) // ✅ yeni
 
   const status = useSelector((state) => state.user.status)
   const userData = useSelector((state) => state.user.user)
@@ -176,17 +177,43 @@ const RegisterArea = () => {
 
                   <div className="default-form-box">
                     <label>Şifre<span className="text-danger">*</span></label>
-                    <input
-                      type="password"
-                      className="form-control"
-                      value={pass}
-                      onChange={e => setPass(e.currentTarget.value)}
-                      onKeyDown={handleEnter}
-                      disabled={loading}
-                      required
-                      minLength={6}
-                      placeholder="••••••"
-                    />
+
+                    {/* ✅ Şifre göster/gizle wrapper */}
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        className="form-control"
+                        value={pass}
+                        onChange={e => setPass(e.currentTarget.value)}
+                        onKeyDown={handleEnter}
+                        disabled={loading}
+                        required
+                        minLength={6}
+                        placeholder="••••••"
+                        aria-label="Şifre"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(prev => !prev)}
+                        style={{
+                          position: 'absolute',
+                          right: '10px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                          opacity: 0.7
+                        }}
+                        disabled={loading}
+                        aria-label={showPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
+                      >
+                        {showPassword ? 'Gizle' : 'Göster'}
+                      </button>
+                    </div>
+
                     <small style={{ opacity: 0.75 }}>En az 6 karakter</small>
                   </div>
 

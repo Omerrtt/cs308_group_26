@@ -66,7 +66,8 @@ const ReviewModal = ({ order, onClose, onSuccess }) => {
             let notApprovedComments = [...(userData.notApprovedComments || [])] // Kopyasını al
 
             for (const [productId, review] of Object.entries(reviews)) {
-                if (review.rating > 0) {
+                // Rating veya comment varsa işle (ikisi de opsiyonel ama en az biri olmalı)
+                if (review.rating > 0 || (review.comment && review.comment.trim())) {
                     // Product ID'yi string'e çevir ve başındaki sıfırları koru
                     const productIdStr = productId.toString()
                     
@@ -104,31 +105,34 @@ const ReviewModal = ({ order, onClose, onSuccess }) => {
                     
                     const productData = productDoc.data() || {}
                     
-                    // Rating array'ini güncelle
-                    const ratings = productData.ratings || []
-                    const newRating = {
-                        userId: currentUser.uid,
-                        orderId: order.orderId,
-                        rating: review.rating,
-                        createdAt: new Date().toISOString()
+                    // Rating > 0 ise rating işlemlerini yap
+                    if (review.rating > 0) {
+                        // Rating array'ini güncelle
+                        const ratings = productData.ratings || []
+                        const newRating = {
+                            userId: currentUser.uid,
+                            orderId: order.orderId,
+                            rating: review.rating,
+                            createdAt: new Date().toISOString()
+                        }
+                        
+                        // Aynı kullanıcı ve order için eski rating'i kaldır
+                        const filteredRatings = ratings.filter(r => 
+                            !(r.userId === currentUser.uid && r.orderId === order.orderId)
+                        )
+                        filteredRatings.push(newRating)
+                        
+                        // Ortalama rating hesapla
+                        const avgRating = filteredRatings.reduce((sum, r) => sum + r.rating, 0) / filteredRatings.length
+                        
+                        // Product'ı güncelle
+                        batch.update(productRef, {
+                            ratings: filteredRatings,
+                            rating: avgRating,
+                            ratingCount: filteredRatings.length,
+                            updatedAt: new Date().toISOString()
+                        })
                     }
-                    
-                    // Aynı kullanıcı ve order için eski rating'i kaldır
-                    const filteredRatings = ratings.filter(r => 
-                        !(r.userId === currentUser.uid && r.orderId === order.orderId)
-                    )
-                    filteredRatings.push(newRating)
-                    
-                    // Ortalama rating hesapla
-                    const avgRating = filteredRatings.reduce((sum, r) => sum + r.rating, 0) / filteredRatings.length
-                    
-                    // Product'ı güncelle
-                    batch.update(productRef, {
-                        ratings: filteredRatings,
-                        rating: avgRating,
-                        ratingCount: filteredRatings.length,
-                        updatedAt: new Date().toISOString()
-                    })
 
                     // Comment varsa notApprovedComments array'ine ekle (döngü sonunda tek seferde kaydedilecek)
                     if (review.comment && review.comment.trim()) {
@@ -145,6 +149,22 @@ const ReviewModal = ({ order, onClose, onSuccess }) => {
                         notApprovedComments.push(newComment)
                         console.log(`💬 Comment eklendi (memory): ${newComment.id} - ${productIdStr}`)
                     }
+                } else if (review.comment && review.comment.trim()) {
+                    // Sadece comment varsa (rating yoksa) - sadece comment'i kaydet
+                    const productIdStr = productId.toString()
+                    
+                    const newComment = {
+                        id: `comment_${Date.now()}_${productId}_${Math.random().toString(36).substr(2, 9)}`,
+                        userId: currentUser.uid,
+                        productId: productIdStr,
+                        orderId: order.orderId,
+                        comment: review.comment.trim(),
+                        createdAt: new Date().toISOString(),
+                        status: 'pending'
+                    }
+                    
+                    notApprovedComments.push(newComment)
+                    console.log(`💬 Sadece comment eklendi (memory): ${newComment.id} - ${productIdStr}`)
                 }
             }
             
@@ -274,7 +294,7 @@ const ReviewModal = ({ order, onClose, onSuccess }) => {
                         
                         <div style={{ marginBottom: '15px' }}>
                             <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#333' }}>
-                                Puan (1-5 Yıldız) *
+                                Puan (1-5 Yıldız) (Opsiyonel)
                             </label>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                 <div style={{ display: 'flex', gap: '5px', cursor: 'pointer' }}>
@@ -348,14 +368,14 @@ const ReviewModal = ({ order, onClose, onSuccess }) => {
                     </button>
                     <button
                         onClick={handleSubmit}
-                        disabled={submitting || Object.values(reviews).every(r => r.rating === 0)}
+                        disabled={submitting || Object.values(reviews).every(r => r.rating === 0 && !(r.comment && r.comment.trim()))}
                         style={{
                             padding: '10px 20px',
                             border: 'none',
                             borderRadius: '4px',
                             backgroundColor: submitting ? '#ccc' : '#ff8a00',
                             color: '#fff',
-                            cursor: submitting || Object.values(reviews).every(r => r.rating === 0) ? 'not-allowed' : 'pointer'
+                            cursor: submitting || Object.values(reviews).every(r => r.rating === 0 && !(r.comment && r.comment.trim())) ? 'not-allowed' : 'pointer'
                         }}
                     >
                         {submitting ? 'Gönderiliyor...' : 'Gönder'}

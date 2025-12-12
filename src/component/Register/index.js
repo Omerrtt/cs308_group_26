@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Link, useHistory } from 'react-router-dom'
 import { useSelector } from "react-redux"
+import { store } from '../../app/store'
 import Swal from 'sweetalert2'
 import firebase from 'firebase/app'
 import 'firebase/firestore' // serverTimestamp için garanti
@@ -83,6 +84,10 @@ const RegisterArea = () => {
     setLoading(true)
 
     try {
+      // Redux store'dan mevcut cart'ı al (register öncesi sepet koruması için)
+      const reduxCart = store.getState().products.carts || []
+      console.log('🛒 Register: Redux cart:', reduxCart.length, 'ürün')
+
       const userCredential = await auth.createUserWithEmailAndPassword(trimmedEmail, trimmedPass)
       const uid = userCredential.user.uid
 
@@ -93,7 +98,18 @@ const RegisterArea = () => {
         console.warn('Display name update failed:', e)
       }
 
+      // Redux cart'ı Firebase formatına çevir
+      const firebaseCart = reduxCart.map(item => ({
+        id: item.id,
+        originalId: item.originalId || item.id,
+        title: item.title,
+        price: item.price,
+        img: item.img || item.image,
+        quantity: item.quantity || 1
+      }))
+
       // Firestore user doc (fail etse bile kayıt devam etsin)
+      // Redux'taki cart'ı Firebase'e kaydet (boş array yerine)
       try {
         await db.collection('users').doc(uid).set({
           name: trimmedName,
@@ -101,10 +117,13 @@ const RegisterArea = () => {
           createdAt: firebase.firestore.FieldValue.serverTimestamp(),
           uid,
           orders: [],
-          cart: [],
+          cart: firebaseCart, // Redux cart'ı kaydet
           addresses: [],
           invoices: []
         })
+        if (firebaseCart.length > 0) {
+          console.log('✅ Register: Redux cart Firebase\'e kaydedildi:', firebaseCart.length, 'ürün')
+        }
       } catch (e) {
         console.warn('Firestore write failed:', e)
       }

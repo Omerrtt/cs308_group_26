@@ -11,10 +11,18 @@ service cloud.firestore {
       // Herkes ürünleri okuyabilir
       allow read: if true;
       
-      // Yazma için sadece authenticated kullanıcılar (ileride admin kontrolü eklenebilir)
-      // NOT: Script çalıştırmak için geçici olarak 'allow write: if true;' yapın
-      // Ürünler yüklendikten sonra tekrar 'allow write: if request.auth != null;' yapın
-      allow write: if request.auth != null;
+      // Product Manager email kontrolü
+      function isProductManager() {
+        return request.auth != null && request.auth.token.email == 'mbozyel2003@gmail.com';
+      }
+      
+      // Admin UID kontrolü
+      function isAdmin() {
+        return request.auth != null && request.auth.uid == 'kcopWa6L3AZ5BbeHCokV7uKD6Pd2';
+      }
+      
+      // Yazma için admin veya product manager gerekli
+      allow write: if isAdmin() || isProductManager();
     }
     
     // Users koleksiyonu - Kullanıcılar sadece kendi verilerini okuyup yazabilir
@@ -29,14 +37,19 @@ service cloud.firestore {
         return request.auth != null && request.auth.token.email == 'mbozyel349@gmail.com';
       }
       
-      // Kullanıcılar kendi dokümanlarını okuyabilir, admin ve sales manager tüm kullanıcıları okuyabilir
-      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin() || isSalesManager());
+      // Product Manager email kontrolü
+      function isProductManager() {
+        return request.auth != null && request.auth.token.email == 'mbozyel2003@gmail.com';
+      }
+      
+      // Kullanıcılar kendi dokümanlarını okuyabilir, admin, sales manager ve product manager tüm kullanıcıları okuyabilir
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin() || isSalesManager() || isProductManager());
       
       // Kullanıcılar kendi dokümanlarını oluşturabilir
       allow create: if request.auth != null && request.auth.uid == userId;
       
-      // Kullanıcılar kendi dokümanlarını güncelleyebilir, admin ve sales manager tüm kullanıcıları güncelleyebilir
-      allow update: if request.auth != null && (request.auth.uid == userId || isAdmin() || isSalesManager());
+      // Kullanıcılar kendi dokümanlarını güncelleyebilir, admin, sales manager ve product manager tüm kullanıcıları güncelleyebilir
+      allow update: if request.auth != null && (request.auth.uid == userId || isAdmin() || isSalesManager() || isProductManager());
     }
     
     // Orders koleksiyonu
@@ -51,14 +64,19 @@ service cloud.firestore {
         return request.auth != null && request.auth.token.email == 'mbozyel349@gmail.com';
       }
       
-      // Kullanıcılar kendi order'larını okuyabilir, admin ve sales manager tüm order'ları okuyabilir
-      allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin() || isSalesManager());
+      // Product Manager email kontrolü
+      function isProductManager() {
+        return request.auth != null && request.auth.token.email == 'mbozyel2003@gmail.com';
+      }
+      
+      // Kullanıcılar kendi order'larını okuyabilir, admin, sales manager ve product manager tüm order'ları okuyabilir
+      allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin() || isSalesManager() || isProductManager());
       
       // Kullanıcılar kendi order'larını oluşturabilir (checkout sırasında)
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
       
-      // Admin ve sales manager order'ları güncelleyebilir, kullanıcılar kendi order'larını güncelleyemez
-      allow update: if isAdmin() || isSalesManager();
+      // Admin, sales manager ve product manager order'ları güncelleyebilir, kullanıcılar kendi order'larını güncelleyemez
+      allow update: if isAdmin() || isSalesManager() || isProductManager();
     }
     
     // Cart koleksiyonu (gelecekte kullanılacak)

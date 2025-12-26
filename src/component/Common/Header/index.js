@@ -15,6 +15,7 @@ import { clearCart } from '../../../app/slices/products'
 import { auth } from '../../../firebaseConfig'
 
 const SALES_MANAGER_EMAIL = 'mbozyel349@gmail.com';
+const PRODUCT_MANAGER_EMAIL = 'mbozyel2003@gmail.com';
 
 const Header = () => {
     const [click, setClick] = useState(false);
@@ -28,14 +29,21 @@ const Header = () => {
     let userData = useSelector((state) => state.user.user);
     let dispatch = useDispatch();
     const [isSalesManager, setIsSalesManager] = useState(false);
+    const [isProductManager, setIsProductManager] = useState(false);
 
-    // Sales manager kontrolü
+    // Sales manager ve Product manager kontrolü
     useEffect(() => {
         const unsubscribe = auth.onAuthStateChanged((currentUser) => {
             if (currentUser && currentUser.email === SALES_MANAGER_EMAIL) {
                 setIsSalesManager(true);
             } else {
                 setIsSalesManager(false);
+            }
+            
+            if (currentUser && currentUser.email === PRODUCT_MANAGER_EMAIL) {
+                setIsProductManager(true);
+            } else {
+                setIsProductManager(false);
             }
         });
         return () => unsubscribe();
@@ -314,6 +322,40 @@ const Header = () => {
                                                 >
                                                     <i className="fa fa-chart-line"></i>
                                                     <span>Sales Panel</span>
+                                                </Link>
+                                            </li>
+                                        )}
+                                        {isProductManager && (
+                                            <li style={{display: 'inline-block'}}>
+                                                <Link 
+                                                    to="/product-manager"
+                                                    style={{
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        gap: '6px',
+                                                        padding: '8px 16px',
+                                                        background: '#28a745',
+                                                        color: 'white',
+                                                        textDecoration: 'none',
+                                                        borderRadius: '4px',
+                                                        fontWeight: '500',
+                                                        fontSize: '14px',
+                                                        transition: 'all 0.3s ease',
+                                                        transform: 'scale(1)'
+                                                    }}
+                                                    onMouseOver={(e) => {
+                                                        e.currentTarget.style.background = '#1e7e34';
+                                                        e.currentTarget.style.transform = 'scale(1.05)';
+                                                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+                                                    }}
+                                                    onMouseOut={(e) => {
+                                                        e.currentTarget.style.background = '#28a745';
+                                                        e.currentTarget.style.transform = 'scale(1)';
+                                                        e.currentTarget.style.boxShadow = 'none';
+                                                    }}
+                                                >
+                                                    <i className="fa fa-box"></i>
+                                                    <span>Product Panel</span>
                                                 </Link>
                                             </li>
                                         )}
@@ -685,6 +727,19 @@ const Header = () => {
                                         >
                                             <i className="fa fa-chart-line"></i>
                                             <span>Sales Panel</span>
+                                        </Link>
+                                    </li>
+                                )}
+                                {/* Product Manager Butonu */}
+                                {isProductManager && (
+                                    <li className="mobile-user-section">
+                                        <Link 
+                                            to="/product-manager" 
+                                            className="mobile-user-link"
+                                            onClick={(e) => handleLinkClick(e, '/product-manager')}
+                                        >
+                                            <i className="fa fa-box"></i>
+                                            <span>Product Panel</span>
                                         </Link>
                                     </li>
                                 )}

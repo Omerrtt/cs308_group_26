@@ -68,6 +68,7 @@ const Fashion = loadable(() => pMinDelay(import('./page/index'), 250), { fallbac
 const UploadProducts = loadable(() => pMinDelay(import('./page/admin/upload-products'), 250), { fallback: <Loading /> });
 const AdminPanel = loadable(() => pMinDelay(import('./page/admin'), 250), { fallback: <Loading /> });
 const SalesManagerPanel = loadable(() => pMinDelay(import('./page/sales-manager'), 250), { fallback: <Loading /> });
+const ProductManagerPanel = loadable(() => pMinDelay(import('./page/product-manager'), 250), { fallback: <Loading /> });
 const Payment = loadable(() => pMinDelay(import('./page/payment'), 250), { fallback: <Loading /> });
 const CheckoutSuccess = loadable(() => pMinDelay(import('./page/checkout-success'), 250), { fallback: <Loading /> });
 
@@ -144,6 +145,7 @@ const App = () => {
             <Route path='/admin' exact component={AdminPanel} />
             <Route path='/admin/upload-products' exact component={UploadProducts} />
             <Route path='/sales-manager' exact component={SalesManagerPanel} />
+            <Route path='/product-manager' exact component={ProductManagerPanel} />
             <Route exact component={Error} />
           </Switch>
         </Router>

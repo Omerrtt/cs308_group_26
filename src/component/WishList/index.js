@@ -30,19 +30,23 @@ const Wishlist = () => {
                             <div className="table_desc">
                                 <div className="table_page table-responsive">
                                     <table>
-                                        <thead>
-                                            <tr>
-                                                <th className="product_remove">Remove</th>
-                                                <th className="product_thumb">Image</th>
-                                                <th className="product_name">Product</th>
-                                                <th className="product-price">Price</th>
-                                                <th className="product_stock">Stock Status</th>
-                                                <th className="product_addcart">Add To Cart</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                          {favorites.map((data, index)=>(
-                                                    <tr key={index}>
+                                            <thead>
+                                                <tr>
+                                                    <th className="product_remove">Kaldır</th>
+                                                    <th className="product_thumb">Resim</th>
+                                                    <th className="product_name">Ürün</th>
+                                                    <th className="product-price">Fiyat</th>
+                                                    <th className="product_stock">Stok Durumu</th>
+                                                    <th className="product_addcart">Sepete Ekle</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {favorites.map((data, index) => {
+                                                    const stock = typeof data.stock === 'number' ? data.stock : parseInt(data.stock || 0, 10);
+                                                    const inStock = stock > 0;
+                                                    
+                                                    return (
+                                                        <tr key={index}>
                                                         <td className="product_remove">
                                                             <i className="fa fa-trash text-danger" onClick={() => rmProduct(data.id)} style={{'cursor':'pointer'}}></i>
                                                         </td>
@@ -57,33 +61,48 @@ const Wishlist = () => {
                                                         </Link>
                                                         </td>
                                                         <td className="product-price">${data.price}.00</td>
-                                                        <td className="product_stock"><h6>In Stock</h6></td>
-                                                        <td className="product_addcart">
-                                                            <button type="button" className="theme-btn-one btn-black-overlay btn_sm" onClick={() => addToCart(data.id)}>Add to cart</button>
-                                                        </td>
-                                                    </tr> 
-                                                ))}                                  
-                                        </tbody>
-                                    </table>
+                                                        <td className="product_stock">
+                                                                <h6>{inStock ? "Stokta" : "Stokta Yok"}</h6>
+                                                            </td>
+                                                            <td className="product_addcart">
+                                                                <button 
+                                                                    type="button" 
+                                                                    className={`theme-btn-one btn-black-overlay btn_sm ${!inStock ? 'disabled' : ''}`} 
+                                                                    onClick={() => inStock && addToCart(data.id)}
+                                                                    disabled={!inStock}
+                                                                    style={!inStock ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+                                                                >
+                                                                    {inStock ? "Sepete Ekle" : "Stokta Yok"}
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    )
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            </section>
-            :         <section id="empty_cart_area" className="ptb-100">
-            <div className="container">
-                <div className="row">
-                    <div className="col-lg-6 offset-lg-3 col-md-6 offset-md-3 col-sm-12 col-12">
-                        <div className="empaty_cart_area">
-                            <img src={img} alt="img" />
-                            <h2>YOUR WISHLIST IS EMPTY</h2>
+                </section>
+                : <section id="empty_cart_area" className="ptb-100">
+                    <div className="container">
+                        <div className="row">
+                            <div className="col-lg-6 offset-lg-3 col-md-6 offset-md-3 col-sm-12 col-12">
+                                <div className="empaty_cart_area">
+                                    <div className="empty-cart-icon mb-3">
+                                        <i className="fa fa-heart-o" style={{ fontSize: '100px', color: '#ff8a00' }}></i>
+                                    </div>
+                                    <h2>İSTEK LİSTENİZ BOŞ</h2>
+                                    <h3>Üzgünüz... İstek listenizde ürün bulunamadı!</h3>
+                                    <Link to="/shop" className="btn btn-black-overlay btn_sm">Alışverişe Devam Et</Link>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
-        </section>
-              }
+                </section>
+            }
         </>
     )
 }

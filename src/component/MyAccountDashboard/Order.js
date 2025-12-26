@@ -195,7 +195,7 @@ const Order = () => {
             // #region agent log
             fetch('http://127.0.0.1:7242/ingest/67e2e45d-e2d0-4eec-88e2-0c404d5839a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'INV2',location:'MyAccountDashboard/Order.js:165',message:'window.open result',data:{orderId,opened:!!openedWindow},timestamp:Date.now()})}).catch(()=>{})
             // #endregion
-
+            
             // Clean up
             setTimeout(() => {
                 URL.revokeObjectURL(pdfUrl)

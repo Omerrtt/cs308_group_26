@@ -7,6 +7,7 @@ import Swal from "sweetalert2";
 import { auth, db } from '../../firebaseConfig';
 
 const CART_STORAGE_KEY = 'cs308_persisted_cart';
+const FAV_STORAGE_KEY = 'cs308_persisted_favorites';
 
 const canUseStorage = () => typeof window !== 'undefined' && window.localStorage;
 
@@ -21,12 +22,32 @@ const loadCartFromStorage = () => {
     }
 };
 
+const loadFavoritesFromStorage = () => {
+    if (!canUseStorage()) return [];
+    try {
+        const stored = window.localStorage.getItem(FAV_STORAGE_KEY);
+        return stored ? JSON.parse(stored) : [];
+    } catch (error) {
+        console.error('Favorites load failed', error);
+        return [];
+    }
+};
+
 const saveCartToStorage = (carts) => {
     if (!canUseStorage()) return;
     try {
         window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(carts));
     } catch (error) {
         console.error('Cart save failed', error);
+    }
+};
+
+const saveFavoritesToStorage = (favorites) => {
+    if (!canUseStorage()) return;
+    try {
+        window.localStorage.setItem(FAV_STORAGE_KEY, JSON.stringify(favorites));
+    } catch (error) {
+        console.error('Favorites save failed', error);
     }
 };
 
@@ -73,13 +94,38 @@ const saveCartToFirebase = async (carts) => {
     }
 };
 
+// Firebase'e favorileri kaydet
+const saveFavoritesToFirebase = async (favorites) => {
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+        try {
+            const userRef = db.collection('users').doc(currentUser.uid);
+            const favData = favorites && favorites.length > 0 ? favorites.map(item => ({
+                id: item.id,
+                title: item.title,
+                price: item.price,
+                img: item.img || item.image,
+                stock: item.stock,
+                originalId: item.originalId || item.id
+            })) : [];
+
+            await userRef.set({
+                favorites: favData
+            }, { merge: true }); // Merge true ile diğer alanları koruyoruz
+            console.log('Favoriler Firebase\'e kaydedildi');
+        } catch (error) {
+            console.error('Firebase favori kaydetme hatası:', error);
+        }
+    }
+};
+
 // Product Slice
 const productsSlice = createSlice({
     name: 'products',
     initialState: {
         products: getProductsDataSync() || [], // İlk yükleme için senkron versiyon (JSON'dan)
         carts: loadCartFromStorage(),
-        favorites: [],
+        favorites: loadFavoritesFromStorage(),
         compare: [],
         single: null,
         loading: false,
@@ -281,6 +327,15 @@ const productsSlice = createSlice({
                 console.error('Firebase sepet kaydetme hatası:', err);
             });
         },
+        // Set Favorites (merge işlemi için)
+        setFavorites: (state, action) => {
+            state.favorites = action.payload || []
+            saveFavoritesToStorage(state.favorites)
+            // Firebase'e kaydet
+            saveFavoritesToFirebase(state.favorites).catch(err => {
+                console.error('Firebase favori kaydetme hatası:', err);
+            });
+        },
         // Add to Favorite / Wishlist
         addToFav: (state, action) =>{
             let { id } = action.payload;
@@ -290,11 +345,20 @@ const productsSlice = createSlice({
             if (item === undefined) {
                 // Get Product
                 let arr = state.products.find(item => item.id === parseInt(id))
-                arr.quantity = 1
-                state.favorites.push(arr)
-                Swal.fire('Başarılı', "Favorilere eklendi", 'success')
+                if (arr) {
+                    arr.quantity = 1
+                    state.favorites.push(arr)
+                    saveFavoritesToStorage(state.favorites)
+                    // Firebase'e kaydet
+                    saveFavoritesToFirebase(state.favorites).catch(err => {
+                        console.error('Firebase favori kaydetme hatası:', err);
+                    });
+                    Swal.fire('Başarılı', "İstek listesine eklendi", 'success')
+                } else {
+                    Swal.fire('Hata', "Ürün bulunamadı", 'error')
+                }
             }else{
-                  Swal.fire('Başarısız', "Zaten favorilerde", 'warning')
+                  Swal.fire('Başarısız', "Zaten istek listenizde", 'warning')
               }
         },
         // Remove from Favorite / Wishlist
@@ -302,7 +366,11 @@ const productsSlice = createSlice({
             let { id } = action.payload;
             let arr = state.favorites.filter(item => item.id !== id)
             state.favorites = arr
-            
+            saveFavoritesToStorage(state.favorites)
+            // Firebase'e kaydet
+            saveFavoritesToFirebase(state.favorites).catch(err => {
+                console.error('Firebase favori silme hatası:', err);
+            });
         },
     },
     extraReducers: (builder) => {
@@ -335,6 +403,7 @@ export const {
     removeCart, 
     clearCart,
     setCart,
+    setFavorites,
     addToFav,
     removeFav,
     addToComp,

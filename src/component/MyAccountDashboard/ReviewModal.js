@@ -107,31 +107,31 @@ const ReviewModal = ({ order, onClose, onSuccess }) => {
                     
                     // Rating > 0 ise rating işlemlerini yap
                     if (review.rating > 0) {
-                        // Rating array'ini güncelle
-                        const ratings = productData.ratings || []
-                        const newRating = {
-                            userId: currentUser.uid,
-                            orderId: order.orderId,
-                            rating: review.rating,
-                            createdAt: new Date().toISOString()
-                        }
-                        
-                        // Aynı kullanıcı ve order için eski rating'i kaldır
-                        const filteredRatings = ratings.filter(r => 
-                            !(r.userId === currentUser.uid && r.orderId === order.orderId)
-                        )
-                        filteredRatings.push(newRating)
-                        
-                        // Ortalama rating hesapla
-                        const avgRating = filteredRatings.reduce((sum, r) => sum + r.rating, 0) / filteredRatings.length
-                        
-                        // Product'ı güncelle
-                        batch.update(productRef, {
-                            ratings: filteredRatings,
-                            rating: avgRating,
-                            ratingCount: filteredRatings.length,
-                            updatedAt: new Date().toISOString()
-                        })
+                    // Rating array'ini güncelle
+                    const ratings = productData.ratings || []
+                    const newRating = {
+                        userId: currentUser.uid,
+                        orderId: order.orderId,
+                        rating: review.rating,
+                        createdAt: new Date().toISOString()
+                    }
+                    
+                    // Aynı kullanıcı ve order için eski rating'i kaldır
+                    const filteredRatings = ratings.filter(r => 
+                        !(r.userId === currentUser.uid && r.orderId === order.orderId)
+                    )
+                    filteredRatings.push(newRating)
+                    
+                    // Ortalama rating hesapla
+                    const avgRating = filteredRatings.reduce((sum, r) => sum + r.rating, 0) / filteredRatings.length
+                    
+                    // Product'ı güncelle
+                    batch.update(productRef, {
+                        ratings: filteredRatings,
+                        rating: avgRating,
+                        ratingCount: filteredRatings.length,
+                        updatedAt: new Date().toISOString()
+                    })
                     }
 
                     // Comment varsa notApprovedComments array'ine ekle (döngü sonunda tek seferde kaydedilecek)

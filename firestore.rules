@@ -91,6 +91,34 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
     }
     
+    // Live Chats koleksiyonu
+    match /liveChats/{chatId} {
+      // Support Agent email kontrolü
+      function isSupportAgent() {
+        return request.auth != null && request.auth.token.email == 'mbzyl349@gmail.com';
+      }
+      
+      // Müşteri kendi chat'ini okuyabilir, support agent tüm chat'leri okuyabilir
+      allow read: if request.auth != null && (
+        resource.data.customerId == request.auth.uid || 
+        resource.data.customerId == 'guest' ||
+        isSupportAgent()
+      );
+      
+      // Müşteri kendi chat'ini oluşturabilir (guest için de)
+      allow create: if request.auth != null;
+      
+      // Müşteri kendi chat'ine mesaj ekleyebilir, support agent tüm chat'lere mesaj ekleyebilir
+      allow update: if request.auth != null && (
+        resource.data.customerId == request.auth.uid ||
+        resource.data.customerId == 'guest' ||
+        isSupportAgent()
+      );
+      
+      // Sadece support agent chat'i silebilir
+      allow delete: if isSupportAgent();
+    }
+    
     // Diğer tüm koleksiyonlar için varsayılan: Reddet
     match /{document=**} {
       allow read, write: if false;

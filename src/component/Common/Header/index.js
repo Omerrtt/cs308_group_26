@@ -16,6 +16,7 @@ import { auth } from '../../../firebaseConfig'
 
 const SALES_MANAGER_EMAIL = 'mbozyel349@gmail.com';
 const PRODUCT_MANAGER_EMAIL = 'mbozyel2003@gmail.com';
+const SUPPORT_AGENT_EMAIL = 'mbzyl349@gmail.com';
 
 const Header = () => {
     const [click, setClick] = useState(false);
@@ -30,8 +31,9 @@ const Header = () => {
     let dispatch = useDispatch();
     const [isSalesManager, setIsSalesManager] = useState(false);
     const [isProductManager, setIsProductManager] = useState(false);
+    const [isSupportAgent, setIsSupportAgent] = useState(false);
 
-    // Sales manager ve Product manager kontrolü
+    // Sales manager, Product manager ve Support agent kontrolü
     useEffect(() => {
         const unsubscribe = auth.onAuthStateChanged((currentUser) => {
             if (currentUser && currentUser.email === SALES_MANAGER_EMAIL) {
@@ -44,6 +46,12 @@ const Header = () => {
                 setIsProductManager(true);
             } else {
                 setIsProductManager(false);
+            }
+            
+            if (currentUser && currentUser.email === SUPPORT_AGENT_EMAIL) {
+                setIsSupportAgent(true);
+            } else {
+                setIsSupportAgent(false);
             }
         });
         return () => unsubscribe();
@@ -356,6 +364,40 @@ const Header = () => {
                                                 >
                                                     <i className="fa fa-box"></i>
                                                     <span>Product Panel</span>
+                                                </Link>
+                                            </li>
+                                        )}
+                                        {isSupportAgent && (
+                                            <li style={{display: 'inline-block'}}>
+                                                <Link 
+                                                    to="/support-agent"
+                                                    style={{
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        gap: '6px',
+                                                        padding: '8px 16px',
+                                                        background: '#25D366',
+                                                        color: 'white',
+                                                        textDecoration: 'none',
+                                                        borderRadius: '4px',
+                                                        fontWeight: '500',
+                                                        fontSize: '14px',
+                                                        transition: 'all 0.3s ease',
+                                                        transform: 'scale(1)'
+                                                    }}
+                                                    onMouseOver={(e) => {
+                                                        e.currentTarget.style.background = '#1da851';
+                                                        e.currentTarget.style.transform = 'scale(1.05)';
+                                                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+                                                    }}
+                                                    onMouseOut={(e) => {
+                                                        e.currentTarget.style.background = '#25D366';
+                                                        e.currentTarget.style.transform = 'scale(1)';
+                                                        e.currentTarget.style.boxShadow = 'none';
+                                                    }}
+                                                >
+                                                    <i className="fa fa-headphones"></i>
+                                                    <span>Support Panel</span>
                                                 </Link>
                                             </li>
                                         )}
@@ -740,6 +782,19 @@ const Header = () => {
                                         >
                                             <i className="fa fa-box"></i>
                                             <span>Product Panel</span>
+                                        </Link>
+                                    </li>
+                                )}
+                                {/* Support Agent Butonu */}
+                                {isSupportAgent && (
+                                    <li className="mobile-user-section">
+                                        <Link 
+                                            to="/support-agent" 
+                                            className="mobile-user-link"
+                                            onClick={(e) => handleLinkClick(e, '/support-agent')}
+                                        >
+                                            <i className="fa fa-headphones"></i>
+                                            <span>Support Panel</span>
                                         </Link>
                                     </li>
                                 )}

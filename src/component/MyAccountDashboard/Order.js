@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useSelector } from 'react-redux'
 import { auth, db } from '../../firebaseConfig'
+import firebase from 'firebase/app'
 import { generateInvoicePDF } from '../../utils/invoiceGenerator'
 import Swal from 'sweetalert2'
 import ReviewModal from './ReviewModal'
@@ -108,12 +109,14 @@ const Order = () => {
         text: {
             'processing': 'İşleniyor',
             'in-transit': 'Yolda',
-            'delivered': 'Teslim Edildi'
+            'delivered': 'Teslim Edildi',
+            'cancelled': 'İptal Edildi'
         },
         class: {
             'processing': 'badge-warning',
             'in-transit': 'badge-info',
-            'delivered': 'badge-success'
+            'delivered': 'badge-success',
+            'cancelled': 'badge-danger'
         }
     }), [])
 
@@ -219,6 +222,150 @@ const Order = () => {
         closeReviewModal()
         loadOrders() // Order'ları yeniden yükle
     }, [closeReviewModal, loadOrders])
+
+    // Order iptal et - memoized
+    const cancelOrder = useCallback(async (order) => {
+        try {
+            // Onay al
+            const result = await Swal.fire({
+                title: 'Siparişi İptal Et',
+                text: `"${order.orderId}" numaralı siparişi iptal etmek istediğinize emin misiniz?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Evet, İptal Et',
+                cancelButtonText: 'Hayır',
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d'
+            })
+
+            if (!result.isConfirmed) {
+                return
+            }
+
+            // Sadece processing durumundaki order'lar iptal edilebilir
+            if (order.status !== 'processing') {
+                Swal.fire({
+                    title: 'İptal Edilemez',
+                    text: 'Sadece "İşleniyor" durumundaki siparişler iptal edilebilir.',
+                    icon: 'warning'
+                })
+                return
+            }
+
+            const currentUser = auth.currentUser
+            if (!currentUser) {
+                Swal.fire({
+                    title: 'Hata',
+                    text: 'Lütfen giriş yapın.',
+                    icon: 'error'
+                })
+                return
+            }
+
+            // Loading göster
+            Swal.fire({
+                title: 'İptal ediliyor...',
+                text: 'Lütfen bekleyiniz.',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading()
+                }
+            })
+
+            const updateTime = new Date()
+            const updateData = {
+                status: 'cancelled',
+                updatedAt: updateTime.toISOString(),
+                updatedAtTimestamp: updateTime.getTime()
+            }
+
+            // Orders collection'ındaki order'ı güncelle
+            const orderRef = db.collection('orders').doc(order.orderId)
+            await orderRef.update(updateData)
+            console.log(`✅ Orders collection'daki order iptal edildi: ${order.orderId}`)
+
+            // Users collection'ındaki orders array'ini güncelle
+            const userRef = db.collection('users').doc(currentUser.uid)
+            const userDoc = await userRef.get()
+            
+            if (userDoc.exists) {
+                const userData = userDoc.data()
+                const userOrders = Array.isArray(userData.orders) ? [...userData.orders] : []
+                
+                // Order'ı bul ve güncelle
+                const orderIndex = userOrders.findIndex(o => o.orderId === order.orderId)
+                if (orderIndex !== -1) {
+                    userOrders[orderIndex] = {
+                        ...userOrders[orderIndex],
+                        ...updateData
+                    }
+                    
+                    await userRef.update({
+                        orders: userOrders
+                    })
+                    console.log(`✅ Users collection'daki order iptal edildi: ${order.orderId}`)
+                }
+            }
+
+            // Ürün stoklarını geri ekle
+            try {
+                if (order.items && Array.isArray(order.items)) {
+                    const batch = db.batch()
+                    let stockUpdateCount = 0
+                    
+                    for (const item of order.items) {
+                        const productId = item.originalId || item.id
+                        const productRef = db.collection('products').doc(productId.toString())
+                        const productDoc = await productRef.get()
+                        
+                        if (productDoc.exists) {
+                            const productData = productDoc.data()
+                            const currentStock = typeof productData.stock === 'number' 
+                                ? productData.stock 
+                                : parseInt(productData.stock, 10) || 0
+                            
+                            const quantityToAdd = item.quantity || 1
+                            const newStock = currentStock + quantityToAdd
+                            
+                            batch.update(productRef, {
+                                stock: newStock,
+                                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                            })
+                            
+                            stockUpdateCount++
+                            console.log(`  - Ürün ${productId}: ${currentStock} → ${newStock} (${quantityToAdd} adet eklendi)`)
+                        }
+                    }
+                    
+                    if (stockUpdateCount > 0) {
+                        await batch.commit()
+                        console.log(`✅ ${stockUpdateCount} ürünün stoku geri eklendi`)
+                    }
+                }
+            } catch (stockError) {
+                console.error('❌ Stok güncelleme hatası (sipariş yine de iptal edildi):', stockError)
+            }
+
+            // Başarı mesajı
+            Swal.fire({
+                title: 'Başarılı',
+                text: 'Sipariş başarıyla iptal edildi.',
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false
+            })
+
+            // Order'ları yeniden yükle
+            await loadOrders()
+        } catch (error) {
+            console.error('❌ Order iptal hatası:', error)
+            Swal.fire({
+                title: 'Hata',
+                text: 'Sipariş iptal edilirken bir hata oluştu: ' + (error.message || 'Bilinmeyen hata'),
+                icon: 'error'
+            })
+        }
+    }, [loadOrders])
 
     // Order detaylarını göster - memoized
     const showOrderDetails = useCallback((order) => {
@@ -339,8 +486,25 @@ const Order = () => {
                                     const itemCount = order.items ? order.items.length : 0
                                     const orderStatus = order.status || 'processing' // Default status
                                     
-                                    // Debug: Status kontrolü
-                                    const isDelivered = orderStatus === 'delivered' || orderStatus === 'Teslim Edildi'
+                                    // Debug: Status kontrolü - console'a yazdır
+                                    console.log('🔍 Order Debug:', {
+                                        orderId: order.orderId,
+                                        status: order.status,
+                                        orderStatus: orderStatus,
+                                        statusType: typeof order.status
+                                    })
+                                    
+                                    // Status kontrolü - case-insensitive ve farklı formatları kontrol et
+                                    const normalizedStatus = (orderStatus || '').toLowerCase().trim()
+                                    const isDelivered = normalizedStatus === 'delivered' || normalizedStatus === 'teslim edildi'
+                                    const isProcessing = normalizedStatus === 'processing' || normalizedStatus === 'işleniyor'
+                                    
+                                    console.log('🔍 Status Check:', {
+                                        orderId: order.orderId,
+                                        normalizedStatus,
+                                        isProcessing,
+                                        isDelivered
+                                    })
                                     
                                     return (
                                         <tr key={order.orderId || index}>
@@ -363,6 +527,15 @@ const Order = () => {
                                                 >
                                                     Fatura İndir
                                                 </button>
+                                                {isProcessing && (
+                                                    <button
+                                                        className="btn btn-sm btn-danger"
+                                                        onClick={() => cancelOrder(order)}
+                                                        style={{ marginRight: '5px' }}
+                                                    >
+                                                        İptal Et
+                                                    </button>
+                                                )}
                                                 {isDelivered && (
                                                     <button
                                                         className="btn btn-sm btn-warning"

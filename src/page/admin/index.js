@@ -611,12 +611,17 @@ const AdminPanel = () => {
                                                                 minWidth: '140px',
                                                                 background: order.status === 'delivered' ? '#d4edda' :
                                                                            order.status === 'in-transit' ? '#cfe2ff' :
+                                                                           order.status === 'cancelled' ? '#f8d7da' :
+                                                                           order.status === 'returned' ? '#f8d7da' :
+                                                                           order.status === 'refunded' ? '#f8d7da' :
                                                                            '#fff3cd'
                                                             }}
                                                         >
                                                             <option value="processing">İşleniyor</option>
                                                             <option value="in-transit">Yolda</option>
                                                             <option value="delivered">Teslim Edildi</option>
+                                                            <option value="cancelled">İptal Edildi</option>
+                                                            <option value="returned">İade Edildi</option>
                                                         </select>
                                                     </td>
                                                     <td>
@@ -647,7 +652,7 @@ const AdminPanel = () => {
                                                                             <p><strong>Kargo:</strong> ${formatPrice(order.shipping || 0)}</p>
                                                                             <p><strong>Vergi:</strong> ${formatPrice(order.tax || 0)}</p>
                                                                             <p><strong>Toplam:</strong> ${formatPrice(order.total)}</p>
-                                                                            <p><strong>Durum:</strong> ${order.status === 'processing' ? 'İşleniyor' : order.status === 'in-transit' ? 'Yolda' : order.status === 'delivered' ? 'Teslim Edildi' : order.status || 'İşleniyor'}</p>
+                                                                            <p><strong>Durum:</strong> ${order.status === 'processing' ? 'İşleniyor' : order.status === 'in-transit' ? 'Yolda' : order.status === 'delivered' ? 'Teslim Edildi' : order.status === 'cancelled' ? 'İptal Edildi' : order.status === 'returned' ? 'İade Edildi' : order.status === 'refunded' ? 'İade Edildi' : order.status || 'İşleniyor'}</p>
                                                                             <p><strong>Ödeme Durumu:</strong> ${order.paymentStatus || 'N/A'}</p>
                                                                             <p><strong>Ödeme Yöntemi:</strong> ${order.paymentMethod || 'N/A'}</p>
                                                                             ${order.comment ? `<p><strong>Yorum/Not:</strong> ${order.comment}</p>` : ''}

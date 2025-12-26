@@ -75,8 +75,9 @@ service cloud.firestore {
       // Kullanıcılar kendi order'larını oluşturabilir (checkout sırasında)
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
       
-      // Admin order'ları güncelleyebilir, kullanıcılar sadece kendi order'larını cancelled durumuna güncelleyebilir
-      allow update: if isAdmin() || 
+      // Admin, sales manager ve product manager order'ları güncelleyebilir
+      // Kullanıcılar sadece kendi order'larını cancelled durumuna güncelleyebilir (sadece processing'den cancelled'a)
+      allow update: if isAdmin() || isSalesManager() || isProductManager() ||
         (request.auth != null && 
          request.auth.uid == resource.data.userId && 
          request.resource.data.status == 'cancelled' &&

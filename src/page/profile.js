@@ -348,13 +348,29 @@ const Profile = () => {
             // Orders collection'ı da güncelle (eğer varsa)
             try {
                 const orderRef = db.collection('orders').doc(order.orderId)
-                await orderRef.update({
-                    status: 'cancelled',
-                    cancelledAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
-                })
+                const orderDoc = await orderRef.get()
+                
+                if (orderDoc.exists) {
+                    const orderData = orderDoc.data()
+                    // Sadece processing durumundaki order'ları cancelled yap
+                    if (orderData.status === 'processing') {
+                        await orderRef.update({
+                            status: 'cancelled',
+                            cancelledAt: new Date().toISOString(),
+                            cancelledAtTimestamp: Date.now(),
+                            updatedAt: new Date().toISOString(),
+                            updatedAtTimestamp: Date.now()
+                        })
+                        console.log('✅ Orders collection güncellendi:', order.orderId)
+                    } else {
+                        console.warn('⚠️ Order zaten processing durumunda değil:', orderData.status)
+                    }
+                } else {
+                    console.warn('⚠️ Orders collection\'da order bulunamadı:', order.orderId)
+                }
             } catch (err) {
-                console.warn('Orders collection güncellenemedi:', err)
+                console.error('❌ Orders collection güncellenemedi:', err)
+                // Hata durumunda kullanıcıya bilgi ver ama sipariş iptalini engelleme
             }
 
             // Ürün stoklarını geri artır

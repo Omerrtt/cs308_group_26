@@ -541,6 +541,12 @@ const AdminPanel = () => {
                                         <p className="mb-0">Teslim Edildi</p>
                                     </div>
                                 </div>
+                                <div className="col-md-3">
+                                    <div className="card text-center" style={{ padding: '20px', background: '#f8d7da', borderRadius: '8px' }}>
+                                        <h3>{allOrders.filter(o => o.status === 'cancelled').length}</h3>
+                                        <p className="mb-0">İptal Edildi</p>
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Siparişler Tablosu */}

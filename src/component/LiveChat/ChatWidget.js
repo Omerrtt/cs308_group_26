@@ -188,19 +188,13 @@ const ChatWidget = () => {
             }
         }, (error) => {
             console.error('Chat listener hatası:', error);
-            // Permission hatası durumunda chat'i sıfırla
+            // Permission hatası durumunda chat'i sıfırla (sessizce)
             if (error.code === 'permission-denied') {
                 setChatId(null);
                 setMessages([]);
                 setIsOpen(false);
                 localStorage.removeItem('chat_id');
-                Swal.fire({
-                    title: 'Erişim Hatası',
-                    text: 'Chat erişim izni yok. Lütfen sayfayı yenileyin.',
-                    icon: 'warning',
-                    timer: 3000,
-                    showConfirmButton: false
-                });
+                // Mesaj gösterme, sessizce temizle
             }
         });
     };

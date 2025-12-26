@@ -7,7 +7,7 @@ import { store } from './app/store';
 import { Provider } from 'react-redux';
 import { auth, db } from './firebaseConfig';
 import { register, logout } from './app/slices/user';
-import { loadProductsFromFirebase, clearCart, setCart, setFavorites } from './app/slices/products';
+import { loadProductsFromFirebase, clearCart, setCart } from './app/slices/products';
 // import Bootstrap CSS first
 import 'bootstrap/dist/css/bootstrap.min.css';
 // import Custom Css - Bootstrap'ten sonra yüklensin
@@ -110,11 +110,6 @@ auth.onAuthStateChanged(async (user) => {
                  updates.invoices = [];
                  needsUpdate = true;
                }
-               
-               if (!userData.hasOwnProperty('favorites')) {
-                 updates.favorites = [];
-                 needsUpdate = true;
-               }
         
         // Eksik field'ları güncelle
         if (needsUpdate) {
@@ -126,7 +121,6 @@ auth.onAuthStateChanged(async (user) => {
             if (updates.orders !== undefined) userData.orders = updates.orders;
             if (updates.addresses !== undefined) userData.addresses = updates.addresses;
             if (updates.invoices !== undefined) userData.invoices = updates.invoices;
-            if (updates.favorites !== undefined) userData.favorites = updates.favorites;
           } catch (updateError) {
             console.warn('Kullanıcı profili güncellenirken hata:', updateError);
           }
@@ -200,48 +194,6 @@ auth.onAuthStateChanged(async (user) => {
         console.error('❌ Cart birleştirme hatası:', cartError);
         // Hata olsa bile devam et
       }
-
-      // Favorites merge işlemi: Redux favorites + Firebase favorites
-      try {
-        const reduxFav = store.getState().products.favorites || [];
-        const firebaseFav = (userData && userData.favorites) ? userData.favorites : [];
-
-        const mergedFav = firebaseFav.map(item => ({
-          id: item.id,
-          originalId: item.originalId || item.id,
-          title: item.title,
-          price: item.price,
-          img: item.img || item.image,
-          stock: item.stock,
-          quantity: item.quantity || 1
-        }));
-
-        reduxFav.forEach(reduxItem => {
-          const productId = reduxItem.originalId || reduxItem.id;
-          const existingItemIndex = mergedFav.findIndex(
-            item => (item.originalId || item.id) === productId
-          );
-
-          if (existingItemIndex < 0) {
-            mergedFav.push({
-              id: reduxItem.id,
-              originalId: reduxItem.originalId || reduxItem.id,
-              title: reduxItem.title,
-              price: reduxItem.price,
-              img: reduxItem.img || reduxItem.image,
-              stock: reduxItem.stock,
-              quantity: reduxItem.quantity || 1
-            });
-          }
-        });
-
-        if (mergedFav.length > 0 || reduxFav.length > 0 || firebaseFav.length > 0) {
-          store.dispatch(setFavorites(mergedFav));
-          console.log('✅ Favorites birleştirme tamamlandı ve kaydedildi');
-        }
-      } catch (favError) {
-        console.error('❌ Favorites birleştirme hatası:', favError);
-      }
     } catch (error) {
       console.error('Firebase auth state listener error:', error);
       // Fallback: sadece email'den kullanıcı adı oluştur
@@ -256,7 +208,6 @@ auth.onAuthStateChanged(async (user) => {
     // Kullanıcı çıkış yapmış
     store.dispatch(logout());
     store.dispatch(clearCart()); // Sepeti temizle
-    store.dispatch(setFavorites([]));
   }
 });
 

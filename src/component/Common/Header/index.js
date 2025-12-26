@@ -259,45 +259,6 @@ const Header = () => {
                                     }}>
                                         <li style={{display: 'inline-block'}}>
                                             <Link 
-                                                to="/wishlist" 
-                                                title="İstek Listem"
-                                                style={{
-                                                    display: 'inline-flex', 
-                                                    alignItems: 'center', 
-                                                    textDecoration: 'none', 
-                                                    color: '#333', 
-                                                    position: 'relative',
-                                                    transition: 'color 0.3s ease'
-                                                }}
-                                                onMouseOver={(e) => {
-                                                    e.currentTarget.style.color = '#ff8a00';
-                                                }}
-                                                onMouseOut={(e) => {
-                                                    e.currentTarget.style.color = '#333';
-                                                }}
-                                            >
-                                                <i className="fa fa-heart" style={{fontSize: '22px'}}></i>
-                                                {favorites.length > 0 && (
-                                                    <span style={{
-                                                        position: 'absolute',
-                                                        top: '-8px',
-                                                        right: '-8px',
-                                                        background: '#ff8a00',
-                                                        color: 'white',
-                                                        borderRadius: '50%',
-                                                        width: '20px',
-                                                        height: '20px',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        fontSize: '12px',
-                                                        fontWeight: 'bold'
-                                                    }}>{favorites.length}</span>
-                                                )}
-                                            </Link>
-                                        </li>
-                                        <li style={{display: 'inline-block'}}>
-                                            <Link 
                                                 to="/cart" 
                                                 title="Sepetim"
                                                 style={{

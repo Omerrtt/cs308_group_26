@@ -7,7 +7,7 @@ const WishLists = () => {
     return (
         <>
             <Header />
-            <Banner title="İstek Listesi" backgroundColor="#f2f2f2" titleColor="black" />
+            <Banner title="Wishlist" />
             <Wishlist />
             <Footer />
         </>

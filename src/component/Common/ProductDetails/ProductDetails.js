@@ -512,32 +512,14 @@ const ProductDetailsOne = () => {
                                         </div>
                                     </form>
                                     <div className="add-to-cart-section mt-3">
-                                        <div className="d-flex align-items-center gap-3">
-                                            <button 
-                                                type="button" 
-                                                className="btn btn-primary theme-btn-one"
-                                                onClick={handleAddToCartClick}
-                                                disabled={!product.stock || product.stock <= 0}
-                                            >
-                                                Sepete Ekle
-                                            </button>
-                                            <button 
-                                                type="button" 
-                                                className="btn btn-outline-secondary theme-btn-one"
-                                                onClick={() => addToFav(product.id)}
-                                                style={{ 
-                                                    backgroundColor: 'transparent', 
-                                                    color: '#333', 
-                                                    border: '1px solid #ddd',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '8px'
-                                                }}
-                                            >
-                                                <i className="fa fa-heart"></i>
-                                                İstek Listesine Ekle
-                                            </button>
-                                        </div>
+                                        <button 
+                                            type="button" 
+                                            className="btn btn-primary theme-btn-one"
+                                            onClick={handleAddToCartClick}
+                                            disabled={!product.stock || product.stock <= 0}
+                                        >
+                                            Sepete Ekle
+                                        </button>
                                         {(!product.stock || product.stock <= 0) && (
                                             <small className="text-danger d-block mt-2">
                                                 Bu ürün şu anda stokta yok.

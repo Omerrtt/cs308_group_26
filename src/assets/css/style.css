@@ -310,10 +310,8 @@ ul li {
 
 #common_banner_one {
     background-image: url('../img/common/common_bg.png');
-    padding: 150px 0;
+    padding: 90px 0;
     background-repeat: no-repeat;
-    background-size: cover;
-    background-position: center;
 }
 
 .common_banner_text {
@@ -321,16 +319,8 @@ ul li {
     color: #fff;
 }
 
-.common_banner_text.banner-text-black {
-    color: #000;
-}
-
 .common_banner_text h2 {
     color: #fff;
-}
-
-.common_banner_text.banner-text-black h2 {
-    color: #000;
 }
 
 .common_banner_text ul {
@@ -341,10 +331,6 @@ ul li {
 
 .common_banner_text ul li {
     color: #fff;
-}
-
-.common_banner_text.banner-text-black ul li {
-    color: #000;
 }
 
 .common_banner_text ul li.active {
@@ -358,10 +344,6 @@ ul li {
 
 .common_banner_text ul li a {
     color: #fff;
-}
-
-.common_banner_text.banner-text-black ul li a {
-    color: #000;
 }
 
 .common_banner_text ul li a:hover {

@@ -24,14 +24,19 @@ service cloud.firestore {
         return request.auth != null && request.auth.uid == 'kcopWa6L3AZ5BbeHCokV7uKD6Pd2';
       }
       
-      // Kullanıcılar kendi dokümanlarını okuyabilir, admin tüm kullanıcıları okuyabilir
-      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      // Sales Manager email kontrolü
+      function isSalesManager() {
+        return request.auth != null && request.auth.token.email == 'mbozyel349@gmail.com';
+      }
+      
+      // Kullanıcılar kendi dokümanlarını okuyabilir, admin ve sales manager tüm kullanıcıları okuyabilir
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin() || isSalesManager());
       
       // Kullanıcılar kendi dokümanlarını oluşturabilir
       allow create: if request.auth != null && request.auth.uid == userId;
       
-      // Kullanıcılar kendi dokümanlarını güncelleyebilir, admin tüm kullanıcıları güncelleyebilir
-      allow update: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      // Kullanıcılar kendi dokümanlarını güncelleyebilir, admin ve sales manager tüm kullanıcıları güncelleyebilir
+      allow update: if request.auth != null && (request.auth.uid == userId || isAdmin() || isSalesManager());
     }
     
     // Orders koleksiyonu
@@ -41,14 +46,19 @@ service cloud.firestore {
         return request.auth != null && request.auth.uid == 'kcopWa6L3AZ5BbeHCokV7uKD6Pd2';
       }
       
-      // Kullanıcılar kendi order'larını okuyabilir, admin tüm order'ları okuyabilir
-      allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+      // Sales Manager email kontrolü
+      function isSalesManager() {
+        return request.auth != null && request.auth.token.email == 'mbozyel349@gmail.com';
+      }
+      
+      // Kullanıcılar kendi order'larını okuyabilir, admin ve sales manager tüm order'ları okuyabilir
+      allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin() || isSalesManager());
       
       // Kullanıcılar kendi order'larını oluşturabilir (checkout sırasında)
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
       
-      // Admin order'ları güncelleyebilir, kullanıcılar kendi order'larını güncelleyemez
-      allow update: if isAdmin();
+      // Admin ve sales manager order'ları güncelleyebilir, kullanıcılar kendi order'larını güncelleyemez
+      allow update: if isAdmin() || isSalesManager();
     }
     
     // Cart koleksiyonu (gelecekte kullanılacak)

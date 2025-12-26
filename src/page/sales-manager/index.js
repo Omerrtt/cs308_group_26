@@ -359,14 +359,14 @@ const SalesManagerPanel = () => {
                 const revenue = parseFloat(order.total) || 0;
                 totalRevenue += revenue;
 
-                // Her ürün için cost hesapla (default: %50 of sale price)
+                // Her ürün için cost hesapla (default: %75 of sale price)
                 let orderCost = 0;
                 if (order.items && Array.isArray(order.items)) {
                     order.items.forEach(item => {
                         const itemPrice = parseFloat(item.price) || 0;
                         const quantity = item.quantity || 1;
-                        // Product cost varsa kullan, yoksa %50 varsay
-                        const productCost = item.cost || (itemPrice * 0.5);
+                        // Product cost varsa kullan, yoksa %75 varsay
+                        const productCost = item.cost || (itemPrice * 0.75);
                         orderCost += productCost * quantity;
                     });
                 }

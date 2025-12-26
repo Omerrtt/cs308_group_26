@@ -1,9 +1,13 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useSelector } from 'react-redux'
 import { auth, db } from '../../firebaseConfig'
+import firebase from 'firebase/app'
 import { generateInvoicePDF } from '../../utils/invoiceGenerator'
 import Swal from 'sweetalert2'
 import ReviewModal from './ReviewModal'
+
+// Admin UID
+const ADMIN_UID = 'kcopWa6L3AZ5BbeHCokV7uKD6Pd2';
 
 const Order = () => {
     const status = useSelector((state) => state.user.status)
@@ -12,6 +16,7 @@ const Order = () => {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
     const [selectedOrderForReview, setSelectedOrderForReview] = useState(null)
+    const [isAdmin, setIsAdmin] = useState(false)
 
     // Body scroll'u kontrol et ve düzelt
     useEffect(() => {
@@ -69,6 +74,15 @@ const Order = () => {
     }, [])
 
     useEffect(() => {
+        // Admin kontrolü
+        const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+            if (currentUser) {
+                setIsAdmin(currentUser.uid === ADMIN_UID)
+            } else {
+                setIsAdmin(false)
+            }
+        })
+
         if (status) {
             loadOrders()
         } else {
@@ -76,6 +90,8 @@ const Order = () => {
             setOrders([])
             setInvoices([])
         }
+
+        return () => unsubscribe()
     }, [status, loadOrders])
 
     // Format date - memoized
@@ -108,12 +124,18 @@ const Order = () => {
         text: {
             'processing': 'İşleniyor',
             'in-transit': 'Yolda',
-            'delivered': 'Teslim Edildi'
+            'delivered': 'Teslim Edildi',
+            'cancelled': 'İptal Edildi',
+            'returned': 'İade Edildi',
+            'refunded': 'İade Edildi'
         },
         class: {
             'processing': 'badge-warning',
             'in-transit': 'badge-info',
-            'delivered': 'badge-success'
+            'delivered': 'badge-success',
+            'cancelled': 'badge-danger',
+            'returned': 'badge-danger',
+            'refunded': 'badge-danger'
         }
     }), [])
 
@@ -219,6 +241,308 @@ const Order = () => {
         closeReviewModal()
         loadOrders() // Order'ları yeniden yükle
     }, [closeReviewModal, loadOrders])
+
+    // Cancel order - only for processing status
+    const cancelOrder = useCallback(async (order) => {
+        const orderStatus = order.status || 'processing'
+        
+        if (orderStatus !== 'processing') {
+            Swal.fire({
+                title: 'İptal Edilemez',
+                text: 'Sadece "İşleniyor" durumundaki siparişler iptal edilebilir.',
+                icon: 'warning',
+                confirmButtonText: 'Tamam'
+            }).then(() => {
+                document.body.style.overflow = 'auto'
+            })
+            return
+        }
+
+        const result = await Swal.fire({
+            title: 'Siparişi İptal Et',
+            text: `Sipariş #${order.orderId} iptal edilecek. Emin misiniz?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Evet, İptal Et',
+            cancelButtonText: 'Vazgeç'
+        })
+
+        if (!result.isConfirmed) {
+            document.body.style.overflow = 'auto'
+            return
+        }
+
+        try {
+            const currentUser = auth.currentUser
+            if (!currentUser) {
+                throw new Error('Kullanıcı giriş yapmamış')
+            }
+
+            const userRef = db.collection('users').doc(currentUser.uid)
+            const userDoc = await userRef.get()
+            
+            if (!userDoc.exists) {
+                throw new Error('Kullanıcı bulunamadı')
+            }
+
+            const userData = userDoc.data()
+            const orders = userData.orders || []
+            
+            // Order'ı bul ve güncelle
+            const updatedOrders = orders.map((o) => {
+                if (o.orderId === order.orderId) {
+                    return {
+                        ...o,
+                        status: 'cancelled',
+                        cancelledAt: new Date().toISOString(),
+                        cancelledAtTimestamp: Date.now(),
+                        updatedAt: new Date().toISOString(),
+                        updatedAtTimestamp: Date.now()
+                    }
+                }
+                return o
+            })
+
+            await userRef.update({ orders: updatedOrders })
+
+            // Orders collection'ı da güncelle (eğer varsa)
+            try {
+                const orderRef = db.collection('orders').doc(order.orderId)
+                await orderRef.update({
+                    status: 'cancelled',
+                    cancelledAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                })
+            } catch (err) {
+                console.warn('Orders collection güncellenemedi:', err)
+            }
+
+            // Ürün stoklarını geri artır
+            try {
+                console.log('İptal edilen sipariş için stoklar geri artırılıyor...')
+                const batch = db.batch()
+                let stockUpdateCount = 0
+                
+                if (order.items && order.items.length > 0) {
+                    for (const item of order.items) {
+                        // Ürün ID'sini al (originalId varsa onu kullan, yoksa productId veya id)
+                        const productId = item.originalId || item.productId || item.id
+                        if (!productId) {
+                            console.warn('  ⚠️ Ürün ID bulunamadı:', item)
+                            continue
+                        }
+                        
+                        const productRef = db.collection('products').doc(productId.toString())
+                        const productDoc = await productRef.get()
+                        
+                        if (productDoc.exists) {
+                            const productData = productDoc.data()
+                            const currentStock = typeof productData.stock === 'number' 
+                                ? productData.stock 
+                                : parseInt(productData.stock, 10) || 0
+                            
+                            const quantityToRestore = item.quantity || 1
+                            const newStock = currentStock + quantityToRestore
+                            
+                            batch.update(productRef, {
+                                stock: newStock,
+                                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                            })
+                            
+                            stockUpdateCount++
+                            console.log(`  - Ürün ${productId}: ${currentStock} → ${newStock} (${quantityToRestore} adet eklendi)`)
+                        } else {
+                            console.warn(`  ⚠️ Ürün bulunamadı: ${productId}`)
+                        }
+                    }
+                    
+                    if (stockUpdateCount > 0) {
+                        await batch.commit()
+                        console.log(`✅ ${stockUpdateCount} ürünün stoku geri artırıldı`)
+                    }
+                }
+            } catch (stockError) {
+                console.error('❌ Stok geri artırma hatası:', stockError)
+                // Stok hatası sipariş iptalini engellemez, sadece log'lar
+            }
+
+            Swal.fire({
+                title: 'Başarılı',
+                text: 'Sipariş iptal edildi ve stoklar geri artırıldı.',
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false
+            }).then(() => {
+                document.body.style.overflow = 'auto'
+            })
+
+            // Order'ları yeniden yükle
+            loadOrders()
+        } catch (error) {
+            console.error('❌ Sipariş iptal hatası:', error)
+            Swal.fire({
+                title: 'Hata',
+                text: 'Sipariş iptal edilirken bir hata oluştu.',
+                icon: 'error'
+            }).then(() => {
+                document.body.style.overflow = 'auto'
+            })
+        }
+    }, [loadOrders])
+
+    // Return/Refund order - only for delivered status
+    const returnOrder = useCallback(async (order) => {
+        const orderStatus = order.status || 'processing'
+        
+        if (orderStatus !== 'delivered') {
+            Swal.fire({
+                title: 'İade Edilemez',
+                text: 'Sadece "Teslim Edildi" durumundaki siparişler iade edilebilir.',
+                icon: 'warning',
+                confirmButtonText: 'Tamam'
+            }).then(() => {
+                document.body.style.overflow = 'auto'
+            })
+            return
+        }
+
+        const result = await Swal.fire({
+            title: 'Siparişi İade Et',
+            text: `Sipariş #${order.orderId} iade edilecek ve ödeme iadesi yapılacak. Emin misiniz?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Evet, İade Et',
+            cancelButtonText: 'Vazgeç'
+        })
+
+        if (!result.isConfirmed) {
+            document.body.style.overflow = 'auto'
+            return
+        }
+
+        try {
+            const currentUser = auth.currentUser
+            if (!currentUser) {
+                throw new Error('Kullanıcı giriş yapmamış')
+            }
+
+            const userRef = db.collection('users').doc(currentUser.uid)
+            const userDoc = await userRef.get()
+            
+            if (!userDoc.exists) {
+                throw new Error('Kullanıcı bulunamadı')
+            }
+
+            const userData = userDoc.data()
+            const orders = userData.orders || []
+            
+            // Order'ı bul ve güncelle
+            const updatedOrders = orders.map((o) => {
+                if (o.orderId === order.orderId) {
+                    return {
+                        ...o,
+                        status: 'returned',
+                        returnedAt: new Date().toISOString(),
+                        returnedAtTimestamp: Date.now(),
+                        refundStatus: 'pending',
+                        updatedAt: new Date().toISOString(),
+                        updatedAtTimestamp: Date.now()
+                    }
+                }
+                return o
+            })
+
+            await userRef.update({ orders: updatedOrders })
+
+            // Orders collection'ı da güncelle (eğer varsa)
+            try {
+                const orderRef = db.collection('orders').doc(order.orderId)
+                await orderRef.update({
+                    status: 'returned',
+                    returnedAt: new Date().toISOString(),
+                    refundStatus: 'pending',
+                    updatedAt: new Date().toISOString()
+                })
+            } catch (err) {
+                console.warn('Orders collection güncellenemedi:', err)
+            }
+
+            // Ürün stoklarını geri artır
+            try {
+                console.log('İade edilen sipariş için stoklar geri artırılıyor...')
+                const batch = db.batch()
+                let stockUpdateCount = 0
+                
+                if (order.items && order.items.length > 0) {
+                    for (const item of order.items) {
+                        // Ürün ID'sini al (originalId varsa onu kullan, yoksa productId veya id)
+                        const productId = item.originalId || item.productId || item.id
+                        if (!productId) {
+                            console.warn('  ⚠️ Ürün ID bulunamadı:', item)
+                            continue
+                        }
+                        
+                        const productRef = db.collection('products').doc(productId.toString())
+                        const productDoc = await productRef.get()
+                        
+                        if (productDoc.exists) {
+                            const productData = productDoc.data()
+                            const currentStock = typeof productData.stock === 'number' 
+                                ? productData.stock 
+                                : parseInt(productData.stock, 10) || 0
+                            
+                            const quantityToRestore = item.quantity || 1
+                            const newStock = currentStock + quantityToRestore
+                            
+                            batch.update(productRef, {
+                                stock: newStock,
+                                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                            })
+                            
+                            stockUpdateCount++
+                            console.log(`  - Ürün ${productId}: ${currentStock} → ${newStock} (${quantityToRestore} adet eklendi)`)
+                        } else {
+                            console.warn(`  ⚠️ Ürün bulunamadı: ${productId}`)
+                        }
+                    }
+                    
+                    if (stockUpdateCount > 0) {
+                        await batch.commit()
+                        console.log(`✅ ${stockUpdateCount} ürünün stoku geri artırıldı`)
+                    }
+                }
+            } catch (stockError) {
+                console.error('❌ Stok geri artırma hatası:', stockError)
+                // Stok hatası sipariş iadesini engellemez, sadece log'lar
+            }
+
+            Swal.fire({
+                title: 'Başarılı',
+                text: 'İade talebi oluşturuldu, stoklar geri artırıldı. Ödeme iadesi işleme alınacaktır.',
+                icon: 'success',
+                timer: 3000,
+                showConfirmButton: false
+            }).then(() => {
+                document.body.style.overflow = 'auto'
+            })
+
+            // Order'ları yeniden yükle
+            loadOrders()
+        } catch (error) {
+            console.error('❌ Sipariş iade hatası:', error)
+            Swal.fire({
+                title: 'Hata',
+                text: 'Sipariş iade edilirken bir hata oluştu.',
+                icon: 'error'
+            }).then(() => {
+                document.body.style.overflow = 'auto'
+            })
+        }
+    }, [loadOrders])
 
     // Order detaylarını göster - memoized
     const showOrderDetails = useCallback((order) => {
@@ -339,8 +663,11 @@ const Order = () => {
                                     const itemCount = order.items ? order.items.length : 0
                                     const orderStatus = order.status || 'processing' // Default status
                                     
-                                    // Debug: Status kontrolü
+                                    // Status kontrolü
                                     const isDelivered = orderStatus === 'delivered' || orderStatus === 'Teslim Edildi'
+                                    const isProcessing = orderStatus === 'processing' || orderStatus === 'İşleniyor'
+                                    const isCancelled = orderStatus === 'cancelled' || orderStatus === 'İptal Edildi'
+                                    const isReturned = orderStatus === 'returned' || orderStatus === 'refunded' || orderStatus === 'İade Edildi'
                                     
                                     return (
                                         <tr key={order.orderId || index}>
@@ -363,7 +690,34 @@ const Order = () => {
                                                 >
                                                     Fatura İndir
                                                 </button>
-                                                {isDelivered && (
+                                                {!isAdmin && isProcessing && !isCancelled && (
+                                                    <button
+                                                        className="btn btn-sm btn-danger"
+                                                        onClick={() => cancelOrder(order)}
+                                                        style={{ marginRight: '5px' }}
+                                                    >
+                                                        İptal Et
+                                                    </button>
+                                                )}
+                                                {!isAdmin && isDelivered && !isReturned && (
+                                                    <>
+                                                        <button
+                                                            className="btn btn-sm btn-danger"
+                                                            onClick={() => returnOrder(order)}
+                                                            style={{ marginRight: '5px' }}
+                                                        >
+                                                            İade Et
+                                                        </button>
+                                                        <button
+                                                            className="btn btn-sm btn-warning"
+                                                            onClick={() => openReviewModal(order)}
+                                                            style={{ marginRight: '5px' }}
+                                                        >
+                                                            ⭐ Değerlendir
+                                                        </button>
+                                                    </>
+                                                )}
+                                                {isAdmin && isDelivered && !isReturned && (
                                                     <button
                                                         className="btn btn-sm btn-warning"
                                                         onClick={() => openReviewModal(order)}

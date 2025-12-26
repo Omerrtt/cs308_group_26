@@ -14,6 +14,8 @@ import { logout } from '../../../app/slices/user'
 import { clearCart } from '../../../app/slices/products'
 import { auth } from '../../../firebaseConfig'
 
+const SALES_MANAGER_EMAIL = 'mbozyel349@gmail.com';
+
 const Header = () => {
     const [click, setClick] = useState(false);
     const [show, setShow] = useState();
@@ -25,6 +27,19 @@ const Header = () => {
     let userStatus = useSelector((state) => state.user.status);
     let userData = useSelector((state) => state.user.user);
     let dispatch = useDispatch();
+    const [isSalesManager, setIsSalesManager] = useState(false);
+
+    // Sales manager kontrolü
+    useEffect(() => {
+        const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+            if (currentUser && currentUser.email === SALES_MANAGER_EMAIL) {
+                setIsSalesManager(true);
+            } else {
+                setIsSalesManager(false);
+            }
+        });
+        return () => unsubscribe();
+    }, []);
 
     const handleLogout = async () => {
         try {
@@ -268,6 +283,40 @@ const Header = () => {
                                                 )}
                                             </Link>
                                         </li>
+                                        {isSalesManager && (
+                                            <li style={{display: 'inline-block'}}>
+                                                <Link 
+                                                    to="/sales-manager"
+                                                    style={{
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        gap: '6px',
+                                                        padding: '8px 16px',
+                                                        background: '#ff8a00',
+                                                        color: 'white',
+                                                        textDecoration: 'none',
+                                                        borderRadius: '4px',
+                                                        fontWeight: '500',
+                                                        fontSize: '14px',
+                                                        transition: 'all 0.3s ease',
+                                                        transform: 'scale(1)'
+                                                    }}
+                                                    onMouseOver={(e) => {
+                                                        e.currentTarget.style.background = '#e67a00';
+                                                        e.currentTarget.style.transform = 'scale(1.05)';
+                                                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+                                                    }}
+                                                    onMouseOut={(e) => {
+                                                        e.currentTarget.style.background = '#ff8a00';
+                                                        e.currentTarget.style.transform = 'scale(1)';
+                                                        e.currentTarget.style.boxShadow = 'none';
+                                                    }}
+                                                >
+                                                    <i className="fa fa-chart-line"></i>
+                                                    <span>Sales Panel</span>
+                                                </Link>
+                                            </li>
+                                        )}
                                         {userStatus ? (
                                             <li style={{display: 'inline-block', position: 'relative'}} className="user-profile-dropdown">
                                                 <a 
@@ -626,6 +675,19 @@ const Header = () => {
                                         )}
                                     </Link>
                                 </li>
+                                {/* Sales Manager Butonu */}
+                                {isSalesManager && (
+                                    <li className="mobile-user-section">
+                                        <Link 
+                                            to="/sales-manager" 
+                                            className="mobile-user-link"
+                                            onClick={(e) => handleLinkClick(e, '/sales-manager')}
+                                        >
+                                            <i className="fa fa-chart-line"></i>
+                                            <span>Sales Panel</span>
+                                        </Link>
+                                    </li>
+                                )}
                                 {/* Kullanıcı Durumu */}
                                 {userStatus ? (
                                     <>

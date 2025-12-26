@@ -20,96 +20,160 @@ const ChatWidget = () => {
 
     // Chat ID oluştur veya yükle
     useEffect(() => {
-        const currentUser = auth.currentUser;
-        
-        // Support agent kontrolü
-        if (currentUser && currentUser.email === 'mbzyl349@gmail.com') {
-            setIsAgent(true);
-            return; // Agent widget'ı kullanmaz
-        }
-
-        // Chat ID oluştur veya yükle
-        const initializeChat = async () => {
-            const storedChatId = localStorage.getItem('chat_id');
-            
-            if (storedChatId) {
-                // Mevcut chat'i kontrol et
-                const chatDoc = await db.collection('liveChats').doc(storedChatId).get();
-                if (chatDoc.exists) {
-                    setChatId(storedChatId);
-                    setupRealtimeListener(storedChatId);
-                } else {
-                    // Chat silinmiş, yeni oluştur
-                    createNewChat();
+        const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
+            // Support agent kontrolü
+            if (currentUser && currentUser.email === 'mbzyl349@gmail.com') {
+                setIsAgent(true);
+                // Agent için chat'i temizle
+                setChatId(null);
+                setMessages([]);
+                setIsOpen(false);
+                if (unsubscribeRef.current) {
+                    unsubscribeRef.current();
                 }
-            } else {
-                // Yeni chat oluştur
-                createNewChat();
+                localStorage.removeItem('chat_id');
+                return; // Agent widget'ı kullanmaz
             }
-        };
 
-        const createNewChat = async () => {
-            try {
-                const currentUser = auth.currentUser;
-                
-                // User bilgisini Firebase'den al (Redux'tan gelmeyebilir)
-                let customerName = 'Misafir';
-                let customerEmail = null;
-                
-                if (currentUser) {
-                    customerEmail = currentUser.email;
-                    // Önce Redux'tan dene
-                    if (user?.name) {
-                        customerName = user.name;
-                    } else {
-                        // Firebase'den user bilgisini çek
+            setIsAgent(false);
+
+            // Chat ID oluştur veya yükle
+            const initializeChat = async () => {
+                try {
+                    const storedChatId = localStorage.getItem('chat_id');
+                    
+                    if (storedChatId) {
+                        // Mevcut chat'i kontrol et
                         try {
-                            const userDoc = await db.collection('users').doc(currentUser.uid).get();
-                            if (userDoc.exists) {
-                                const userData = userDoc.data();
-                                customerName = userData.name || currentUser.displayName || 'Kullanıcı';
+                            const chatDoc = await db.collection('liveChats').doc(storedChatId).get();
+                            if (chatDoc.exists) {
+                                const chatData = chatDoc.data();
+                                // Eğer logged-in kullanıcı varsa ve chat guest'e aitse, yeni chat oluştur
+                                // Eğer guest ise ve chat logged-in kullanıcıya aitse, yeni chat oluştur
+                                if (currentUser && chatData.customerId === 'guest') {
+                                    // Logged-in kullanıcı, guest chat'i kullanmamalı
+                                    localStorage.removeItem('chat_id');
+                                    await createNewChat();
+                                } else if (!currentUser && chatData.customerId !== 'guest') {
+                                    // Guest, logged-in kullanıcının chat'ini kullanmamalı
+                                    localStorage.removeItem('chat_id');
+                                    await createNewChat();
+                                } else if (currentUser && chatData.customerId !== currentUser.uid) {
+                                    // Farklı kullanıcı, yeni chat oluştur
+                                    localStorage.removeItem('chat_id');
+                                    await createNewChat();
+                                } else {
+                                    // Chat uygun, kullan
+                                    setChatId(storedChatId);
+                                    setupRealtimeListener(storedChatId);
+                                }
                             } else {
+                                // Chat silinmiş, yeni oluştur
+                                localStorage.removeItem('chat_id');
+                                await createNewChat();
+                            }
+                        } catch (readError) {
+                            // Permission hatası, yeni chat oluştur
+                            console.warn('Chat okuma hatası, yeni chat oluşturuluyor:', readError);
+                            localStorage.removeItem('chat_id');
+                            await createNewChat();
+                        }
+                    } else {
+                        // Yeni chat oluştur
+                        await createNewChat();
+                    }
+                } catch (error) {
+                    console.error('Chat initialize hatası:', error);
+                    // Hata durumunda chat widget'ı gizle
+                    setChatId(null);
+                    setMessages([]);
+                    setIsOpen(false);
+                }
+            };
+
+            const createNewChat = async () => {
+                try {
+                    // Önce mevcut listener'ı temizle
+                    if (unsubscribeRef.current) {
+                        unsubscribeRef.current();
+                    }
+                    
+                    // User bilgisini Firebase'den al (Redux'tan gelmeyebilir)
+                    let customerName = 'Misafir';
+                    let customerEmail = null;
+                    
+                    if (currentUser) {
+                        customerEmail = currentUser.email;
+                        // Önce Redux'tan dene
+                        if (user?.name) {
+                            customerName = user.name;
+                        } else {
+                            // Firebase'den user bilgisini çek (sadece logged-in kullanıcılar için)
+                            try {
+                                const userDoc = await db.collection('users').doc(currentUser.uid).get();
+                                if (userDoc.exists) {
+                                    const userData = userDoc.data();
+                                    customerName = userData.name || currentUser.displayName || 'Kullanıcı';
+                                } else {
+                                    customerName = currentUser.displayName || currentUser.email?.split('@')[0] || 'Kullanıcı';
+                                }
+                            } catch (err) {
+                                // Permission hatası veya başka bir hata, email'den isim çıkar
+                                console.warn('User bilgisi çekilemedi, email kullanılıyor:', err);
                                 customerName = currentUser.displayName || currentUser.email?.split('@')[0] || 'Kullanıcı';
                             }
-                        } catch (err) {
-                            customerName = currentUser.displayName || currentUser.email?.split('@')[0] || 'Kullanıcı';
                         }
                     }
-                }
-                
-                const chatData = {
-                    customerId: currentUser ? currentUser.uid : 'guest',
-                    customerName: customerName,
-                    customerEmail: customerEmail,
-                    status: 'open', // open, claimed, closed
-                    claimedBy: null,
-                    messages: [],
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                };
+                    
+                    const chatData = {
+                        customerId: currentUser ? currentUser.uid : 'guest',
+                        customerName: customerName,
+                        customerEmail: customerEmail,
+                        status: 'open', // open, claimed, closed
+                        claimedBy: null,
+                        messages: [],
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    };
 
                 const docRef = await db.collection('liveChats').add(chatData);
                 setChatId(docRef.id);
                 localStorage.setItem('chat_id', docRef.id);
+                setMessages([]); // Mesajları temizle
+                setIsOpen(false); // Chat penceresini kapat
                 setupRealtimeListener(docRef.id);
             } catch (error) {
                 console.error('Chat oluşturulurken hata:', error);
-                Swal.fire({
-                    title: 'Hata',
-                    text: 'Chat başlatılamadı. Lütfen tekrar deneyin.',
-                    icon: 'error'
-                });
+                // Permission hatası durumunda chat widget'ı gizle
+                if (error.code === 'permission-denied') {
+                    setChatId(null);
+                    setMessages([]);
+                    setIsOpen(false);
+                    localStorage.removeItem('chat_id');
+                    // Sessizce hata ver, kullanıcıyı rahatsız etme
+                    console.warn('Chat oluşturma izni yok, widget gizlendi');
+                } else {
+                    Swal.fire({
+                        title: 'Hata',
+                        text: 'Chat başlatılamadı. Lütfen tekrar deneyin.',
+                        icon: 'error',
+                        timer: 3000,
+                        showConfirmButton: false
+                    });
+                }
             }
-        };
+            };
 
-        initializeChat();
+            initializeChat();
+        });
 
         return () => {
+            unsubscribe();
             if (unsubscribeRef.current) {
                 unsubscribeRef.current();
             }
         };
-    }, []);
+    }, [user]);
 
     // Real-time listener kur
     const setupRealtimeListener = (chatId) => {
@@ -124,6 +188,20 @@ const ChatWidget = () => {
             }
         }, (error) => {
             console.error('Chat listener hatası:', error);
+            // Permission hatası durumunda chat'i sıfırla
+            if (error.code === 'permission-denied') {
+                setChatId(null);
+                setMessages([]);
+                setIsOpen(false);
+                localStorage.removeItem('chat_id');
+                Swal.fire({
+                    title: 'Erişim Hatası',
+                    text: 'Chat erişim izni yok. Lütfen sayfayı yenileyin.',
+                    icon: 'warning',
+                    timer: 3000,
+                    showConfirmButton: false
+                });
+            }
         });
     };
 
@@ -166,11 +244,19 @@ const ChatWidget = () => {
             }
         } catch (error) {
             console.error('Mesaj gönderilirken hata:', error);
-            Swal.fire({
-                title: 'Hata',
-                text: 'Mesaj gönderilemedi. Lütfen tekrar deneyin.',
-                icon: 'error'
-            });
+            // Permission hatası durumunda sessizce hata ver
+            if (error.code === 'permission-denied') {
+                console.warn('Mesaj gönderme izni yok');
+                // Kullanıcıyı rahatsız etme, sadece console'a yaz
+            } else {
+                Swal.fire({
+                    title: 'Hata',
+                    text: 'Mesaj gönderilemedi. Lütfen tekrar deneyin.',
+                    icon: 'error',
+                    timer: 3000,
+                    showConfirmButton: false
+                });
+            }
         }
     };
 

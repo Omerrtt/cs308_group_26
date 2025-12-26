@@ -99,20 +99,24 @@ service cloud.firestore {
       }
       
       // Müşteri kendi chat'ini okuyabilir, support agent tüm chat'leri okuyabilir
-      allow read: if request.auth != null && (
-        resource.data.customerId == request.auth.uid || 
-        resource.data.customerId == 'guest' ||
-        isSupportAgent()
+      // Guest kullanıcılar için: customerId == 'guest' olan chat'leri okuyabilir
+      allow read: if (
+        isSupportAgent() ||
+        (request.auth != null && resource.data.customerId == request.auth.uid) ||
+        (request.auth != null && resource.data.customerId == 'guest') ||
+        (request.auth == null && resource.data.customerId == 'guest')
       );
       
-      // Müşteri kendi chat'ini oluşturabilir (guest için de)
-      allow create: if request.auth != null;
+      // Müşteri kendi chat'ini oluşturabilir (guest için de, auth olmadan)
+      allow create: if true;
       
       // Müşteri kendi chat'ine mesaj ekleyebilir, support agent tüm chat'lere mesaj ekleyebilir
-      allow update: if request.auth != null && (
-        resource.data.customerId == request.auth.uid ||
-        resource.data.customerId == 'guest' ||
-        isSupportAgent()
+      // Guest kullanıcılar için: customerId == 'guest' olan chat'lere mesaj ekleyebilir
+      allow update: if (
+        isSupportAgent() ||
+        (request.auth != null && resource.data.customerId == request.auth.uid) ||
+        (request.auth != null && resource.data.customerId == 'guest') ||
+        (request.auth == null && resource.data.customerId == 'guest')
       );
       
       // Sadece support agent chat'i silebilir

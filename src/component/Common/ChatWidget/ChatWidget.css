@@ -32,7 +32,7 @@
 
 .chat-popup {
     position: absolute;
-    bottom: 5px;
+    bottom: 0px;
     right: 75px;
     width: 320px;
     background: white;

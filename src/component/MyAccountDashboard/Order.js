@@ -477,14 +477,30 @@ const Order = () => {
             // Orders collection'ı da güncelle (eğer varsa)
             try {
                 const orderRef = db.collection('orders').doc(order.orderId)
-                await orderRef.update({
-                    status: 'returned',
-                    returnedAt: new Date().toISOString(),
-                    refundStatus: 'pending',
-                    updatedAt: new Date().toISOString()
-                })
+                const orderDoc = await orderRef.get()
+                
+                if (orderDoc.exists) {
+                    const orderData = orderDoc.data()
+                    // Sadece delivered durumundaki order'ları returned yap
+                    if (orderData.status === 'delivered') {
+                        await orderRef.update({
+                            status: 'returned',
+                            returnedAt: new Date().toISOString(),
+                            returnedAtTimestamp: Date.now(),
+                            refundStatus: 'pending',
+                            updatedAt: new Date().toISOString(),
+                            updatedAtTimestamp: Date.now()
+                        })
+                        console.log('✅ Orders collection güncellendi:', order.orderId)
+                    } else {
+                        console.warn('⚠️ Order zaten delivered durumunda değil:', orderData.status)
+                    }
+                } else {
+                    console.warn('⚠️ Orders collection\'da order bulunamadı:', order.orderId)
+                }
             } catch (err) {
-                console.warn('Orders collection güncellenemedi:', err)
+                console.error('❌ Orders collection güncellenemedi:', err)
+                // Hata durumunda kullanıcıya bilgi ver ama sipariş iadesini engelleme
             }
 
             // Ürün stoklarını geri artır

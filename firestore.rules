@@ -21,8 +21,19 @@ service cloud.firestore {
         return request.auth != null && request.auth.uid == 'kcopWa6L3AZ5BbeHCokV7uKD6Pd2';
       }
       
-      // Yazma için admin veya product manager gerekli
-      allow write: if isAdmin() || isProductManager();
+      // Update için: Admin, product manager veya authenticated kullanıcılar (stok düşürme için)
+      // Authenticated kullanıcılar sadece stock field'ını güncelleyebilir (stok düşürme/artırma için)
+      allow update: if isAdmin() || isProductManager() ||
+        (request.auth != null && 
+         // Sadece stock ve updatedAt field'ları değişiyorsa izin ver
+         (!('title' in request.resource.data) || request.resource.data.title == resource.data.title) &&
+         (!('price' in request.resource.data) || request.resource.data.price == resource.data.price) &&
+         (!('category' in request.resource.data) || request.resource.data.category == resource.data.category) &&
+         (!('description' in request.resource.data) || request.resource.data.description == resource.data.description) &&
+         (!('image' in request.resource.data) || request.resource.data.image == resource.data.image));
+      
+      // Create ve delete için sadece admin ve product manager
+      allow create, delete: if isAdmin() || isProductManager();
     }
     
     // Users koleksiyonu - Kullanıcılar sadece kendi verilerini okuyup yazabilir

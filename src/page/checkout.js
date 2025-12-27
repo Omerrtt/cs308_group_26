@@ -583,6 +583,72 @@ const Checkout = () => {
 
             console.log('Sipariş kaydediliyor:', orderData);
 
+            // ÖNCE ürün stoklarını kontrol et ve düşür
+            try {
+                console.log('Ürün stokları kontrol ediliyor ve düşürülüyor...');
+                const stockBatch = db.batch();
+                let stockUpdateCount = 0;
+                const stockChecks = [];
+                
+                for (const item of orderItems) {
+                    // Ürün ID'sini al (originalId varsa onu kullan, yoksa id)
+                    const productId = item.originalId || item.id;
+                    const productRef = db.collection('products').doc(productId.toString());
+                    const productDoc = await productRef.get();
+                    
+                    if (productDoc.exists) {
+                        const productData = productDoc.data();
+                        const currentStock = typeof productData.stock === 'number' 
+                            ? productData.stock 
+                            : parseInt(productData.stock, 10) || 0;
+                        
+                        const quantityToDeduct = item.quantity || 1;
+                        
+                        // Stok kontrolü
+                        if (currentStock < quantityToDeduct) {
+                            throw new Error(`${item.title} için yeterli stok yok. Mevcut stok: ${currentStock}, İstenen: ${quantityToDeduct}`);
+                        }
+                        
+                        const newStock = currentStock - quantityToDeduct;
+                        
+                        stockBatch.update(productRef, {
+                            stock: newStock,
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        
+                        stockUpdateCount++;
+                        stockChecks.push({
+                            productId: productId,
+                            productName: item.title,
+                            currentStock: currentStock,
+                            newStock: newStock,
+                            quantity: quantityToDeduct
+                        });
+                        
+                        console.log(`  ✓ Ürün ${productId} (${item.title}): ${currentStock} → ${newStock} (${quantityToDeduct} adet düşülecek)`);
+                    } else {
+                        throw new Error(`Ürün bulunamadı: ${item.title} (ID: ${productId})`);
+                    }
+                }
+                
+                if (stockUpdateCount > 0) {
+                    await stockBatch.commit();
+                    console.log(`✅ ${stockUpdateCount} ürünün stoku düşürüldü`);
+                } else {
+                    throw new Error('Güncellenecek ürün bulunamadı');
+                }
+            } catch (stockError) {
+                console.error('❌ Stok güncelleme hatası:', stockError);
+                setSubmitting(false);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Stok Hatası',
+                    text: stockError.message || 'Ürün stokları güncellenirken bir hata oluştu. Lütfen tekrar deneyin.',
+                    confirmButtonText: 'Tamam'
+                });
+                return; // Siparişi engelle
+            }
+
             // Firebase'e kaydet - users collection'ındaki orders array'ine ekle
             const userRef = db.collection('users').doc(currentUser.uid);
             const userDoc = await userRef.get();
@@ -818,49 +884,8 @@ const Checkout = () => {
                 // PDF hatası siparişi engellemez
             }
 
-            // Ürün stoklarını güncelle
-            try {
-                console.log('Ürün stokları güncelleniyor...');
-                const batch = db.batch();
-                let stockUpdateCount = 0;
-                
-                for (const item of orderItems) {
-                    // Ürün ID'sini al (originalId varsa onu kullan, yoksa id)
-                    const productId = item.originalId || item.id;
-                    const productRef = db.collection('products').doc(productId.toString());
-                    const productDoc = await productRef.get();
-                    
-                    if (productDoc.exists) {
-                        const productData = productDoc.data();
-                        const currentStock = typeof productData.stock === 'number' 
-                            ? productData.stock 
-                            : parseInt(productData.stock, 10) || 0;
-                        
-                        const quantityToDeduct = item.quantity || 1;
-                        const newStock = Math.max(0, currentStock - quantityToDeduct);
-                        
-                        batch.update(productRef, {
-                            stock: newStock,
-                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                        });
-                        
-                        stockUpdateCount++;
-                        console.log(`  - Ürün ${productId}: ${currentStock} → ${newStock} (${quantityToDeduct} adet düşüldü)`);
-                    } else {
-                        console.warn(`  ⚠️ Ürün bulunamadı: ${productId}`);
-                    }
-                }
-                
-                if (stockUpdateCount > 0) {
-                    await batch.commit();
-                    console.log(`✅ ${stockUpdateCount} ürünün stoku güncellendi`);
-                } else {
-                    console.warn('⚠️ Güncellenecek ürün bulunamadı');
-                }
-            } catch (stockError) {
-                console.error('❌ Stok güncelleme hatası:', stockError);
-                // Stok hatası siparişi engellemez, sadece logla
-            }
+            // Stoklar zaten düşürüldü (yukarıda), burada sadece log
+            console.log('✅ Ürün stokları başarıyla düşürüldü (sipariş kaydından önce)');
 
             // Redux store'dan sepeti temizle
             dispatch(clearCart());

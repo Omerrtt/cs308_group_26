@@ -408,7 +408,64 @@ const Order = () => {
         }
     }, [loadOrders])
 
-    // Return/Refund order - only for delivered status
+    // İade süresini hesapla (30 gün)
+    const getReturnDaysRemaining = useCallback((order) => {
+        if (!order) return null
+        
+        // Order date'i al
+        let orderDate;
+        if (order.orderDateTimestamp) {
+            orderDate = new Date(order.orderDateTimestamp);
+        } else if (order.orderDate) {
+            // Firebase Timestamp kontrolü
+            if (order.orderDate.toDate) {
+                orderDate = order.orderDate.toDate();
+            } else if (typeof order.orderDate === 'string') {
+                orderDate = new Date(order.orderDate);
+            } else if (typeof order.orderDate === 'number') {
+                orderDate = new Date(order.orderDate);
+            } else {
+                orderDate = new Date(order.orderDate);
+            }
+        } else if (order.createdAt) {
+            if (order.createdAt.toDate) {
+                orderDate = order.createdAt.toDate();
+            } else if (typeof order.createdAt === 'string') {
+                orderDate = new Date(order.createdAt);
+            } else if (typeof order.createdAt === 'number') {
+                orderDate = new Date(order.createdAt);
+            } else {
+                orderDate = new Date(order.createdAt);
+            }
+        } else {
+            return null;
+        }
+        
+        if (isNaN(orderDate.getTime())) {
+            return null;
+        }
+        
+        // 30 gün sonrasını hesapla
+        const returnDeadline = new Date(orderDate);
+        returnDeadline.setDate(returnDeadline.getDate() + 30);
+        
+        // Bugünün tarihi
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        returnDeadline.setHours(23, 59, 59, 999);
+        
+        // Kalan gün sayısı
+        const diffTime = returnDeadline - today;
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        
+        return {
+            daysRemaining: diffDays,
+            isExpired: diffDays < 0,
+            deadline: returnDeadline
+        };
+    }, []);
+
+    // Return/Refund order - only for delivered status and within 30 days
     const returnOrder = useCallback(async (order) => {
         const orderStatus = order.status || 'processing'
         
@@ -417,6 +474,20 @@ const Order = () => {
                 title: 'İade Edilemez',
                 text: 'Sadece "Teslim Edildi" durumundaki siparişler iade edilebilir.',
                 icon: 'warning',
+                confirmButtonText: 'Tamam'
+            }).then(() => {
+                document.body.style.overflow = 'auto'
+            })
+            return
+        }
+        
+        // İade süresi kontrolü (30 gün)
+        const returnInfo = getReturnDaysRemaining(order);
+        if (!returnInfo || returnInfo.isExpired || returnInfo.daysRemaining <= 0) {
+            Swal.fire({
+                title: 'İade Süresi Doldu',
+                text: 'Üzgünüz, sipariş tarihinden itibaren 30 gün geçtiği için bu siparişi iade edemezsiniz.',
+                icon: 'error',
                 confirmButtonText: 'Tamam'
             }).then(() => {
                 document.body.style.overflow = 'auto'
@@ -574,7 +645,7 @@ const Order = () => {
                 document.body.style.overflow = 'auto'
             })
         }
-    }, [loadOrders])
+    }, [loadOrders, getReturnDaysRemaining])
 
     // Order detaylarını göster - memoized
     const showOrderDetails = useCallback((order) => {
@@ -701,11 +772,30 @@ const Order = () => {
                                     const isCancelled = orderStatus === 'cancelled' || orderStatus === 'İptal Edildi'
                                     const isReturned = orderStatus === 'returned' || orderStatus === 'refunded' || orderStatus === 'İade Edildi'
                                     
+                                    // İade süresi kontrolü
+                                    const returnInfo = getReturnDaysRemaining(order)
+                                    const canReturn = isDelivered && !isReturned && returnInfo && !returnInfo.isExpired && returnInfo.daysRemaining > 0
+                                    
                                     return (
                                         <tr key={order.orderId || index}>
                                             <td>{order.orderId || 'N/A'}</td>
                                             <td>{formatDate(order.orderDate || order.createdAt)}</td>
-                                            <td>{getStatusBadge(orderStatus)}</td>
+                                            <td>
+                                                {getStatusBadge(orderStatus)}
+                                                {isDelivered && !isReturned && returnInfo && (
+                                                    <div style={{ marginTop: '5px' }}>
+                                                        {returnInfo.isExpired || returnInfo.daysRemaining <= 0 ? (
+                                                            <span className="badge bg-secondary" style={{ fontSize: '11px' }}>
+                                                                İade süresi doldu
+                                                            </span>
+                                                        ) : (
+                                                            <span className={`badge ${returnInfo.daysRemaining <= 5 ? 'bg-warning' : 'bg-info'}`} style={{ fontSize: '11px' }}>
+                                                                İade için son {returnInfo.daysRemaining} gün
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </td>
                                             <td>{formatPrice(order.total)} ({itemCount} ürün)</td>
                                             <td>
                                                 <button
@@ -731,7 +821,7 @@ const Order = () => {
                                                         İptal Et
                                                     </button>
                                                 )}
-                                                {!isAdmin && isDelivered && !isReturned && (
+                                                {!isAdmin && canReturn && (
                                                     <>
                                                         <button
                                                             className="btn btn-sm btn-danger"
@@ -748,6 +838,15 @@ const Order = () => {
                                                             ⭐ Değerlendir
                                                         </button>
                                                     </>
+                                                )}
+                                                {!isAdmin && isDelivered && !isReturned && !canReturn && (
+                                                    <button
+                                                        className="btn btn-sm btn-warning"
+                                                        onClick={() => openReviewModal(order)}
+                                                        style={{ marginRight: '5px' }}
+                                                    >
+                                                        ⭐ Değerlendir
+                                                    </button>
                                                 )}
                                                 {isAdmin && isDelivered && !isReturned && (
                                                     <button

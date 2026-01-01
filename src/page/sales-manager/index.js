@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useHistory } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { auth, db } from '../../firebaseConfig';
@@ -25,6 +25,7 @@ const SalesManagerPanel = () => {
     const [newPrice, setNewPrice] = useState('');
     const [pricingLoading, setPricingLoading] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
+    const [searchQuery, setSearchQuery] = useState('');
     const itemsPerPage = 30;
     
     // Invoice Management
@@ -92,11 +93,23 @@ const SalesManagerPanel = () => {
         }
     };
 
+    // Filtrelenmiş ürünler (arama sorgusuna göre)
+    const filteredProducts = useMemo(() => {
+        if (!searchQuery.trim()) {
+            return products;
+        }
+        const query = searchQuery.toLowerCase().trim();
+        return products.filter(product => {
+            const title = (product.title || product.name || '').toLowerCase();
+            return title.includes(query);
+        });
+    }, [products, searchQuery]);
+
     // Pagination hesaplamaları
-    const totalPages = Math.ceil(products.length / itemsPerPage);
+    const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    const paginatedProducts = products.slice(startIndex, endIndex);
+    const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
 
     // Pricing & Discounts - Ürün seçimi
     const handleProductSelect = (productId) => {
@@ -114,6 +127,11 @@ const SalesManagerPanel = () => {
         setCurrentPage(page);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
+
+    // Arama sorgusu değiştiğinde sayfayı sıfırla
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery]);
 
     // Pricing & Discounts - İndirim uygula
     const handleApplyDiscount = async () => {
@@ -497,6 +515,33 @@ const SalesManagerPanel = () => {
                                     <div className="card-body">
                                         <h3 className="mb-4">Ürün Fiyatlandırma ve İndirimler</h3>
                                         
+                                        {/* Arama Bar */}
+                                        <div className="row mb-3">
+                                            <div className="col-md-12">
+                                                <div className="input-group">
+                                                    <span className="input-group-text">
+                                                        <i className="fa fa-search"></i>
+                                                    </span>
+                                                    <input
+                                                        type="text"
+                                                        className="form-control"
+                                                        placeholder="Ürün ara..."
+                                                        value={searchQuery}
+                                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                                    />
+                                                    {searchQuery && (
+                                                        <button
+                                                            className="btn btn-outline-secondary"
+                                                            type="button"
+                                                            onClick={() => setSearchQuery('')}
+                                                        >
+                                                            <i className="fa fa-times"></i>
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
                                         <div className="row mb-4">
                                             <div className="col-md-6">
                                                 <label className="form-label">İndirim Oranı (%)</label>
@@ -585,9 +630,19 @@ const SalesManagerPanel = () => {
                                             <div className="d-flex justify-content-between align-items-center mt-4">
                                                 <div>
                                                     <p className="mb-0 text-muted">
-                                                        Toplam {products.length} ürün - Sayfa {currentPage} / {totalPages}
-                                                        <br />
-                                                        <small>Gösterilen: {startIndex + 1} - {Math.min(endIndex, products.length)}</small>
+                                                        {searchQuery ? (
+                                                            <>
+                                                                {filteredProducts.length} ürün bulundu (Toplam: {products.length}) - Sayfa {currentPage} / {totalPages}
+                                                                <br />
+                                                                <small>Gösterilen: {startIndex + 1} - {Math.min(endIndex, filteredProducts.length)}</small>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                Toplam {products.length} ürün - Sayfa {currentPage} / {totalPages}
+                                                                <br />
+                                                                <small>Gösterilen: {startIndex + 1} - {Math.min(endIndex, filteredProducts.length)}</small>
+                                                            </>
+                                                        )}
                                                     </p>
                                                 </div>
                                                 <nav>

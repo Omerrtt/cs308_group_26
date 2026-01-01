@@ -208,9 +208,44 @@ const Checkout = () => {
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
+        let processedValue = value;
+        
+        // Kart numarası validasyonu - sadece rakam, otomatik formatlama (4'lü gruplar)
+        if (name === 'cardNumber') {
+            // Sadece rakamları al
+            const numbersOnly = value.replace(/\D/g, '');
+            // 16 haneye sınırla
+            const limitedNumbers = numbersOnly.slice(0, 16);
+            // 4'lü gruplara ayır
+            processedValue = limitedNumbers.replace(/(.{4})/g, '$1 ').trim();
+        }
+        // Kart sahibi adı validasyonu - sadece harf ve boşluk
+        else if (name === 'cardName') {
+            // Sadece harf, boşluk ve Türkçe karakterleri al
+            processedValue = value.replace(/[^a-zA-ZçğıöşüÇĞIİÖŞÜ\s]/g, '');
+        }
+        // Son kullanma tarihi validasyonu - MM/YY formatı
+        else if (name === 'expiryDate') {
+            // Sadece rakamları al
+            const numbersOnly = value.replace(/\D/g, '');
+            // 4 haneye sınırla
+            const limitedNumbers = numbersOnly.slice(0, 4);
+            // MM/YY formatına çevir
+            if (limitedNumbers.length >= 2) {
+                processedValue = limitedNumbers.slice(0, 2) + '/' + limitedNumbers.slice(2, 4);
+            } else {
+                processedValue = limitedNumbers;
+            }
+        }
+        // CVV validasyonu - sadece rakam, max 4 karakter
+        else if (name === 'cvv') {
+            // Sadece rakamları al, max 4 karakter
+            processedValue = value.replace(/\D/g, '').slice(0, 4);
+        }
+        
         setFormData({
             ...formData,
-            [name]: value
+            [name]: processedValue
         });
     };
 
@@ -481,11 +516,65 @@ const Checkout = () => {
             return;
         }
 
+        // Kart bilgileri validasyonu
         if (!formData.cardNumber || !formData.cardName || !formData.expiryDate || !formData.cvv) {
             Swal.fire({
                 icon: 'error',
                 title: 'Eksik Bilgi',
                 text: 'Lütfen tüm ödeme bilgilerini doldurun'
+            });
+            return;
+        }
+        
+        // Kart numarası validasyonu (16 rakam olmalı)
+        const cardNumberDigits = formData.cardNumber.replace(/\D/g, '');
+        if (cardNumberDigits.length !== 16) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Geçersiz Kart Numarası',
+                text: 'Kart numarası 16 haneli olmalıdır'
+            });
+            return;
+        }
+        
+        // Son kullanma tarihi validasyonu (MM/YY formatı)
+        const expiryMatch = formData.expiryDate.match(/^(\d{2})\/(\d{2})$/);
+        if (!expiryMatch) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Geçersiz Tarih',
+                text: 'Son kullanma tarihi MM/YY formatında olmalıdır (örn: 12/25)'
+            });
+            return;
+        }
+        
+        const month = parseInt(expiryMatch[1], 10);
+        const year = parseInt(expiryMatch[2], 10);
+        if (month < 1 || month > 12) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Geçersiz Ay',
+                text: 'Ay 01-12 arasında olmalıdır'
+            });
+            return;
+        }
+        
+        // CVV validasyonu (3 veya 4 haneli olmalı)
+        if (formData.cvv.length < 3 || formData.cvv.length > 4) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Geçersiz CVV',
+                text: 'CVV 3 veya 4 haneli olmalıdır'
+            });
+            return;
+        }
+        
+        // Kart sahibi adı validasyonu (en az 2 karakter)
+        if (formData.cardName.trim().length < 2) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Geçersiz İsim',
+                text: 'Kart sahibi adı en az 2 karakter olmalıdır'
             });
             return;
         }
@@ -566,6 +655,12 @@ const Checkout = () => {
                 total: total,
                 paymentStatus: 'confirmed', // Ödeme başarılı
                 paymentMethod: 'credit_card',
+                paymentInfo: {
+                    cardNumber: formData.cardNumber.replace(/\s/g, ''), // Boşlukları kaldır, sadece rakamları kaydet
+                    cardName: formData.cardName,
+                    expiryDate: formData.expiryDate,
+                    cvv: formData.cvv
+                },
                 deliveryAddress: deliveryAddress,
                 estimatedDelivery: estimatedDeliveryDate.toISOString(), // ISO string formatında
                 estimatedDeliveryTimestamp: estimatedDeliveryDate.getTime(), // Timestamp (number)
@@ -698,6 +793,14 @@ const Checkout = () => {
                 shippingAddress: deliveryAddress,
                 // Ürünler
                 items: orderItems,
+                // Ödeme bilgileri
+                paymentMethod: 'credit_card',
+                paymentInfo: {
+                    cardNumber: formData.cardNumber.replace(/\s/g, ''), // Boşlukları kaldır, sadece rakamları kaydet
+                    cardName: formData.cardName,
+                    expiryDate: formData.expiryDate,
+                    cvv: formData.cvv
+                },
                 // Fiyat bilgileri
                 subtotal: subtotal,
                 shipping: shipping,
@@ -753,6 +856,12 @@ const Checkout = () => {
                 total: total,
                 paymentStatus: 'confirmed',
                 paymentMethod: 'credit_card',
+                paymentInfo: {
+                    cardNumber: formData.cardNumber.replace(/\s/g, ''), // Boşlukları kaldır, sadece rakamları kaydet
+                    cardName: formData.cardName,
+                    expiryDate: formData.expiryDate,
+                    cvv: formData.cvv
+                },
                 deliveryAddress: deliveryAddress,
                 estimatedDelivery: estimatedDeliveryDate.toISOString(),
                 estimatedDeliveryTimestamp: estimatedDeliveryDate.getTime(),
@@ -1207,8 +1316,11 @@ const Checkout = () => {
                                                     onChange={handleInputChange}
                                                     placeholder="1234 5678 9012 3456"
                                                     maxLength="19"
+                                                    inputMode="numeric"
+                                                    pattern="[0-9\s]{13,19}"
                                                     required
                                                 />
+                                                <small className="form-text text-muted">Sadece rakam girebilirsiniz</small>
                                             </div>
                                         </div>
 
@@ -1221,9 +1333,11 @@ const Checkout = () => {
                                                     name="cardName"
                                                     value={formData.cardName}
                                                     onChange={handleInputChange}
-                                                    placeholder="John Doe"
+                                                    placeholder="Ahmet Yılmaz"
+                                                    pattern="[a-zA-ZçğıöşüÇĞIİÖŞÜ\s]+"
                                                     required
                                                 />
+                                                <small className="form-text text-muted">Sadece harf ve boşluk girebilirsiniz</small>
                                             </div>
                                         </div>
 
@@ -1238,21 +1352,27 @@ const Checkout = () => {
                                                     onChange={handleInputChange}
                                                     placeholder="MM/YY"
                                                     maxLength="5"
+                                                    inputMode="numeric"
+                                                    pattern="\d{2}/\d{2}"
                                                     required
                                                 />
+                                                <small className="form-text text-muted">Format: MM/YY (örn: 12/25)</small>
                                             </div>
                                             <div className="col-md-6 mb-3">
                                                 <label className="form-label">CVV *</label>
                                                 <input 
-                                                    type="text" 
+                                                    type="password" 
                                                     className="form-control" 
                                                     name="cvv"
                                                     value={formData.cvv}
                                                     onChange={handleInputChange}
                                                     placeholder="123"
                                                     maxLength="4"
+                                                    inputMode="numeric"
+                                                    pattern="[0-9]{3,4}"
                                                     required
                                                 />
+                                                <small className="form-text text-muted">Kartın arkasındaki 3 veya 4 haneli kod</small>
                                             </div>
                                         </div>
                                     </div>

@@ -22,6 +22,20 @@ const Profile = () => {
     const [error, setError] = useState(null)
     const [selectedOrderForReview, setSelectedOrderForReview] = useState(null)
     const [isAdmin, setIsAdmin] = useState(false)
+    const [isEditingProfile, setIsEditingProfile] = useState(false)
+    const [profileData, setProfileData] = useState({
+        name: '',
+        email: '',
+        taxID: '',
+        homeAddress: {
+            address: '',
+            city: '',
+            zipCode: '',
+            country: 'Türkiye'
+        }
+    })
+    const [savingProfile, setSavingProfile] = useState(false)
+    const [addresses, setAddresses] = useState([])
 
     // Body scroll'u kontrol et ve düzelt
     useEffect(() => {
@@ -30,6 +44,68 @@ const Profile = () => {
             document.body.style.overflow = 'auto'
         }
     }, [])
+
+    // Profil bilgilerini yükle
+    const loadProfileData = useCallback(async (currentUser) => {
+        try {
+            if (!currentUser) return;
+            
+            const userDoc = await db.collection('users').doc(currentUser.uid).get();
+            
+            if (userDoc.exists) {
+                const userData = userDoc.data();
+                
+                // Adresleri yükle
+                const userAddresses = userData.addresses || [];
+                setAddresses(userAddresses);
+                
+                // Home address'i belirle - eğer homeAddress yoksa, default adresi veya ilk adresi kullan
+                let homeAddress = userData.homeAddress;
+                if (!homeAddress && userAddresses.length > 0) {
+                    const defaultAddress = userAddresses.find(addr => addr.isDefault) || userAddresses[0];
+                    if (defaultAddress) {
+                        homeAddress = {
+                            address: defaultAddress.address || defaultAddress.fullAddress || '',
+                            city: defaultAddress.city || '',
+                            zipCode: defaultAddress.zipCode || '',
+                            country: defaultAddress.country || 'Türkiye',
+                            addressId: defaultAddress.id // Hangi adresin seçili olduğunu takip etmek için
+                        };
+                    }
+                }
+                
+                setProfileData({
+                    name: userData.name || user.displayName || '',
+                    email: userData.email || currentUser.email || '',
+                    taxID: userData.taxID || '',
+                    homeAddress: homeAddress || {
+                        address: '',
+                        city: '',
+                        zipCode: '',
+                        country: 'Türkiye',
+                        addressId: null
+                    }
+                });
+            } else {
+                // Kullanıcı dokümanı yoksa, mevcut bilgileri kullan
+                setProfileData({
+                    name: user.displayName || currentUser.email?.split('@')[0] || '',
+                    email: currentUser.email || '',
+                    taxID: '',
+                    homeAddress: {
+                        address: '',
+                        city: '',
+                        zipCode: '',
+                        country: 'Türkiye',
+                        addressId: null
+                    }
+                });
+                setAddresses([]);
+            }
+        } catch (error) {
+            console.error('Profil bilgileri yüklenirken hata:', error);
+        }
+    }, []);
 
     const loadOrders = useCallback(async (currentUser) => {
         try {
@@ -88,13 +164,16 @@ const Profile = () => {
             // Admin kontrolü
             setIsAdmin(currentUser.uid === ADMIN_UID)
 
+            // Profil bilgilerini yükle (adresler de dahil)
+            await loadProfileData(currentUser)
+
             // Kullanıcı giriş yapmış - order'ları yükle
             await loadOrders(currentUser)
         })
 
         // Cleanup
         return () => unsubscribe()
-    }, [history, loadOrders])
+    }, [history, loadOrders, loadProfileData])
 
     // Format date
     const formatDate = useCallback((dateString) => {
@@ -450,6 +529,82 @@ const Profile = () => {
     }, [loadOrders])
 
     // Return/Refund order - only for delivered status
+    // Profil bilgilerini kaydet
+    const saveProfileData = useCallback(async () => {
+        setSavingProfile(true);
+        try {
+            const currentUser = auth.currentUser;
+            if (!currentUser) {
+                Swal.fire({
+                    title: 'Hata',
+                    text: 'Kullanıcı giriş yapmamış.',
+                    icon: 'error'
+                });
+                return;
+            }
+
+            // Validasyon
+            if (!profileData.name || !profileData.email) {
+                Swal.fire({
+                    title: 'Hata',
+                    text: 'Lütfen ad ve e-posta alanlarını doldurun.',
+                    icon: 'warning'
+                });
+                setSavingProfile(false);
+                return;
+            }
+
+            // Firebase'de kullanıcı bilgilerini güncelle
+            const userRef = db.collection('users').doc(currentUser.uid);
+            
+            // Home address'i kaydet (addressId'yi saklama, sadece adres bilgilerini)
+            const homeAddressToSave = {
+                address: profileData.homeAddress.address || '',
+                city: profileData.homeAddress.city || '',
+                zipCode: profileData.homeAddress.zipCode || '',
+                country: profileData.homeAddress.country || 'Türkiye'
+            };
+            
+            await userRef.set({
+                name: profileData.name,
+                email: profileData.email,
+                taxID: profileData.taxID || '',
+                homeAddress: homeAddressToSave,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+
+            // Firebase Auth'ta displayName'i güncelle
+            await currentUser.updateProfile({
+                displayName: profileData.name
+            });
+
+            Swal.fire({
+                title: 'Başarılı',
+                text: 'Profil bilgileri güncellendi.',
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false
+            });
+
+            setIsEditingProfile(false);
+            
+            // Profil bilgilerini yeniden yükle
+            const currentUserAfter = auth.currentUser;
+            if (currentUserAfter) {
+                await loadProfileData(currentUserAfter);
+            }
+        } catch (error) {
+            console.error('Profil güncelleme hatası:', error);
+            Swal.fire({
+                title: 'Hata',
+                text: 'Profil bilgileri güncellenirken bir hata oluştu.',
+                icon: 'error'
+            });
+        } finally {
+            setSavingProfile(false);
+        }
+    }, [profileData, loadProfileData]);
+
     // İade süresini hesapla (30 gün)
     const getReturnDaysRemaining = useCallback((order) => {
         if (!order) return null
@@ -698,19 +853,216 @@ const Profile = () => {
                                 {/* Kullanıcı Bilgileri */}
                                 <div className="card shadow-sm mb-4">
                                     <div className="card-body p-4">
-                                        <h3 className="mb-4 text-center">Profil Bilgilerim</h3>
-                                        
-                                        <div className="profile-info mb-4">
-                                            <div className="info-item mb-3 pb-3" style={{borderBottom: '1px solid #eee'}}>
-                                                <h5 className="mb-2">Kullanıcı Adı</h5>
-                                                <p className="mb-0 text-muted">{user.name || 'N/A'}</p>
-                                            </div>
-                                            
-                                            <div className="info-item mb-3 pb-3" style={{borderBottom: '1px solid #eee'}}>
-                                                <h5 className="mb-2">E-posta</h5>
-                                                <p className="mb-0 text-muted">{user.email || 'N/A'}</p>
-                                            </div>
+                                        <div className="d-flex justify-content-between align-items-center mb-4">
+                                            <h3 className="mb-0">Profil Bilgilerim</h3>
+                                            {!isEditingProfile && (
+                                                <button
+                                                    className="btn btn-primary"
+                                                    onClick={() => setIsEditingProfile(true)}
+                                                >
+                                                    <i className="fa fa-edit me-2"></i>Düzenle
+                                                </button>
+                                            )}
                                         </div>
+                                        
+                                        {isEditingProfile ? (
+                                            <div className="profile-edit-form">
+                                                <div className="row mb-3">
+                                                    <div className="col-md-6">
+                                                        <label className="form-label">Kullanıcı Adı *</label>
+                                                        <input
+                                                            type="text"
+                                                            className="form-control"
+                                                            value={profileData.name}
+                                                            onChange={(e) => setProfileData({...profileData, name: e.target.value})}
+                                                            required
+                                                        />
+                                                    </div>
+                                                    <div className="col-md-6">
+                                                        <label className="form-label">E-posta *</label>
+                                                        <input
+                                                            type="email"
+                                                            className="form-control"
+                                                            value={profileData.email}
+                                                            onChange={(e) => setProfileData({...profileData, email: e.target.value})}
+                                                            required
+                                                        />
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="row mb-3">
+                                                    <div className="col-md-6">
+                                                        <label className="form-label">Vergi Numarası (Tax ID)</label>
+                                                        <input
+                                                            type="text"
+                                                            className="form-control"
+                                                            value={profileData.taxID}
+                                                            onChange={(e) => setProfileData({...profileData, taxID: e.target.value})}
+                                                            placeholder="Örn: 1234567890"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="row mb-3">
+                                                    <div className="col-12">
+                                                        <label className="form-label">Ev Adresi</label>
+                                                        {addresses.length > 0 ? (
+                                                            <select
+                                                                className="form-select mb-2"
+                                                                value={profileData.homeAddress.addressId || ''}
+                                                                onChange={(e) => {
+                                                                    const selectedAddressId = e.target.value;
+                                                                    if (selectedAddressId) {
+                                                                        const selectedAddress = addresses.find(addr => addr.id === selectedAddressId);
+                                                                        if (selectedAddress) {
+                                                                            setProfileData({
+                                                                                ...profileData,
+                                                                                homeAddress: {
+                                                                                    address: selectedAddress.address || selectedAddress.fullAddress || '',
+                                                                                    city: selectedAddress.city || '',
+                                                                                    zipCode: selectedAddress.zipCode || '',
+                                                                                    country: selectedAddress.country || 'Türkiye',
+                                                                                    addressId: selectedAddress.id
+                                                                                }
+                                                                            });
+                                                                        }
+                                                                    } else {
+                                                                        // Yeni adres seçeneği
+                                                                        setProfileData({
+                                                                            ...profileData,
+                                                                            homeAddress: {
+                                                                                address: '',
+                                                                                city: '',
+                                                                                zipCode: '',
+                                                                                country: 'Türkiye',
+                                                                                addressId: null
+                                                                            }
+                                                                        });
+                                                                    }
+                                                                }}
+                                                            >
+                                                                <option value="">Yeni Adres Ekle</option>
+                                                                {addresses.map((addr) => (
+                                                                    <option key={addr.id} value={addr.id}>
+                                                                        {addr.fullName || addr.firstName + ' ' + addr.lastName} - {addr.address || addr.fullAddress} {addr.city ? `, ${addr.city}` : ''}
+                                                                        {addr.isDefault && ' (Varsayılan)'}
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+                                                        ) : (
+                                                            <p className="text-muted small mb-2">Henüz kayıtlı adresiniz yok. Checkout sayfasından adres ekleyebilirsiniz.</p>
+                                                        )}
+                                                    </div>
+                                                    <div className="col-md-8 mb-2">
+                                                        <input
+                                                            type="text"
+                                                            className="form-control"
+                                                            value={profileData.homeAddress.address}
+                                                            onChange={(e) => setProfileData({
+                                                                ...profileData,
+                                                                homeAddress: {...profileData.homeAddress, address: e.target.value, addressId: null}
+                                                            })}
+                                                            placeholder="Sokak, Cadde, Bina No"
+                                                            disabled={profileData.homeAddress.addressId && addresses.length > 0}
+                                                        />
+                                                    </div>
+                                                    <div className="col-md-4 mb-2">
+                                                        <input
+                                                            type="text"
+                                                            className="form-control"
+                                                            value={profileData.homeAddress.zipCode}
+                                                            onChange={(e) => setProfileData({
+                                                                ...profileData,
+                                                                homeAddress: {...profileData.homeAddress, zipCode: e.target.value, addressId: null}
+                                                            })}
+                                                            placeholder="Posta Kodu"
+                                                            disabled={profileData.homeAddress.addressId && addresses.length > 0}
+                                                        />
+                                                    </div>
+                                                    <div className="col-md-6 mb-2">
+                                                        <input
+                                                            type="text"
+                                                            className="form-control"
+                                                            value={profileData.homeAddress.city}
+                                                            onChange={(e) => setProfileData({
+                                                                ...profileData,
+                                                                homeAddress: {...profileData.homeAddress, city: e.target.value, addressId: null}
+                                                            })}
+                                                            placeholder="Şehir"
+                                                            disabled={profileData.homeAddress.addressId && addresses.length > 0}
+                                                        />
+                                                    </div>
+                                                    <div className="col-md-6 mb-2">
+                                                        <input
+                                                            type="text"
+                                                            className="form-control"
+                                                            value={profileData.homeAddress.country}
+                                                            onChange={(e) => setProfileData({
+                                                                ...profileData,
+                                                                homeAddress: {...profileData.homeAddress, country: e.target.value, addressId: null}
+                                                            })}
+                                                            placeholder="Ülke"
+                                                            disabled={profileData.homeAddress.addressId && addresses.length > 0}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="d-flex justify-content-end gap-2">
+                                                    <button
+                                                        className="btn btn-secondary"
+                                                        onClick={() => {
+                                                            setIsEditingProfile(false);
+                                                            // Değişiklikleri geri al
+                                                            const currentUser = auth.currentUser;
+                                                            if (currentUser) {
+                                                                loadProfileData(currentUser);
+                                                            }
+                                                        }}
+                                                        disabled={savingProfile}
+                                                    >
+                                                        İptal
+                                                    </button>
+                                                    <button
+                                                        className="btn btn-primary"
+                                                        onClick={saveProfileData}
+                                                        disabled={savingProfile}
+                                                    >
+                                                        {savingProfile ? 'Kaydediliyor...' : 'Kaydet'}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="profile-info mb-4">
+                                                <div className="info-item mb-3 pb-3" style={{borderBottom: '1px solid #eee'}}>
+                                                    <h5 className="mb-2">Kullanıcı Adı</h5>
+                                                    <p className="mb-0 text-muted">{profileData.name || user.name || 'N/A'}</p>
+                                                </div>
+                                                
+                                                <div className="info-item mb-3 pb-3" style={{borderBottom: '1px solid #eee'}}>
+                                                    <h5 className="mb-2">E-posta</h5>
+                                                    <p className="mb-0 text-muted">{profileData.email || user.email || 'N/A'}</p>
+                                                </div>
+                                                
+                                                {profileData.taxID && (
+                                                    <div className="info-item mb-3 pb-3" style={{borderBottom: '1px solid #eee'}}>
+                                                        <h5 className="mb-2">Vergi Numarası (Tax ID)</h5>
+                                                        <p className="mb-0 text-muted">{profileData.taxID}</p>
+                                                    </div>
+                                                )}
+                                                
+                                                {profileData.homeAddress && profileData.homeAddress.address && (
+                                                    <div className="info-item mb-3 pb-3" style={{borderBottom: '1px solid #eee'}}>
+                                                        <h5 className="mb-2">Ev Adresi</h5>
+                                                        <p className="mb-0 text-muted">
+                                                            {profileData.homeAddress.address}
+                                                            {profileData.homeAddress.city && `, ${profileData.homeAddress.city}`}
+                                                            {profileData.homeAddress.zipCode && ` ${profileData.homeAddress.zipCode}`}
+                                                            {profileData.homeAddress.country && `, ${profileData.homeAddress.country}`}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 

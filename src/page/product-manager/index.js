@@ -281,7 +281,7 @@ const ProductManagerPanel = () => {
                             deliveryAddress: order.deliveryAddress || order.address || {},
                             deliveryCompleted: order.status === 'delivered',
                             orderStatus: order.status || 'processing',
-                            orderDate: order.orderDateString || order.orderDate
+                            orderDate: order.orderDateString || order.orderDate || order.createdAt
                         });
                     });
                 }
@@ -289,8 +289,20 @@ const ProductManagerPanel = () => {
 
             // Tarihe göre sırala (en yeni önce)
             deliveriesList.sort((a, b) => {
-                const dateA = new Date(a.orderDate).getTime();
-                const dateB = new Date(b.orderDate).getTime();
+                const getTimestamp = (dateInput) => {
+                    if (!dateInput) return 0;
+                    if (typeof dateInput === 'object' && dateInput.toDate) {
+                        return dateInput.toDate().getTime();
+                    }
+                    if (typeof dateInput === 'number') {
+                        return dateInput;
+                    }
+                    const date = new Date(dateInput);
+                    return isNaN(date.getTime()) ? 0 : date.getTime();
+                };
+                
+                const dateA = getTimestamp(a.orderDate);
+                const dateB = getTimestamp(b.orderDate);
                 return dateB - dateA;
             });
 
@@ -315,16 +327,45 @@ const ProductManagerPanel = () => {
             const ordersList = [];
 
             ordersSnapshot.forEach((doc) => {
+                const orderData = doc.data();
+                console.log('📦 Sipariş yükleniyor - orderId:', doc.id);
+                console.log('   - orderDateString:', orderData.orderDateString);
+                console.log('   - orderDate:', orderData.orderDate);
+                console.log('   - orderDateTimestamp:', orderData.orderDateTimestamp);
+                console.log('   - createdAt:', orderData.createdAt);
+                console.log('   - Tüm order data:', orderData);
+                
                 ordersList.push({
                     orderId: doc.id,
-                    ...doc.data()
+                    ...orderData
                 });
             });
 
             // Tarihe göre sırala (en yeni önce)
             ordersList.sort((a, b) => {
-                const dateA = a.orderDateTimestamp || 0;
-                const dateB = b.orderDateTimestamp || 0;
+                // Tarih değerini al (Timestamp, number veya Date)
+                const getTimestamp = (order) => {
+                    if (order.orderDateTimestamp) return order.orderDateTimestamp;
+                    if (order.orderDate && typeof order.orderDate === 'object' && order.orderDate.toDate) {
+                        return order.orderDate.toDate().getTime();
+                    }
+                    if (order.orderDate && typeof order.orderDate === 'number') {
+                        return order.orderDate;
+                    }
+                    if (order.orderDate) {
+                        return new Date(order.orderDate).getTime();
+                    }
+                    if (order.createdAt && typeof order.createdAt === 'object' && order.createdAt.toDate) {
+                        return order.createdAt.toDate().getTime();
+                    }
+                    if (order.createdAt) {
+                        return new Date(order.createdAt).getTime();
+                    }
+                    return 0;
+                };
+                
+                const dateA = getTimestamp(a);
+                const dateB = getTimestamp(b);
                 return dateB - dateA;
             });
 
@@ -540,19 +581,66 @@ const ProductManagerPanel = () => {
     };
 
     // Format date
-    const formatDate = (dateString) => {
-        if (!dateString) return 'Tarih yok';
+    const formatDate = (dateInput) => {
+        console.log('🔍 formatDate çağrıldı - dateInput:', dateInput, 'type:', typeof dateInput);
+        
+        if (!dateInput) {
+            console.log('⚠️ dateInput boş');
+            return 'Tarih yok';
+        }
+        
+        // Eğer zaten formatlanmış Türkçe string ise (ay isimleri içeriyorsa), direkt döndür
+        if (typeof dateInput === 'string') {
+            const turkishMonths = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 
+                                   'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+            const containsTurkishMonth = turkishMonths.some(month => dateInput.includes(month));
+            
+            if (containsTurkishMonth) {
+                console.log('✅ Zaten formatlanmış Türkçe string, direkt döndürülüyor:', dateInput);
+                return dateInput;
+            }
+        }
+        
         try {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('tr-TR', {
+            let date;
+            
+            // Firebase Timestamp kontrolü
+            if (dateInput && typeof dateInput === 'object' && dateInput.toDate) {
+                console.log('✅ Firebase Timestamp bulundu');
+                date = dateInput.toDate();
+            }
+            // Timestamp (number) kontrolü
+            else if (typeof dateInput === 'number') {
+                console.log('✅ Number timestamp bulundu:', dateInput);
+                date = new Date(dateInput);
+            }
+            // String veya diğer formatlar
+            else {
+                console.log('✅ String/other format, new Date() ile parse ediliyor:', dateInput);
+                date = new Date(dateInput);
+            }
+            
+            console.log('📅 Parse edilen date:', date);
+            
+            // Geçerli tarih kontrolü
+            if (isNaN(date.getTime())) {
+                console.error('❌ Geçersiz tarih - getTime() NaN:', date);
+                return 'Geçersiz tarih';
+            }
+            
+            const formatted = date.toLocaleDateString('tr-TR', {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric',
                 hour: '2-digit',
                 minute: '2-digit'
             });
+            
+            console.log('✅ Formatlanmış tarih:', formatted);
+            return formatted;
         } catch (error) {
-            return dateString;
+            console.error('❌ Tarih formatlama hatası:', error, 'dateInput:', dateInput);
+            return 'Tarih yok';
         }
     };
 
@@ -1113,7 +1201,28 @@ const ProductManagerPanel = () => {
                                                             <tr key={order.orderId}>
                                                                 <td>{order.orderId}</td>
                                                                 <td>{order.userName || 'Bilinmeyen'}</td>
-                                                                <td>{formatDate(order.orderDateString || order.orderDate)}</td>
+                                                                <td>
+                                                                    {(() => {
+                                                                        // Öncelik sırası: orderDateTimestamp > orderDate > orderDateString > createdAt
+                                                                        // orderDateString zaten formatlanmış, diğerleri parse edilmeli
+                                                                        let dateValue;
+                                                                        if (order.orderDateTimestamp) {
+                                                                            dateValue = order.orderDateTimestamp;
+                                                                        } else if (order.orderDate) {
+                                                                            dateValue = order.orderDate;
+                                                                        } else if (order.orderDateString) {
+                                                                            // Zaten formatlanmış, direkt döndür
+                                                                            return order.orderDateString;
+                                                                        } else if (order.createdAt) {
+                                                                            dateValue = order.createdAt;
+                                                                        } else {
+                                                                            return 'Tarih yok';
+                                                                        }
+                                                                        
+                                                                        console.log('🎯 Tarih gösterimi - orderId:', order.orderId, 'dateValue:', dateValue);
+                                                                        return formatDate(dateValue);
+                                                                    })()}
+                                                                </td>
                                                                 <td>{formatPrice(order.total)}</td>
                                                                 <td>
                                                                     <select

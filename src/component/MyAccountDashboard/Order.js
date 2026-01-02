@@ -574,58 +574,9 @@ const Order = () => {
                 // Hata durumunda kullanıcıya bilgi ver ama sipariş iadesini engelleme
             }
 
-            // Ürün stoklarını geri artır
-            try {
-                console.log('İade edilen sipariş için stoklar geri artırılıyor...')
-                const batch = db.batch()
-                let stockUpdateCount = 0
-                
-                if (order.items && order.items.length > 0) {
-                    for (const item of order.items) {
-                        // Ürün ID'sini al (originalId varsa onu kullan, yoksa productId veya id)
-                        const productId = item.originalId || item.productId || item.id
-                        if (!productId) {
-                            console.warn('  ⚠️ Ürün ID bulunamadı:', item)
-                            continue
-                        }
-                        
-                        const productRef = db.collection('products').doc(productId.toString())
-                        const productDoc = await productRef.get()
-                        
-                        if (productDoc.exists) {
-                            const productData = productDoc.data()
-                            const currentStock = typeof productData.stock === 'number' 
-                                ? productData.stock 
-                                : parseInt(productData.stock, 10) || 0
-                            
-                            const quantityToRestore = item.quantity || 1
-                            const newStock = currentStock + quantityToRestore
-                            
-                            batch.update(productRef, {
-                                stock: newStock,
-                                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                            })
-                            
-                            stockUpdateCount++
-                            console.log(`  - Ürün ${productId}: ${currentStock} → ${newStock} (${quantityToRestore} adet eklendi)`)
-                        } else {
-                            console.warn(`  ⚠️ Ürün bulunamadı: ${productId}`)
-                        }
-                    }
-                    
-                    if (stockUpdateCount > 0) {
-                        await batch.commit()
-                        console.log(`✅ ${stockUpdateCount} ürünün stoku geri artırıldı`)
-                    }
-                }
-            } catch (stockError) {
-                console.error('❌ Stok geri artırma hatası:', stockError)
-                // Stok hatası sipariş iadesini engellemez, sadece log'lar
-            }
-
             Swal.fire({
                 title: 'Başarılı',
-                text: 'İade talebi oluşturuldu, stoklar geri artırıldı. Ödeme iadesi işleme alınacaktır.',
+                text: 'İade talebi oluşturuldu. Sales Manager tarafından onaylandıktan sonra stoklar geri artırılacak ve ödeme iadesi yapılacaktır.',
                 icon: 'success',
                 timer: 3000,
                 showConfirmButton: false

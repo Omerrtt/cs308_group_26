@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useHistory } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { auth, db, functions } from '../../firebaseConfig';
+import firebase from 'firebase/app';
 import Header from '../../component/Common/Header';
 import Footer from '../../component/Common/Footer';
 import Swal from 'sweetalert2';
@@ -610,7 +611,69 @@ const SalesManagerPanel = () => {
                 console.warn('Orders collection güncellenemedi:', err);
             }
             
-            // 3. Email gönder (Cloud Function)
+            // 3. Ürün stoklarını geri artır (iade onaylandığında)
+            try {
+                console.log('İade onaylandı, stoklar geri artırılıyor...');
+                const batch = db.batch();
+                let stockUpdateCount = 0;
+                
+                if (refund.items && refund.items.length > 0) {
+                    for (const item of refund.items) {
+                        // Ürün ID'sini al (originalId varsa onu kullan, yoksa productId veya id)
+                        const productId = item.originalId || item.productId || item.id;
+                        if (!productId) {
+                            console.warn('  ⚠️ Ürün ID bulunamadı:', item);
+                            continue;
+                        }
+                        
+                        const productRef = db.collection('products').doc(productId.toString());
+                        const productDoc = await productRef.get();
+                        
+                        if (productDoc.exists) {
+                            const productData = productDoc.data();
+                            const currentStock = typeof productData.stock === 'number' 
+                                ? productData.stock 
+                                : parseInt(productData.stock, 10) || 0;
+                            
+                            const quantityToRestore = item.quantity || 1;
+                            const newStock = currentStock + quantityToRestore;
+                            
+                            batch.update(productRef, {
+                                stock: newStock,
+                                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                            
+                            stockUpdateCount++;
+                            console.log(`  - Ürün ${productId}: ${currentStock} → ${newStock} (${quantityToRestore} adet eklendi)`);
+                        } else {
+                            console.warn(`  ⚠️ Ürün bulunamadı: ${productId}`);
+                        }
+                    }
+                    
+                    if (stockUpdateCount > 0) {
+                        await batch.commit();
+                        console.log(`✅ ${stockUpdateCount} ürünün stoku geri artırıldı`);
+                    }
+                } else {
+                    console.warn('⚠️ İade edilen siparişte ürün bilgisi bulunamadı');
+                }
+            } catch (stockError) {
+                console.error('❌ Stok geri artırma hatası:', stockError);
+                // Stok hatası refund işlemini engellemez, sadece uyarı ver
+                Swal.fire({
+                    title: 'Uyarı',
+                    html: `
+                        <p>İade onaylandı ancak stoklar geri artırılamadı.</p>
+                        <p><small>Hata: ${stockError.message || 'Bilinmeyen hata'}</small></p>
+                        <p><small>Lütfen stokları manuel olarak kontrol edin.</small></p>
+                    `,
+                    icon: 'warning',
+                    timer: 5000,
+                    showConfirmButton: true
+                });
+            }
+            
+            // 4. Email gönder (Cloud Function)
             try {
                 const sendRefundEmail = functions.httpsCallable('sendRefundApprovalEmail');
                 const emailResult = await sendRefundEmail({

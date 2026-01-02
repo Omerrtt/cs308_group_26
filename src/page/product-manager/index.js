@@ -6,7 +6,7 @@ import Header from '../../component/Common/Header';
 import Footer from '../../component/Common/Footer';
 import Swal from 'sweetalert2';
 import firebase from 'firebase/app';
-import { getCategoryTree, clearProductsCache } from '../../app/data/productsData';
+import { getCategoryTree, clearProductsCache, generateProductCode } from '../../app/data/productsData';
 import { loadProductsFromFirebase } from '../../app/slices/products';
 
 // Product Manager Email
@@ -481,34 +481,271 @@ const ProductManagerPanel = () => {
         setProductLoading(true);
         try {
             // Kategori bilgisini oluştur (alt kategori varsa birleştir)
-            let categoryPath = newProduct.category || '';
-            if (newProduct.subcategory) {
-                const mainCategoryName = categories.find(cat => 
-                    cat.type === 'main' && (cat.slug === newProduct.category || cat.name === newProduct.category)
-                )?.name || newProduct.category;
-                const subCategoryName = categories.find(cat => 
-                    cat.type === 'sub' && (cat.slug === newProduct.subcategory || cat.name === newProduct.subcategory)
-                )?.name || newProduct.subcategory;
+            const selectedMainCategory = categories.find(cat => 
+                cat.type === 'main' && (cat.slug === newProduct.category || cat.name === newProduct.category)
+            );
+            const selectedSubCategory = newProduct.subcategory ? categories.find(cat => 
+                cat.type === 'sub' && (cat.slug === newProduct.subcategory || cat.name === newProduct.subcategory)
+            ) : null;
+            
+            const mainCategoryName = selectedMainCategory?.name || newProduct.category;
+            const mainCategorySlug = selectedMainCategory?.slug || newProduct.category;
+            const subCategoryName = selectedSubCategory?.name || newProduct.subcategory || '';
+            const subCategorySlug = selectedSubCategory?.slug || newProduct.subcategory || '';
+            
+            let categoryPath = mainCategoryName;
+            if (subCategoryName) {
                 categoryPath = `${mainCategoryName} > ${subCategoryName}`;
             }
 
+            // Product ID oluştur (8 haneli, benzersiz)
+            const generateProductId = () => {
+                const timestamp = Date.now().toString();
+                const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+                return (timestamp.slice(-4) + random).padStart(8, '0');
+            };
+            
+            const productId = generateProductId();
+            
+            // Mevcut Firebase ürün yapısına uygun olarak tüm attribute'ları ekle
             const productData = {
+                // Temel bilgiler
+                id: productId, // Product ID (string, 8 haneli)
                 title: newProduct.title,
                 price: parseFloat(newProduct.price),
                 stock: parseInt(newProduct.stock),
-                category: newProduct.category || '',
-                subcategory: newProduct.subcategory || '',
-                categoryPath: categoryPath,
+                currency: 'TL', // Default currency
+                
+                // Kategori bilgileri (tam kategori yolu formatında)
+                category: categoryPath, // Tam kategori yolu (örn: "Ana Kategori > Alt Kategori")
+                categoryName: mainCategoryName, // Ana kategori adı
+                categorySlug: mainCategorySlug, // Ana kategori slug
+                subcategory: subCategorySlug || '', // Alt kategori slug
+                subcategoryName: subCategoryName || '', // Alt kategori adı
+                
+                // Görsel bilgileri
+                image: newProduct.image || '', // Ana görsel URL
+                images: newProduct.image ? [newProduct.image] : [], // Görsel array
+                
+                // Açıklama
                 description: newProduct.description || '',
-                image: newProduct.image || '',
+                
+                // Marka ve distribütör (default değerler)
+                brand: '', // Boş, sonra doldurulabilir
+                distributor: '', // Boş, sonra doldurulabilir
+                
+                // EAN/Barkod
+                ean: '', // Boş, sonra doldurulabilir
+                
+                // Rating ve yorumlar
                 rating: 0,
                 ratingCount: 0,
-                approvedComments: [],
+                commentCount: 0,
+                all_comments: [], // Boş array
+                approvedComments: [], // Boş array
+                
+                // İndirim bilgileri
+                discountRate: null, // Boş, indirim yoksa null
+                discountedAt: null, // Boş, indirim yoksa null
+                originalPrice: parseFloat(newProduct.price), // Başlangıçta price ile aynı
+                
+                // Diğer bilgiler
+                inStock: parseInt(newProduct.stock) > 0, // Stok varsa true
+                productCode: generateProductCode(newProduct.title), // Ürün kodu
+                
+                // Timestamp'ler
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             };
 
-            await db.collection('products').add(productData);
+            console.log('🔍 DEBUG: Ürün ekleniyor...');
+            console.log('📦 Product Data:', JSON.stringify(productData, null, 2));
+            console.log('📦 Product Data (raw):', productData);
+            console.log('👤 DEBUG: Kullanıcı:', auth.currentUser?.email, auth.currentUser?.uid);
+            
+            let docRef;
+            let docId;
+            try {
+                // Product ID'yi document ID olarak kullan
+                docRef = db.collection('products').doc(productId);
+                await docRef.set(productData);
+                docId = productId;
+                
+                console.log('✅ DEBUG: Ürün Firebase\'e eklendi!');
+                console.log('🆔 Document ID:', docId);
+                
+                // Biraz bekle (Firebase'in senkronize olması için)
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Eklenen ürünü kontrol et
+                const addedProduct = await docRef.get();
+                if (addedProduct.exists) {
+                    console.log('✅ DEBUG: Eklenen ürün (Firebase\'den okundu):', addedProduct.data());
+                } else {
+                    console.error('❌ DEBUG: ÜRÜN BULUNAMADI! Document ID:', docId);
+                }
+                
+                // Tüm ürünleri kontrol et
+                const allProductsSnapshot = await db.collection('products').get();
+                console.log(`📊 DEBUG: Firebase'de toplam ${allProductsSnapshot.size} ürün var`);
+                
+                // Son eklenen 5 ürünü göster
+                const recentProducts = [];
+                allProductsSnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    recentProducts.push({
+                        id: doc.id,
+                        title: data.title,
+                        category: data.category,
+                        categoryName: data.categoryName,
+                        categoryPath: data.categoryPath
+                    });
+                });
+                console.log('📋 DEBUG: Son 5 ürün:', recentProducts.slice(-5));
+                
+                // Yeni eklenen ürünü bul
+                const newProductInList = recentProducts.find(p => p.id === docId);
+                if (newProductInList) {
+                    console.log('✅ DEBUG: Yeni ürün listede bulundu:', newProductInList);
+                } else {
+                    console.error('❌ DEBUG: Yeni ürün listede BULUNAMADI!');
+                }
+                
+                // Ürünü ilgili kategorinin products array'ine ekle
+                if (mainCategorySlug) {
+                    try {
+                        const mainCategoryRef = db.collection('categories').doc(mainCategorySlug);
+                        const mainCategoryDoc = await mainCategoryRef.get();
+                        
+                        if (mainCategoryDoc.exists) {
+                            // Alt kategori varsa, alt kategorinin products array'ine ekle
+                            if (subCategorySlug) {
+                                const subCategoryRef = mainCategoryRef.collection('subcategories').doc(subCategorySlug);
+                                const subCategoryDoc = await subCategoryRef.get();
+                                
+                                if (subCategoryDoc.exists) {
+                                    const subCategoryData = subCategoryDoc.data();
+                                    const existingProducts = subCategoryData.products || [];
+                                    
+                                    // Ürün zaten var mı kontrol et
+                                    const productExists = existingProducts.some(p => 
+                                        p.id === productId || 
+                                        p.firebaseDocId === productId || 
+                                        p.originalId === productId
+                                    );
+                                    
+                                    if (!productExists) {
+                                        // Yeni ürünü ekle
+                                        const newProductForCategory = {
+                                            id: productId,
+                                            originalId: productId,
+                                            firebaseDocId: productId,
+                                            title: newProduct.title,
+                                            price: parseFloat(newProduct.price),
+                                            image: newProduct.image || productData.image || ''
+                                        };
+                                        
+                                        // Mevcut products array'ine yeni ürünü ekle
+                                        const updatedProducts = [...existingProducts, newProductForCategory];
+                                        
+                                        await subCategoryRef.update({
+                                            products: updatedProducts,
+                                            productCount: updatedProducts.length,
+                                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                                        });
+                                        
+                                        console.log('✅ DEBUG: Ürün alt kategoriye eklendi:', subCategorySlug);
+                                        console.log('📊 DEBUG: Alt kategoride toplam ürün sayısı:', updatedProducts.length);
+                                    } else {
+                                        console.log('⚠️ DEBUG: Ürün zaten alt kategoride mevcut');
+                                    }
+                                } else {
+                                    console.warn('⚠️ DEBUG: Alt kategori bulunamadı:', subCategorySlug);
+                                }
+                            } else {
+                                // Alt kategori yoksa, otomatik olarak "Genel" alt kategorisi oluştur
+                                console.log('ℹ️ DEBUG: Alt kategori seçilmedi, otomatik "Genel" alt kategorisi oluşturuluyor...');
+                                
+                                const defaultSubcategorySlug = 'genel';
+                                const defaultSubcategoryName = 'Genel';
+                                const subCategoryRef = mainCategoryRef.collection('subcategories').doc(defaultSubcategorySlug);
+                                const subCategoryDoc = await subCategoryRef.get();
+                                
+                                // Yeni ürünü ekle
+                                const newProductForCategory = {
+                                    id: productId,
+                                    originalId: productId,
+                                    firebaseDocId: productId,
+                                    title: newProduct.title,
+                                    price: parseFloat(newProduct.price),
+                                    image: newProduct.image || productData.image || ''
+                                };
+                                
+                                if (subCategoryDoc.exists) {
+                                    // Alt kategori zaten varsa, sadece ürünü ekle
+                                    const subCategoryData = subCategoryDoc.data();
+                                    const existingProducts = subCategoryData.products || [];
+                                    
+                                    // Ürün zaten var mı kontrol et
+                                    const productExists = existingProducts.some(p => 
+                                        p.id === productId || 
+                                        p.firebaseDocId === productId || 
+                                        p.originalId === productId
+                                    );
+                                    
+                                    if (!productExists) {
+                                        const updatedProducts = [...existingProducts, newProductForCategory];
+                                        
+                                        await subCategoryRef.update({
+                                            products: updatedProducts,
+                                            productCount: updatedProducts.length,
+                                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                                        });
+                                        
+                                        console.log('✅ DEBUG: Ürün "Genel" alt kategorisine eklendi');
+                                    } else {
+                                        console.log('⚠️ DEBUG: Ürün zaten "Genel" alt kategoride mevcut');
+                                    }
+                                } else {
+                                    // Alt kategori yoksa, oluştur ve ürünü ekle
+                                    await subCategoryRef.set({
+                                        name: defaultSubcategoryName,
+                                        slug: defaultSubcategorySlug,
+                                        parentCategory: mainCategoryName,
+                                        parentCategorySlug: mainCategorySlug,
+                                        products: [newProductForCategory],
+                                        productCount: 1,
+                                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                                    });
+                                    
+                                    console.log('✅ DEBUG: "Genel" alt kategorisi oluşturuldu ve ürün eklendi');
+                                }
+                                
+                                // Ürün verisini güncelle (subcategory bilgisini ekle)
+                                await docRef.update({
+                                    subcategory: defaultSubcategorySlug,
+                                    subcategoryName: defaultSubcategoryName,
+                                    categoryPath: `${mainCategoryName} > ${defaultSubcategoryName}`
+                                });
+                            }
+                        } else {
+                            console.warn('⚠️ DEBUG: Ana kategori bulunamadı:', mainCategorySlug);
+                        }
+                    } catch (categoryError) {
+                        console.error('❌ DEBUG: Kategoriye ekleme hatası:', categoryError);
+                        // Kategoriye ekleme hatası kritik değil, ürün zaten eklendi
+                    }
+                }
+            } catch (firebaseError) {
+                console.error('❌ DEBUG: Firebase\'e ekleme hatası:', firebaseError);
+                console.error('❌ DEBUG: Hata detayı:', {
+                    code: firebaseError.code,
+                    message: firebaseError.message,
+                    stack: firebaseError.stack
+                });
+                throw firebaseError; // Hatayı yukarı fırlat
+            }
 
             // Cache'i temizle ki yeni ürün hemen görünsün
             clearProductsCache();

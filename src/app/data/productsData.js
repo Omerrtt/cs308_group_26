@@ -15,9 +15,22 @@ try {
 
 // Ürün adından benzersiz 6 haneli kod oluştur
 export const generateProductCode = (productName) => {
+    // Null/undefined kontrolü
+    if (!productName || typeof productName !== 'string') {
+        // Fallback: rastgele kod oluştur
+        const randomCode = Math.floor(Math.random() * 900000) + 100000;
+        return randomCode.toString();
+    }
+    
     const cleanName = productName.toLowerCase()
         .replace(/[^a-z0-9\s]/g, '')
         .replace(/\s+/g, '');
+    
+    // Eğer cleanName boşsa (sadece özel karakterler varsa), rastgele kod oluştur
+    if (!cleanName || cleanName.length === 0) {
+        const randomCode = Math.floor(Math.random() * 900000) + 100000;
+        return randomCode.toString();
+    }
     
     let hash = 0;
     for (let i = 0; i < cleanName.length; i++) {
@@ -118,7 +131,12 @@ const formatProductsFromJSON = (productsData) => {
         
         // Eğer productCode yoksa oluştur
         if (!formattedProduct.productCode) {
-            formattedProduct.productCode = generateProductCode(formattedProduct.name || formattedProduct['Product Name']);
+            const productName = formattedProduct.name || 
+                               formattedProduct.title || 
+                               formattedProduct['Product Name'] || 
+                               formattedProduct['Ürün Adı'] ||
+                               'Ürün ' + (index + 1);
+            formattedProduct.productCode = generateProductCode(productName);
         }
 
         // EAN bilgisini ekle - öncelik allProducts.json'daki ean alanı
@@ -230,7 +248,12 @@ const formatProducts = (productsData) => {
         
         // Eğer productCode yoksa oluştur
         if (!formattedProduct.productCode) {
-            formattedProduct.productCode = generateProductCode(formattedProduct.name || formattedProduct['Product Name']);
+            const productName = formattedProduct.name || 
+                               formattedProduct.title || 
+                               formattedProduct['Product Name'] || 
+                               formattedProduct['Ürün Adı'] ||
+                               'Ürün ' + (index + 1);
+            formattedProduct.productCode = generateProductCode(productName);
         }
 
         // EAN bilgisini ekle - öncelik allProducts.json'daki ean alanı

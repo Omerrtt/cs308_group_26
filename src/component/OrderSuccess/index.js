@@ -61,7 +61,7 @@ const OrderSuccess = () => {
                                         <tr>
                                             <td>
                                                 <img src={img2} alt="img"
-                                                    style={{ marginTop: "30px", marginBottom: "30px" }} />
+                                                    style={{ marginTop: "40px", marginBottom: "30px" }} />
                                             </td>
                                         </tr>
                                     </tbody>

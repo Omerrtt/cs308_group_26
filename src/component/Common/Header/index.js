@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import logo from '../../../assets/img/malikane-electronics-logo-removebg-preview.png'
 import logoWhite from '../../../assets/img/malikane-electronics-logo-removebg-preview.png'
-import { MenuData } from './MenuData'
+import { MenuData, getMenuData, clearMenuCategoriesCache } from './MenuData'
 import NaveItems from './NaveItems'
 import TopHeader from './TopHeader'
 import { useHistory } from "react-router-dom"
@@ -22,6 +22,7 @@ const Header = () => {
     const [click, setClick] = useState(false);
     const [show, setShow] = useState();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [menuData, setMenuData] = useState(MenuData);
     const history = useHistory()
     const location = useLocation()
     let carts = useSelector((state) => state.products.carts);
@@ -32,6 +33,43 @@ const Header = () => {
     const [isSalesManager, setIsSalesManager] = useState(false);
     const [isProductManager, setIsProductManager] = useState(false);
     const [isSupportAgent, setIsSupportAgent] = useState(false);
+
+    // Kategorileri Firebase'den yükle
+    useEffect(() => {
+        const loadMenuCategories = async () => {
+            try {
+                const menuDataFromFirebase = await getMenuData();
+                setMenuData(menuDataFromFirebase);
+            } catch (error) {
+                console.error('Menu kategorileri yüklenirken hata:', error);
+            }
+        };
+        
+        loadMenuCategories();
+        
+        // Storage event listener - yeni kategori eklendiğinde cache temizlensin
+        const handleStorageChange = (e) => {
+            if (e.key === 'categories_updated') {
+                clearMenuCategoriesCache();
+                loadMenuCategories();
+            }
+        };
+        
+        window.addEventListener('storage', handleStorageChange);
+        
+        // Custom event listener - aynı tab'da kategori eklendiğinde
+        const handleCategoriesUpdate = () => {
+            clearMenuCategoriesCache();
+            loadMenuCategories();
+        };
+        
+        window.addEventListener('categoriesUpdated', handleCategoriesUpdate);
+        
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+            window.removeEventListener('categoriesUpdated', handleCategoriesUpdate);
+        };
+    }, []);
 
     // Sales manager, Product manager ve Support agent kontrolü
     useEffect(() => {
@@ -242,7 +280,7 @@ const Header = () => {
                                     <div className="main-menu menu-color--black menu-hover-color--golden d-none d-xl-block">
                                         <nav>
                                             <ul>
-                                                {MenuData.map((item, index) => (
+                                                {menuData.map((item, index) => (
                                                     <NaveItems item={item} key={index} />
                                                 ))}
                                             </ul>
@@ -694,7 +732,7 @@ const Header = () => {
                                 <li>
                                     <Link to="/"><span>Ana Sayfa</span></Link>
                                 </li>
-                                {MenuData.map((item, index) => {
+                                {menuData.map((item, index) => {
                                     // Kategoriler için accordion yapısı
                                     if (item.name === "KATEGORİLER" && item.children) {
                                         return (

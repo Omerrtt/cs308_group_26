@@ -441,6 +441,12 @@ const ProductManagerPanel = () => {
 
             // Kategorileri yeniden yükle
             await loadCategories();
+            
+            // Header ve anasayfadaki kategorileri güncellemek için event gönder
+            window.dispatchEvent(new CustomEvent('categoriesUpdated'));
+            if (typeof window !== 'undefined' && window.localStorage) {
+                window.localStorage.setItem('categories_updated', Date.now().toString());
+            }
         } catch (error) {
             console.error('Kategori eklenirken hata:', error);
             Swal.fire({

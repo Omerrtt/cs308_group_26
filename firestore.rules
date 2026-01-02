@@ -134,6 +134,50 @@ service cloud.firestore {
       allow delete: if isSupportAgent();
     }
     
+    // Categories koleksiyonu
+    match /categories/{categoryId} {
+      // Herkes kategorileri okuyabilir
+      allow read: if true;
+      
+      // Product Manager email kontrolü
+      function isProductManager() {
+        return request.auth != null && request.auth.token.email == 'mbozyel2003@gmail.com';
+      }
+      
+      // Admin UID kontrolü
+      function isAdmin() {
+        return request.auth != null && request.auth.uid == 'kcopWa6L3AZ5BbeHCokV7uKD6Pd2';
+      }
+      
+      // Sadece admin ve product manager kategori oluşturabilir/güncelleyebilir/silebilir
+      // set() işlemi hem create hem update yapabilir, bu yüzden her ikisini de kontrol ediyoruz
+      allow create: if isAdmin() || isProductManager();
+      allow update: if isAdmin() || isProductManager();
+      allow delete: if isAdmin() || isProductManager();
+      
+      // Subcategories subcollection
+      match /subcategories/{subcategoryId} {
+        // Herkes alt kategorileri okuyabilir
+        allow read: if true;
+        
+        // Product Manager email kontrolü
+        function isProductManager() {
+          return request.auth != null && request.auth.token.email == 'mbozyel2003@gmail.com';
+        }
+        
+        // Admin UID kontrolü
+        function isAdmin() {
+          return request.auth != null && request.auth.uid == 'kcopWa6L3AZ5BbeHCokV7uKD6Pd2';
+        }
+        
+        // Sadece admin ve product manager alt kategori oluşturabilir/güncelleyebilir/silebilir
+        // set() işlemi hem create hem update yapabilir, bu yüzden her ikisini de kontrol ediyoruz
+        allow create: if isAdmin() || isProductManager();
+        allow update: if isAdmin() || isProductManager();
+        allow delete: if isAdmin() || isProductManager();
+      }
+    }
+    
     // Diğer tüm koleksiyonlar için varsayılan: Reddet
     match /{document=**} {
       allow read, write: if false;

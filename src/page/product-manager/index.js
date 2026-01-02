@@ -38,6 +38,7 @@ const ProductManagerPanel = () => {
     // Categories Management
     const [categories, setCategories] = useState([]);
     const [newCategory, setNewCategory] = useState({ name: '', slug: '' });
+    const [migratingCategories, setMigratingCategories] = useState(false);
     
     // Stock Management
     const [stockUpdates, setStockUpdates] = useState({});
@@ -111,28 +112,64 @@ const ProductManagerPanel = () => {
         }
     };
 
-    // Kategorileri yükle
+    // Kategorileri yükle (Firebase'den)
     const loadCategories = async () => {
         try {
-            // Kategori ağacını yükle
-            const categoryTree = getCategoryTree();
             const categoriesList = [];
             
-            for (const [mainCat, data] of Object.entries(categoryTree)) {
+            // Firebase'den kategorileri yükle
+            const categoriesSnapshot = await db.collection('categories').get();
+            
+            for (const mainCategoryDoc of categoriesSnapshot.docs) {
+                const mainCategoryData = mainCategoryDoc.data();
+                
+                // Ana kategoriyi ekle
                 categoriesList.push({
-                    name: mainCat,
-                    slug: data.slug,
-                    type: 'main'
+                    name: mainCategoryData.name,
+                    slug: mainCategoryData.slug,
+                    type: 'main',
+                    id: mainCategoryDoc.id
                 });
                 
-                if (data.subcategories) {
-                    for (const [subCat, subData] of Object.entries(data.subcategories)) {
-                        categoriesList.push({
-                            name: subCat,
-                            slug: subData.slug,
-                            parent: mainCat,
-                            type: 'sub'
-                        });
+                // Alt kategorileri yükle
+                const subcategoriesSnapshot = await mainCategoryDoc.ref.collection('subcategories').get();
+                
+                subcategoriesSnapshot.forEach((subCategoryDoc) => {
+                    const subCategoryData = subCategoryDoc.data();
+                    categoriesList.push({
+                        name: subCategoryData.name,
+                        slug: subCategoryData.slug,
+                        parent: mainCategoryData.name,
+                        parentSlug: mainCategoryData.slug,
+                        type: 'sub',
+                        productCount: subCategoryData.productCount || 0,
+                        id: subCategoryDoc.id,
+                        mainCategoryId: mainCategoryDoc.id
+                    });
+                });
+            }
+            
+            // Eğer Firebase'de kategori yoksa, fallback olarak JSON'dan yükle
+            if (categoriesList.length === 0) {
+                console.warn('Firebase\'de kategori bulunamadı, JSON\'dan yükleniyor...');
+                const categoryTree = getCategoryTree();
+                
+                for (const [mainCat, data] of Object.entries(categoryTree)) {
+                    categoriesList.push({
+                        name: mainCat,
+                        slug: data.slug,
+                        type: 'main'
+                    });
+                    
+                    if (data.subcategories) {
+                        for (const [subCat, subData] of Object.entries(data.subcategories)) {
+                            categoriesList.push({
+                                name: subCat,
+                                slug: subData.slug,
+                                parent: mainCat,
+                                type: 'sub'
+                            });
+                        }
                     }
                 }
             }
@@ -140,6 +177,183 @@ const ProductManagerPanel = () => {
             setCategories(categoriesList);
         } catch (error) {
             console.error('Kategoriler yüklenirken hata:', error);
+            // Hata durumunda fallback olarak JSON'dan yükle
+            try {
+                const categoryTree = getCategoryTree();
+                const categoriesList = [];
+                
+                for (const [mainCat, data] of Object.entries(categoryTree)) {
+                    categoriesList.push({
+                        name: mainCat,
+                        slug: data.slug,
+                        type: 'main'
+                    });
+                    
+                    if (data.subcategories) {
+                        for (const [subCat, subData] of Object.entries(data.subcategories)) {
+                            categoriesList.push({
+                                name: subCat,
+                                slug: subData.slug,
+                                parent: mainCat,
+                                type: 'sub'
+                            });
+                        }
+                    }
+                }
+                
+                setCategories(categoriesList);
+            } catch (fallbackError) {
+                console.error('Fallback kategori yükleme hatası:', fallbackError);
+            }
+        }
+    };
+
+    // Kategorileri Firebase'e taşı
+    const migrateCategoriesToFirebase = async () => {
+        setMigratingCategories(true);
+        try {
+            Swal.fire({
+                title: 'Kategoriler taşınıyor...',
+                text: 'Lütfen bekleyin, bu işlem biraz zaman alabilir.',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            console.log('=== Kategoriler Firebase\'e taşınıyor ===');
+
+            // Tüm ürünleri al
+            const productsSnapshot = await db.collection('products').get();
+            const products = [];
+            productsSnapshot.forEach((doc) => {
+                products.push({
+                    id: doc.id,
+                    ...doc.data()
+                });
+            });
+
+            console.log(`Toplam ${products.length} ürün bulundu`);
+
+            // Kategori -> Ürün mapping'i oluştur
+            const categoryProductsMap = new Map();
+
+            products.forEach((product) => {
+                const categoryPath = product.category || product.categoryPath || '';
+                if (categoryPath) {
+                    if (!categoryProductsMap.has(categoryPath)) {
+                        categoryProductsMap.set(categoryPath, []);
+                    }
+                    categoryProductsMap.get(categoryPath).push({
+                        id: product.id || product.originalId || product.firebaseDocId,
+                        originalId: product.originalId || product.id,
+                        firebaseDocId: product.id, // Firebase document ID
+                        title: product.title || product.name,
+                        price: product.price,
+                        image: product.img || product.image || product.mainImage
+                    });
+                }
+            });
+
+            console.log(`${categoryProductsMap.size} farklı kategori yolu bulundu`);
+
+            // Kategori ağacını al
+            const categoryTree = getCategoryTree();
+            let totalCategories = 0;
+            let totalSubcategories = 0;
+
+            // Kategorileri Firebase'e kaydet
+            for (const [mainCategoryName, mainCategoryData] of Object.entries(categoryTree)) {
+                const subcategories = mainCategoryData.subcategories || {};
+                let hasAnyProducts = false;
+                const subcategoriesToSave = [];
+
+                // Alt kategorileri kontrol et
+                for (const [subCategoryName, subCategoryData] of Object.entries(subcategories)) {
+                    const fullPaths = subCategoryData.full_paths || [];
+                    let hasProducts = false;
+                    const subCategoryProducts = [];
+
+                    for (const fullPath of fullPaths) {
+                        if (categoryProductsMap.has(fullPath)) {
+                            hasProducts = true;
+                            const productsForPath = categoryProductsMap.get(fullPath);
+                            console.log(`  📦 ${subCategoryName} - ${fullPath}: ${productsForPath.length} ürün bulundu`);
+                            subCategoryProducts.push(...productsForPath);
+                        }
+                    }
+
+                    // Eğer bu alt kategoride ürün varsa, kaydet
+                    if (hasProducts && subCategoryProducts.length > 0) {
+                        hasAnyProducts = true;
+                        subcategoriesToSave.push({
+                            name: subCategoryName,
+                            slug: subCategoryData.slug,
+                            products: subCategoryProducts,
+                            productCount: subCategoryProducts.length
+                        });
+                    }
+                }
+
+                // Eğer bu ana kategoride ürün varsa, kaydet
+                if (hasAnyProducts && subcategoriesToSave.length > 0) {
+                    const mainCategoryRef = db.collection('categories').doc(mainCategoryData.slug);
+                    
+                    // Ana kategori bilgilerini kaydet
+                    await mainCategoryRef.set({
+                        name: mainCategoryName,
+                        slug: mainCategoryData.slug,
+                        type: 'main',
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+
+                    console.log(`✓ Ana kategori kaydedildi: ${mainCategoryName}`);
+                    totalCategories++;
+
+                    // Alt kategorileri kaydet
+                    for (const subCategory of subcategoriesToSave) {
+                        const subCategoryRef = mainCategoryRef.collection('subcategories').doc(subCategory.slug);
+                        
+                        // Ürün ID'lerini kontrol et ve logla
+                        const productIds = subCategory.products.map(p => p.id || p.originalId || p.firebaseDocId).filter(Boolean);
+                        console.log(`  📋 ${subCategory.name} - Ürün ID'leri:`, productIds.slice(0, 5), productIds.length > 5 ? `... (toplam ${productIds.length})` : '');
+                        
+                        await subCategoryRef.set({
+                            name: subCategory.name,
+                            slug: subCategory.slug,
+                            parentCategory: mainCategoryName,
+                            parentCategorySlug: mainCategoryData.slug,
+                            products: subCategory.products,
+                            productCount: subCategory.productCount,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        }, { merge: true });
+
+                        console.log(`  ✓ Alt kategori kaydedildi: ${subCategory.name} (${subCategory.productCount} ürün)`);
+                        totalSubcategories++;
+                    }
+                }
+            }
+
+            // Kategorileri yeniden yükle
+            await loadCategories();
+
+            Swal.fire({
+                title: 'Başarılı!',
+                text: `${totalCategories} ana kategori ve ${totalSubcategories} alt kategori Firebase'e taşındı.`,
+                icon: 'success',
+                timer: 3000
+            });
+        } catch (error) {
+            console.error('Kategori migration hatası:', error);
+            Swal.fire({
+                title: 'Hata',
+                text: 'Kategoriler taşınırken bir hata oluştu: ' + error.message,
+                icon: 'error'
+            });
+        } finally {
+            setMigratingCategories(false);
         }
     };
 
@@ -319,7 +533,7 @@ const ProductManagerPanel = () => {
         }
     };
 
-    // Siparişleri yükle
+    // Siparişleri y ükle
     const loadOrders = async () => {
         setOrdersLoading(true);
         try {
@@ -959,9 +1173,28 @@ const ProductManagerPanel = () => {
                             {activeTab === 'categories' && (
                                 <div className="card shadow-sm">
                                     <div className="card-body">
-                                        <h3 className="mb-4">Kategori Yönetimi</h3>
+                                        <div className="d-flex justify-content-between align-items-center mb-4">
+                                            <h3 className="mb-0">Kategori Yönetimi</h3>
+                                            <button
+                                                className="btn btn-primary"
+                                                onClick={migrateCategoriesToFirebase}
+                                                disabled={migratingCategories}
+                                            >
+                                                {migratingCategories ? (
+                                                    <>
+                                                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                                        Taşınıyor...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <i className="fa fa-upload me-2"></i>
+                                                        Kategorileri Firebase'e Taşı
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
                                         <div className="alert alert-info">
-                                            <p className="mb-0">Kategori yönetimi şu anda categoryTree.json dosyasından yükleniyor. İleride buradan kategori ekleme/çıkarma özelliği eklenecek.</p>
+                                            <p className="mb-0">Kategoriler Firebase'den yükleniyor. Sadece altında ürün olan kategoriler gösteriliyor. Kategorileri Firebase'e taşımak için yukarıdaki butona tıklayın.</p>
                                         </div>
                                         <div className="table-responsive">
                                             <table className="table table-striped">
@@ -971,21 +1204,37 @@ const ProductManagerPanel = () => {
                                                         <th>Slug</th>
                                                         <th>Tip</th>
                                                         <th>Ana Kategori</th>
+                                                        <th>Ürün Sayısı</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {categories.map((category, index) => (
-                                                        <tr key={index}>
-                                                            <td>{category.name}</td>
-                                                            <td>{category.slug}</td>
-                                                            <td>
-                                                                <span className={`badge ${category.type === 'main' ? 'bg-primary' : 'bg-secondary'}`}>
-                                                                    {category.type === 'main' ? 'Ana' : 'Alt'}
-                                                                </span>
+                                                    {categories.length === 0 ? (
+                                                        <tr>
+                                                            <td colSpan="5" className="text-center text-muted">
+                                                                Kategori bulunamadı. Kategorileri Firebase'e yüklemek için migration script'ini çalıştırın.
                                                             </td>
-                                                            <td>{category.parent || '-'}</td>
                                                         </tr>
-                                                    ))}
+                                                    ) : (
+                                                        categories.map((category, index) => (
+                                                            <tr key={category.id || index}>
+                                                                <td>{category.name}</td>
+                                                                <td>{category.slug}</td>
+                                                                <td>
+                                                                    <span className={`badge ${category.type === 'main' ? 'bg-primary' : 'bg-secondary'}`}>
+                                                                        {category.type === 'main' ? 'Ana' : 'Alt'}
+                                                                    </span>
+                                                                </td>
+                                                                <td>{category.parent || '-'}</td>
+                                                                <td>
+                                                                    {category.type === 'sub' && category.productCount !== undefined ? (
+                                                                        <span className="badge bg-success">{category.productCount}</span>
+                                                                    ) : (
+                                                                        '-'
+                                                                    )}
+                                                                </td>
+                                                            </tr>
+                                                        ))
+                                                    )}
                                                 </tbody>
                                             </table>
                                         </div>

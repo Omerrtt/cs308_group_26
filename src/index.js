@@ -25,6 +25,22 @@ if (typeof window !== 'undefined' && typeof window.process === 'undefined') {
     };
 }
 
+// Global SweetAlert cleanup - body overflow'un düzgün temizlenmesi için
+if (typeof window !== 'undefined') {
+    // Sayfa yüklendiğinde body overflow'u temizle
+    document.body.style.overflow = 'auto';
+    
+    // Sayfa kapatılırken veya yönlendirme yapılırken body overflow'u temizle
+    window.addEventListener('beforeunload', () => {
+        document.body.style.overflow = 'auto';
+    });
+    
+    // Popstate event (geri/ileri butonları) için
+    window.addEventListener('popstate', () => {
+        document.body.style.overflow = 'auto';
+    });
+}
+
 // Sayfa yüklenirken hemen auth state'i localStorage'dan yükle
 const initializeAuthFromStorage = () => {
   try {

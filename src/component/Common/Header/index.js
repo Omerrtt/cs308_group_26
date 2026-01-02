@@ -36,10 +36,15 @@ const Header = () => {
 
     // Kategorileri Firebase'den yükle
     useEffect(() => {
+        let isMounted = true;
+        
         const loadMenuCategories = async () => {
             try {
                 const menuDataFromFirebase = await getMenuData();
-                setMenuData(menuDataFromFirebase);
+                // Unmount kontrolü - component unmount olduysa state update yapma
+                if (isMounted) {
+                    setMenuData(menuDataFromFirebase);
+                }
             } catch (error) {
                 console.error('Menu kategorileri yüklenirken hata:', error);
             }
@@ -49,7 +54,7 @@ const Header = () => {
         
         // Storage event listener - yeni kategori eklendiğinde cache temizlensin
         const handleStorageChange = (e) => {
-            if (e.key === 'categories_updated') {
+            if (e.key === 'categories_updated' && isMounted) {
                 clearMenuCategoriesCache();
                 loadMenuCategories();
             }
@@ -59,13 +64,16 @@ const Header = () => {
         
         // Custom event listener - aynı tab'da kategori eklendiğinde
         const handleCategoriesUpdate = () => {
-            clearMenuCategoriesCache();
-            loadMenuCategories();
+            if (isMounted) {
+                clearMenuCategoriesCache();
+                loadMenuCategories();
+            }
         };
         
         window.addEventListener('categoriesUpdated', handleCategoriesUpdate);
         
         return () => {
+            isMounted = false; // Cleanup: unmount olduğunu işaretle
             window.removeEventListener('storage', handleStorageChange);
             window.removeEventListener('categoriesUpdated', handleCategoriesUpdate);
         };
@@ -199,7 +207,7 @@ const Header = () => {
             mobileMenu.style.transform = "translateX(100%)";
             mobileMenu.style.visibility = "hidden";
             // Body scroll'u geri aç
-            document.body.style.overflow = "";
+            document.body.style.overflow = "auto";
         }
     }
 

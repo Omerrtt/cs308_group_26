@@ -149,7 +149,11 @@ const CategoryPage = () => {
     }, [displayedProducts.length, filteredProducts.length, loadingMore, loadMoreProducts])
 
     useEffect(() => {
+        let isMounted = true;
+        
         const fetchProducts = async () => {
+            if (!isMounted) return; // Unmount kontrolü
+            
             setLoading(true)
             try {
                 console.log('CategoryPage - categorySlug:', categorySlug)
@@ -162,10 +166,12 @@ const CategoryPage = () => {
                 if (categorySlug === 'tum-urunler' || categorySlug === 'all') {
                     // Tüm ürünleri getir
                     categoryProducts = await getProductsData() // await eklendi
+                    if (!isMounted) return; // Unmount kontrolü
+                    
                     setCategoryName('Tüm Ürünler')
                     if (Array.isArray(categoryProducts)) {
-                    setFilteredProducts(categoryProducts)
-                    setDisplayedProducts(categoryProducts.slice(0, itemsPerPage))
+                        setFilteredProducts(categoryProducts)
+                        setDisplayedProducts(categoryProducts.slice(0, itemsPerPage))
                     } else {
                         setFilteredProducts([])
                         setDisplayedProducts([])
@@ -173,6 +179,8 @@ const CategoryPage = () => {
                 } else {
                     // Belirli kategori ürünlerini getir
                     categoryProducts = await getProductsByCategory(categorySlug) // await eklendi
+                    if (!isMounted) return; // Unmount kontrolü
+                    
                     console.log('CategoryPage - categoryProducts:', categoryProducts?.length || 0)
                     setCategoryName(getCategoryName(categorySlug))
                     
@@ -215,6 +223,8 @@ const CategoryPage = () => {
                     }
                 }
                 
+                if (!isMounted) return; // Unmount kontrolü
+                
                 console.log('CategoryPage - Final categoryProducts:', Array.isArray(categoryProducts) ? categoryProducts.length : 0)
                 console.log('CategoryPage - categoryName:', categoryName || getCategoryName(categorySlug))
                 
@@ -223,14 +233,22 @@ const CategoryPage = () => {
                 setCurrentPage(1)
             } catch (error) {
                 console.error('Ürünler yüklenirken hata:', error)
-                setProducts([])
-                setFilteredProducts([])
-                setDisplayedProducts([])
+                if (isMounted) {
+                    setProducts([])
+                    setFilteredProducts([])
+                    setDisplayedProducts([])
+                }
             }
-            setLoading(false)
+            if (isMounted) {
+                setLoading(false)
+            }
         }
 
         fetchProducts()
+        
+        return () => {
+            isMounted = false; // Cleanup: unmount olduğunu işaretle
+        };
     }, [categorySlug, location.search, itemsPerPage])
 
     useEffect(() => {

@@ -46,44 +46,61 @@ const SalesManagerPanel = () => {
     const [refundLoading, setRefundLoading] = useState(false);
 
     useEffect(() => {
+        let isMounted = true;
+        
         const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
+            if (!isMounted) return; // Unmount kontrolü
+            
             if (!currentUser) {
-                Swal.fire({
-                    title: 'Yetkisiz Erişim',
-                    text: 'Bu sayfaya erişmek için giriş yapmanız gerekiyor.',
-                    icon: 'error',
-                    confirmButtonText: 'Giriş Yap'
-                }).then(() => {
-                    history.push('/login');
-                });
-                setLoading(false);
+                if (isMounted) {
+                    Swal.fire({
+                        title: 'Yetkisiz Erişim',
+                        text: 'Bu sayfaya erişmek için giriş yapmanız gerekiyor.',
+                        icon: 'error',
+                        confirmButtonText: 'Giriş Yap'
+                    }).then(() => {
+                        history.push('/login');
+                    });
+                    setLoading(false);
+                }
                 return;
             }
             
             if (currentUser.email !== SALES_MANAGER_EMAIL) {
-                Swal.fire({
-                    title: 'Yetkisiz Erişim',
-                    text: 'Bu sayfaya sadece sales manager erişebilir.',
-                    icon: 'error',
-                    confirmButtonText: 'Ana Sayfaya Dön'
-                }).then(() => {
-                    history.push('/');
-                });
-                setLoading(false);
+                if (isMounted) {
+                    Swal.fire({
+                        title: 'Yetkisiz Erişim',
+                        text: 'Bu sayfaya sadece sales manager erişebilir.',
+                        icon: 'error',
+                        confirmButtonText: 'Ana Sayfaya Dön'
+                    }).then(() => {
+                        history.push('/');
+                    });
+                    setLoading(false);
+                }
                 return;
             }
 
-            setIsSalesManager(true);
-            await loadProducts();
-            await loadPendingRefunds();
-            setLoading(false);
+            if (isMounted) {
+                setIsSalesManager(true);
+            }
+            
+            await loadProducts(isMounted);
+            await loadPendingRefunds(isMounted);
+            
+            if (isMounted) {
+                setLoading(false);
+            }
         });
 
-        return () => unsubscribe();
+        return () => {
+            isMounted = false; // Cleanup: unmount olduğunu işaretle
+            unsubscribe();
+        };
     }, [history]);
 
     // Ürünleri yükle
-    const loadProducts = async () => {
+    const loadProducts = async (isMounted = true) => {
         try {
             const productsSnapshot = await db.collection('products').get();
             const productsList = [];
@@ -93,7 +110,10 @@ const SalesManagerPanel = () => {
                     ...doc.data()
                 });
             });
-            setProducts(productsList);
+            // Unmount kontrolü - component unmount olduysa state update yapma
+            if (isMounted) {
+                setProducts(productsList);
+            }
         } catch (error) {
             console.error('Ürünler yüklenirken hata:', error);
         }
@@ -255,7 +275,9 @@ const SalesManagerPanel = () => {
             return;
         }
 
+        let isMounted = true;
         setInvoiceLoading(true);
+        
         try {
             const start = new Date(startDate);
             const end = new Date(endDate);
@@ -266,6 +288,8 @@ const SalesManagerPanel = () => {
             // Tüm kullanıcıların invoice'larını çek
             const usersSnapshot = await db.collection('users').get();
             for (const userDoc of usersSnapshot.docs) {
+                if (!isMounted) return; // Unmount kontrolü
+                
                 const userData = userDoc.data();
                 const userInvoices = userData.invoices || [];
                 
@@ -281,6 +305,8 @@ const SalesManagerPanel = () => {
                 }
             }
 
+            if (!isMounted) return; // Unmount kontrolü
+
             // Tarihe göre sırala (en yeni önce)
             allInvoices.sort((a, b) => {
                 const dateA = new Date(a.createdAt || a.invoiceDate);
@@ -291,13 +317,17 @@ const SalesManagerPanel = () => {
             setInvoices(allInvoices);
         } catch (error) {
             console.error('Faturalar yüklenirken hata:', error);
-            Swal.fire({
-                title: 'Hata',
-                text: 'Faturalar yüklenirken bir hata oluştu.',
-                icon: 'error'
-            });
+            if (isMounted) {
+                Swal.fire({
+                    title: 'Hata',
+                    text: 'Faturalar yüklenirken bir hata oluştu.',
+                    icon: 'error'
+                });
+            }
         } finally {
-            setInvoiceLoading(false);
+            if (isMounted) {
+                setInvoiceLoading(false);
+            }
         }
     };
 
@@ -358,7 +388,9 @@ const SalesManagerPanel = () => {
             return;
         }
 
+        let isMounted = true;
         setReportLoading(true);
+        
         try {
             const start = new Date(reportStartDate);
             const end = new Date(reportEndDate);
@@ -406,6 +438,8 @@ const SalesManagerPanel = () => {
                 dailyData[dateKey].cost += orderCost;
             });
 
+            if (!isMounted) return; // Unmount kontrolü
+
             const profit = totalRevenue - totalCost;
             const profitMargin = totalRevenue > 0 ? (profit / totalRevenue) * 100 : 0;
 
@@ -425,20 +459,26 @@ const SalesManagerPanel = () => {
             });
         } catch (error) {
             console.error('Finansal rapor oluşturulurken hata:', error);
-            Swal.fire({
-                title: 'Hata',
-                text: 'Finansal rapor oluşturulurken bir hata oluştu.',
-                icon: 'error'
-            });
+            if (isMounted) {
+                Swal.fire({
+                    title: 'Hata',
+                    text: 'Finansal rapor oluşturulurken bir hata oluştu.',
+                    icon: 'error'
+                });
+            }
         } finally {
-            setReportLoading(false);
+            if (isMounted) {
+                setReportLoading(false);
+            }
         }
     };
 
     // Pending refund'ları yükle
-    const loadPendingRefunds = async () => {
+    const loadPendingRefunds = async (isMounted = true) => {
         try {
-            setRefundLoading(true);
+            if (isMounted) {
+                setRefundLoading(true);
+            }
             
             // Tüm kullanıcıları çek ve refundStatus: 'pending' olan order'ları bul
             const usersSnapshot = await db.collection('users').get();
@@ -471,10 +511,10 @@ const SalesManagerPanel = () => {
                     const orderData = orderDoc.data();
                     // Zaten listede var mı kontrol et
                     const exists = refundsList.some(r => r.orderId === orderData.orderId || r.orderId === orderDoc.id);
-                    if (!exists) {
+                    if (!exists && isMounted) {
                         // User bilgilerini çek
                         db.collection('users').doc(orderData.userId).get().then((userDoc) => {
-                            if (userDoc.exists) {
+                            if (userDoc.exists && isMounted) {
                                 const userData = userDoc.data();
                                 refundsList.push({
                                     ...orderData,
@@ -483,7 +523,9 @@ const SalesManagerPanel = () => {
                                     userEmail: userData.email || userData.userEmail || 'N/A',
                                     userName: userData.displayName || userData.name || 'N/A'
                                 });
-                                setPendingRefunds([...refundsList]);
+                                if (isMounted) {
+                                    setPendingRefunds([...refundsList]);
+                                }
                             }
                         });
                     }
@@ -491,6 +533,8 @@ const SalesManagerPanel = () => {
             } catch (err) {
                 console.warn('Orders collection kontrolü hatası:', err);
             }
+            
+            if (!isMounted) return; // Unmount kontrolü
             
             // Tarihe göre sırala (en eski önce - önce gelen önce işlensin)
             refundsList.sort((a, b) => {
@@ -502,13 +546,17 @@ const SalesManagerPanel = () => {
             setPendingRefunds(refundsList);
         } catch (error) {
             console.error('Refund yükleme hatası:', error);
-            Swal.fire({
-                title: 'Hata',
-                text: 'İade talepleri yüklenirken bir hata oluştu.',
-                icon: 'error'
-            });
+            if (isMounted) {
+                Swal.fire({
+                    title: 'Hata',
+                    text: 'İade talepleri yüklenirken bir hata oluştu.',
+                    icon: 'error'
+                });
+            }
         } finally {
-            setRefundLoading(false);
+            if (isMounted) {
+                setRefundLoading(false);
+            }
         }
     };
 

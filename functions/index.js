@@ -801,3 +801,117 @@ exports.checkWishlistNotifications = functions.firestore
     }
   });
 
+// Refund onay email gönderme fonksiyonu
+exports.sendRefundApprovalEmail = functions.https.onCall(async (data, context) => {
+  console.log('=== sendRefundApprovalEmail FONKSİYONU ÇAĞRILDI ===');
+  console.log('Context auth:', context.auth ? 'Var' : 'Yok');
+  console.log('Data:', JSON.stringify(data, null, 2));
+  
+  // Authentication kontrolü
+  if (!context.auth) {
+    console.error('❌ Authentication hatası: Kullanıcı giriş yapmamış');
+    throw new functions.https.HttpsError(
+      'unauthenticated',
+      'Kullanıcı giriş yapmamış.'
+    );
+  }
+
+  const { userEmail, userName, orderId, refundAmount, refundNote } = data;
+
+  if (!userEmail || !userName || !orderId || refundAmount === undefined || refundAmount === null) {
+    console.error('❌ Eksik parametreler:', { userEmail, userName, orderId, refundAmount });
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      'Eksik parametreler: userEmail, userName, orderId, refundAmount gerekli.'
+    );
+  }
+
+  // Email credentials kontrolü
+  const email = functions.config().email?.user || process.env.EMAIL_USER;
+  const password = functions.config().email?.password || process.env.EMAIL_PASSWORD;
+  
+  console.log('Email credentials kontrolü:', email ? `${email.substring(0, 3)}***` : 'YOK');
+  
+  if (!email || !password) {
+    console.error('❌ Email credentials bulunamadı');
+    throw new functions.https.HttpsError(
+      'failed-precondition',
+      'Email servisi yapılandırılmamış. Lütfen Firebase Console\'dan email credentials ayarlayın.'
+    );
+  }
+
+  const transporter = createTransporter();
+  if (!transporter) {
+    console.error('❌ Transporter oluşturulamadı');
+    throw new functions.https.HttpsError(
+      'failed-precondition',
+      'Email servisi yapılandırılamadı.'
+    );
+  }
+
+  const companyInfo = {
+    name: 'Malikan Electronics',
+    address: 'İstanbul, Türkiye',
+    city: 'İstanbul',
+    phone: '+90 539 397 39 49',
+    email: email || 'info@malikanelectronics.com'
+  };
+
+  try {
+    const subject = `İade Onayı - Sipariş #${orderId}`;
+    const emailHTML = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background-color: #28a745; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
+          .content { background-color: #f8f9fa; padding: 20px; border: 1px solid #dee2e6; }
+          .refund-info { background-color: white; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #28a745; }
+          .amount { font-size: 24px; font-weight: bold; color: #28a745; text-align: center; margin: 20px 0; }
+          .footer { text-align: center; color: #666; font-size: 12px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #dee2e6; }
+        </style>
+      </head>
+      <body>
+        <div class="header"><h1>✅ İade Onaylandı</h1></div>
+        <div class="content">
+          <p>Sayın ${userName},</p>
+          <p>Sipariş #${orderId} için iade talebiniz onaylanmıştır.</p>
+          <div class="refund-info">
+            <p><strong>Sipariş ID:</strong> #${orderId}</p>
+            <div class="amount">İade Tutarı: ₺${parseFloat(refundAmount).toFixed(2)}</div>
+            ${refundNote ? `<p><strong>Not:</strong> ${refundNote}</p>` : ''}
+          </div>
+          <p>İade tutarı, ödeme yaptığınız kredi kartına veya hesabınıza en geç 3-5 iş günü içinde yansıtılacaktır.</p>
+          <p>Herhangi bir sorunuz varsa lütfen bizimle iletişime geçin.</p>
+          <p>Teşekkürler,<br>${companyInfo.name}</p>
+        </div>
+        <div class="footer">
+          <p>${companyInfo.name}</p>
+          <p>${companyInfo.address}, ${companyInfo.city}</p>
+          <p>Tel: ${companyInfo.phone} | Email: ${companyInfo.email}</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const mailOptions = {
+      from: `"${companyInfo.name}" <${email}>`,
+      to: userEmail,
+      subject: subject,
+      html: emailHTML
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`✅ Refund onay emaili gönderildi: ${userEmail} - Sipariş #${orderId}`);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('❌ Refund onay emaili gönderme hatası:', error);
+    throw new functions.https.HttpsError(
+      'internal',
+      'Email gönderilemedi: ' + error.message
+    );
+  }
+});
+

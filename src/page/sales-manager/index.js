@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useHistory } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { auth, db } from '../../firebaseConfig';
+import { auth, db, functions } from '../../firebaseConfig';
 import Header from '../../component/Common/Header';
 import Footer from '../../component/Common/Footer';
 import Swal from 'sweetalert2';
@@ -16,7 +16,7 @@ const SalesManagerPanel = () => {
     const user = useSelector((state) => state.user.user);
     const [loading, setLoading] = useState(true);
     const [isSalesManager, setIsSalesManager] = useState(false);
-    const [activeTab, setActiveTab] = useState('pricing'); // 'pricing', 'invoices', 'financial', 'wishlist'
+    const [activeTab, setActiveTab] = useState('pricing'); // 'pricing', 'invoices', 'financial', 'wishlist', 'refunds'
     
     // Pricing & Discounts
     const [products, setProducts] = useState([]);
@@ -39,6 +39,10 @@ const SalesManagerPanel = () => {
     const [reportStartDate, setReportStartDate] = useState('');
     const [reportEndDate, setReportEndDate] = useState('');
     const [reportLoading, setReportLoading] = useState(false);
+    
+    // Refund Management
+    const [pendingRefunds, setPendingRefunds] = useState([]);
+    const [refundLoading, setRefundLoading] = useState(false);
 
     useEffect(() => {
         const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
@@ -70,6 +74,7 @@ const SalesManagerPanel = () => {
 
             setIsSalesManager(true);
             await loadProducts();
+            await loadPendingRefunds();
             setLoading(false);
         });
 
@@ -429,6 +434,323 @@ const SalesManagerPanel = () => {
         }
     };
 
+    // Pending refund'ları yükle
+    const loadPendingRefunds = async () => {
+        try {
+            setRefundLoading(true);
+            
+            // Tüm kullanıcıları çek ve refundStatus: 'pending' olan order'ları bul
+            const usersSnapshot = await db.collection('users').get();
+            const refundsList = [];
+            
+            usersSnapshot.forEach((userDoc) => {
+                const userData = userDoc.data();
+                const orders = userData.orders || [];
+                
+                orders.forEach((order) => {
+                    if (order.refundStatus === 'pending' && order.status === 'returned') {
+                        refundsList.push({
+                            ...order,
+                            userId: userDoc.id,
+                            userEmail: userData.email || userData.userEmail || 'N/A',
+                            userName: userData.displayName || userData.name || 'N/A'
+                        });
+                    }
+                });
+            });
+            
+            // Orders collection'dan da kontrol et
+            try {
+                const ordersSnapshot = await db.collection('orders')
+                    .where('refundStatus', '==', 'pending')
+                    .where('status', '==', 'returned')
+                    .get();
+                
+                ordersSnapshot.forEach((orderDoc) => {
+                    const orderData = orderDoc.data();
+                    // Zaten listede var mı kontrol et
+                    const exists = refundsList.some(r => r.orderId === orderData.orderId || r.orderId === orderDoc.id);
+                    if (!exists) {
+                        // User bilgilerini çek
+                        db.collection('users').doc(orderData.userId).get().then((userDoc) => {
+                            if (userDoc.exists) {
+                                const userData = userDoc.data();
+                                refundsList.push({
+                                    ...orderData,
+                                    orderId: orderData.orderId || orderDoc.id,
+                                    userId: orderData.userId,
+                                    userEmail: userData.email || userData.userEmail || 'N/A',
+                                    userName: userData.displayName || userData.name || 'N/A'
+                                });
+                                setPendingRefunds([...refundsList]);
+                            }
+                        });
+                    }
+                });
+            } catch (err) {
+                console.warn('Orders collection kontrolü hatası:', err);
+            }
+            
+            // Tarihe göre sırala (en eski önce - önce gelen önce işlensin)
+            refundsList.sort((a, b) => {
+                const dateA = a.returnedAtTimestamp || a.returnedAt || 0;
+                const dateB = b.returnedAtTimestamp || b.returnedAt || 0;
+                return dateA - dateB;
+            });
+            
+            setPendingRefunds(refundsList);
+        } catch (error) {
+            console.error('Refund yükleme hatası:', error);
+            Swal.fire({
+                title: 'Hata',
+                text: 'İade talepleri yüklenirken bir hata oluştu.',
+                icon: 'error'
+            });
+        } finally {
+            setRefundLoading(false);
+        }
+    };
+
+    // Refund amount hesapla (indirimli fiyat kontrolü)
+    // Gereksinim: Kampanya sırasında alınan ürün için indirimli fiyat iade edilmeli
+    const calculateRefundAmount = (order) => {
+        let totalRefund = 0;
+        
+        if (order.items && order.items.length > 0) {
+            // Her item için satın alma anındaki fiyatı kullan
+            // item.price zaten satın alma anındaki fiyattır (indirimli ise indirimli, değilse normal)
+            order.items.forEach((item) => {
+                // item.price = satın alma anındaki fiyat (kampanya indirimi dahil)
+                const itemPrice = parseFloat(item.price) || 0;
+                const quantity = item.quantity || 1;
+                totalRefund += itemPrice * quantity;
+            });
+        } else {
+            // Eğer items yoksa, order total'ini kullan
+            // order.total zaten satın alma anındaki toplam tutardır (indirimli ise indirimli)
+            totalRefund = parseFloat(order.total) || 0;
+        }
+        
+        return totalRefund;
+    };
+
+    // Refund'u onayla
+    const approveRefund = async (refund) => {
+        const refundAmount = calculateRefundAmount(refund);
+        
+        const result = await Swal.fire({
+            title: 'İade Onayla',
+            html: `
+                <p><strong>Sipariş ID:</strong> ${refund.orderId}</p>
+                <p><strong>Müşteri:</strong> ${refund.userName} (${refund.userEmail})</p>
+                <p><strong>İade Tutarı:</strong> ₺${refundAmount.toFixed(2)}</p>
+                <p><strong>Ürün mağazaya geri geldi mi?</strong></p>
+            `,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#28a745',
+            cancelButtonColor: '#dc3545',
+            confirmButtonText: 'Evet, Onayla',
+            cancelButtonText: 'İptal',
+            input: 'textarea',
+            inputPlaceholder: 'Not ekleyebilirsiniz (opsiyonel)...',
+            inputAttributes: {
+                'aria-label': 'Not'
+            }
+        });
+
+        if (!result.isConfirmed) {
+            return;
+        }
+
+        try {
+            setRefundLoading(true);
+            
+            // 1. User'ın order'ını güncelle
+            const userRef = db.collection('users').doc(refund.userId);
+            const userDoc = await userRef.get();
+            
+            if (userDoc.exists) {
+                const userData = userDoc.data();
+                const orders = userData.orders || [];
+                
+                const updatedOrders = orders.map((o) => {
+                    if (o.orderId === refund.orderId) {
+                        return {
+                            ...o,
+                            status: 'refunded',
+                            refundStatus: 'approved',
+                            refundAmount: refundAmount,
+                            refundedAt: new Date().toISOString(),
+                            refundedAtTimestamp: Date.now(),
+                            refundNote: result.value || '',
+                            updatedAt: new Date().toISOString(),
+                            updatedAtTimestamp: Date.now()
+                        };
+                    }
+                    return o;
+                });
+                
+                await userRef.update({ orders: updatedOrders });
+            }
+            
+            // 2. Orders collection'ı güncelle
+            try {
+                const orderRef = db.collection('orders').doc(refund.orderId);
+                await orderRef.update({
+                    status: 'refunded',
+                    refundStatus: 'approved',
+                    refundAmount: refundAmount,
+                    refundedAt: new Date().toISOString(),
+                    refundedAtTimestamp: Date.now(),
+                    refundNote: result.value || '',
+                    updatedAt: new Date().toISOString()
+                });
+            } catch (err) {
+                console.warn('Orders collection güncellenemedi:', err);
+            }
+            
+            // 3. Email gönder (Cloud Function)
+            try {
+                const sendRefundEmail = functions.httpsCallable('sendRefundApprovalEmail');
+                const emailResult = await sendRefundEmail({
+                    userEmail: refund.userEmail,
+                    userName: refund.userName,
+                    orderId: refund.orderId,
+                    refundAmount: refundAmount,
+                    refundNote: result.value || ''
+                });
+                console.log('✅ Refund onay emaili gönderildi:', emailResult.data);
+            } catch (emailError) {
+                console.error('❌ Email gönderme hatası:', emailError);
+                // Email hatası refund işlemini engellemez, sadece uyarı ver
+                const errorMessage = emailError.message || emailError.code || 'Bilinmeyen hata';
+                Swal.fire({
+                    title: 'Uyarı',
+                    html: `
+                        <p>İade onaylandı ancak email gönderilemedi.</p>
+                        <p><small><strong>Hata:</strong> ${errorMessage}</small></p>
+                        <p><small>Lütfen Firebase Functions loglarını kontrol edin veya email credentials'ları kontrol edin.</small></p>
+                    `,
+                    icon: 'warning',
+                    timer: 7000,
+                    showConfirmButton: true
+                });
+            }
+            
+            Swal.fire({
+                title: 'Başarılı',
+                text: `İade onaylandı. ₺${refundAmount.toFixed(2)} tutarı müşteriye iade edilecek.`,
+                icon: 'success'
+            });
+            
+            // Listeyi yenile
+            await loadPendingRefunds();
+        } catch (error) {
+            console.error('Refund onaylama hatası:', error);
+            Swal.fire({
+                title: 'Hata',
+                text: 'İade onaylanırken bir hata oluştu: ' + error.message,
+                icon: 'error'
+            });
+        } finally {
+            setRefundLoading(false);
+        }
+    };
+
+    // Refund'u reddet
+    const rejectRefund = async (refund) => {
+        const result = await Swal.fire({
+            title: 'İade Reddet',
+            html: `
+                <p><strong>Sipariş ID:</strong> ${refund.orderId}</p>
+                <p><strong>Müşteri:</strong> ${refund.userName} (${refund.userEmail})</p>
+            `,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Evet, Reddet',
+            cancelButtonText: 'İptal',
+            input: 'textarea',
+            inputPlaceholder: 'Red nedeni (zorunlu)...',
+            inputAttributes: {
+                'aria-label': 'Red nedeni'
+            },
+            inputValidator: (value) => {
+                if (!value) {
+                    return 'Lütfen red nedenini belirtin';
+                }
+            }
+        });
+
+        if (!result.isConfirmed) {
+            return;
+        }
+
+        try {
+            setRefundLoading(true);
+            
+            // 1. User'ın order'ını güncelle
+            const userRef = db.collection('users').doc(refund.userId);
+            const userDoc = await userRef.get();
+            
+            if (userDoc.exists) {
+                const userData = userDoc.data();
+                const orders = userData.orders || [];
+                
+                const updatedOrders = orders.map((o) => {
+                    if (o.orderId === refund.orderId) {
+                        return {
+                            ...o,
+                            refundStatus: 'rejected',
+                            refundRejectionReason: result.value,
+                            refundRejectedAt: new Date().toISOString(),
+                            refundRejectedAtTimestamp: Date.now(),
+                            updatedAt: new Date().toISOString(),
+                            updatedAtTimestamp: Date.now()
+                        };
+                    }
+                    return o;
+                });
+                
+                await userRef.update({ orders: updatedOrders });
+            }
+            
+            // 2. Orders collection'ı güncelle
+            try {
+                const orderRef = db.collection('orders').doc(refund.orderId);
+                await orderRef.update({
+                    refundStatus: 'rejected',
+                    refundRejectionReason: result.value,
+                    refundRejectedAt: new Date().toISOString(),
+                    refundRejectedAtTimestamp: Date.now(),
+                    updatedAt: new Date().toISOString()
+                });
+            } catch (err) {
+                console.warn('Orders collection güncellenemedi:', err);
+            }
+            
+            Swal.fire({
+                title: 'Başarılı',
+                text: 'İade talebi reddedildi.',
+                icon: 'success'
+            });
+            
+            // Listeyi yenile
+            await loadPendingRefunds();
+        } catch (error) {
+            console.error('Refund reddetme hatası:', error);
+            Swal.fire({
+                title: 'Hata',
+                text: 'İade reddedilirken bir hata oluştu: ' + error.message,
+                icon: 'error'
+            });
+        } finally {
+            setRefundLoading(false);
+        }
+    };
+
     if (loading) {
         return (
             <>
@@ -494,6 +816,20 @@ const SalesManagerPanel = () => {
                                         }}
                                     >
                                         Finansal Raporlar
+                                    </button>
+                                </li>
+                                <li className="nav-item">
+                                    <button
+                                        className={`nav-link ${activeTab === 'refunds' ? 'active' : ''}`}
+                                        onClick={() => {
+                                            setActiveTab('refunds');
+                                            loadPendingRefunds();
+                                        }}
+                                    >
+                                        İade Yönetimi
+                                        {pendingRefunds.length > 0 && (
+                                            <span className="badge bg-danger ms-2">{pendingRefunds.length}</span>
+                                        )}
                                     </button>
                                 </li>
                                 <li className="nav-item">
@@ -904,6 +1240,95 @@ const SalesManagerPanel = () => {
                             )}
 
                             {/* Wishlist Notifications Tab - Placeholder */}
+                            {/* Refund Management Tab */}
+                            {activeTab === 'refunds' && (
+                                <div className="card shadow-sm">
+                                    <div className="card-body">
+                                        <h3 className="mb-4">İade Yönetimi</h3>
+                                        
+                                        {refundLoading ? (
+                                            <div className="text-center py-5">
+                                                <div className="spinner-border text-primary" role="status">
+                                                    <span className="sr-only">Yükleniyor...</span>
+                                                </div>
+                                                <p className="mt-3">Yükleniyor...</p>
+                                            </div>
+                                        ) : pendingRefunds.length === 0 ? (
+                                            <div className="alert alert-info">
+                                                <h5>Bekleyen İade Talebi Yok</h5>
+                                                <p>Şu anda onay bekleyen iade talebi bulunmamaktadır.</p>
+                                            </div>
+                                        ) : (
+                                            <div className="table-responsive">
+                                                <table className="table table-hover">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Sipariş ID</th>
+                                                            <th>Müşteri</th>
+                                                            <th>Email</th>
+                                                            <th>İade Tarihi</th>
+                                                            <th>İade Tutarı</th>
+                                                            <th>Ürünler</th>
+                                                            <th>İşlemler</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {pendingRefunds.map((refund) => {
+                                                            const refundAmount = calculateRefundAmount(refund);
+                                                            const returnDate = refund.returnedAt 
+                                                                ? new Date(refund.returnedAt).toLocaleDateString('tr-TR')
+                                                                : 'N/A';
+                                                            
+                                                            return (
+                                                                <tr key={refund.orderId}>
+                                                                    <td><strong>#{refund.orderId}</strong></td>
+                                                                    <td>{refund.userName}</td>
+                                                                    <td>{refund.userEmail}</td>
+                                                                    <td>{returnDate}</td>
+                                                                    <td><strong>₺{refundAmount.toFixed(2)}</strong></td>
+                                                                    <td>
+                                                                        {refund.items && refund.items.length > 0 ? (
+                                                                            <ul className="list-unstyled mb-0">
+                                                                                {refund.items.slice(0, 2).map((item, idx) => (
+                                                                                    <li key={idx}>
+                                                                                        {item.name || item.title} x{item.quantity || 1}
+                                                                                    </li>
+                                                                                ))}
+                                                                                {refund.items.length > 2 && (
+                                                                                    <li><small>+{refund.items.length - 2} ürün daha</small></li>
+                                                                                )}
+                                                                            </ul>
+                                                                        ) : (
+                                                                            <span className="text-muted">Ürün bilgisi yok</span>
+                                                                        )}
+                                                                    </td>
+                                                                    <td>
+                                                                        <button
+                                                                            className="btn btn-success btn-sm me-2"
+                                                                            onClick={() => approveRefund(refund)}
+                                                                            disabled={refundLoading}
+                                                                        >
+                                                                            <i className="fa fa-check"></i> Onayla
+                                                                        </button>
+                                                                        <button
+                                                                            className="btn btn-danger btn-sm"
+                                                                            onClick={() => rejectRefund(refund)}
+                                                                            disabled={refundLoading}
+                                                                        >
+                                                                            <i className="fa fa-times"></i> Reddet
+                                                                        </button>
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
                             {activeTab === 'wishlist' && (
                                 <div className="card shadow-sm">
                                     <div className="card-body">

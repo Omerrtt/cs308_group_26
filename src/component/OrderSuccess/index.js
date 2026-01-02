@@ -79,7 +79,7 @@ const OrderSuccess = () => {
                                     <tbody>
                                         <tr align="left">
                                             <th>PRODUCT</th>
-                                            <th style={{ paddingLeft: " 15px" }}>DESCRIPTION</th>
+                                            <th style={{ paddingLeft: " 13px" }}>DESCRIPTION</th>
                                             <th>QUANTITY</th>
                                             <th>PRICE</th>
                                         </tr>

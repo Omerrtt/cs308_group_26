@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { auth, db } from '../../firebaseConfig';
 import Header from '../../component/Common/Header';
 import Footer from '../../component/Common/Footer';
 import Swal from 'sweetalert2';
 import firebase from 'firebase/app';
-import { getCategoryTree } from '../../app/data/productsData';
+import { getCategoryTree, clearProductsCache } from '../../app/data/productsData';
+import { loadProductsFromFirebase } from '../../app/slices/products';
 
 // Product Manager Email
 const PRODUCT_MANAGER_EMAIL = 'mbozyel2003@gmail.com';
 
 const ProductManagerPanel = () => {
     const history = useHistory();
+    const dispatch = useDispatch();
     const status = useSelector((state) => state.user.status);
     const [loading, setLoading] = useState(true);
     const [isProductManager, setIsProductManager] = useState(false);
@@ -31,6 +33,7 @@ const ProductManagerPanel = () => {
         price: '',
         stock: '',
         category: '',
+        subcategory: '',
         description: '',
         image: ''
     });
@@ -471,11 +474,25 @@ const ProductManagerPanel = () => {
 
         setProductLoading(true);
         try {
+            // Kategori bilgisini oluştur (alt kategori varsa birleştir)
+            let categoryPath = newProduct.category || '';
+            if (newProduct.subcategory) {
+                const mainCategoryName = categories.find(cat => 
+                    cat.type === 'main' && (cat.slug === newProduct.category || cat.name === newProduct.category)
+                )?.name || newProduct.category;
+                const subCategoryName = categories.find(cat => 
+                    cat.type === 'sub' && (cat.slug === newProduct.subcategory || cat.name === newProduct.subcategory)
+                )?.name || newProduct.subcategory;
+                categoryPath = `${mainCategoryName} > ${subCategoryName}`;
+            }
+
             const productData = {
                 title: newProduct.title,
                 price: parseFloat(newProduct.price),
                 stock: parseInt(newProduct.stock),
                 category: newProduct.category || '',
+                subcategory: newProduct.subcategory || '',
+                categoryPath: categoryPath,
                 description: newProduct.description || '',
                 image: newProduct.image || '',
                 rating: 0,
@@ -487,9 +504,19 @@ const ProductManagerPanel = () => {
 
             await db.collection('products').add(productData);
 
+            // Cache'i temizle ki yeni ürün hemen görünsün
+            clearProductsCache();
+            
+            // Redux store'u güncelle (sayfalar Redux kullanıyorsa)
+            try {
+                await dispatch(loadProductsFromFirebase());
+            } catch (reduxError) {
+                console.warn('Redux store güncellenirken hata:', reduxError);
+            }
+
             Swal.fire({
                 title: 'Başarılı',
-                text: 'Ürün eklendi.',
+                text: 'Ürün eklendi. Site genelinde görünecek.',
                 icon: 'success'
             });
 
@@ -498,6 +525,7 @@ const ProductManagerPanel = () => {
                 price: '',
                 stock: '',
                 category: '',
+                subcategory: '',
                 description: '',
                 image: ''
             });
@@ -1128,14 +1156,65 @@ const ProductManagerPanel = () => {
                                                             />
                                                         </div>
                                                         <div className="col-md-6 mb-3">
-                                                            <label className="form-label">Kategori</label>
-                                                            <input
-                                                                type="text"
-                                                                className="form-control"
+                                                            <label className="form-label">Ana Kategori</label>
+                                                            <select
+                                                                className="form-select"
                                                                 value={newProduct.category}
-                                                                onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
-                                                            />
+                                                                onChange={(e) => {
+                                                                    // Ana kategori değiştiğinde alt kategoriyi sıfırla
+                                                                    setNewProduct({
+                                                                        ...newProduct,
+                                                                        category: e.target.value,
+                                                                        subcategory: ''
+                                                                    });
+                                                                }}
+                                                            >
+                                                                <option value="">Ana Kategori Seçin</option>
+                                                                {categories
+                                                                    .filter(cat => cat.type === 'main')
+                                                                    .map((category) => (
+                                                                        <option key={`category-${category.slug || category.id}`} value={category.slug || category.name}>
+                                                                            {category.name}
+                                                                        </option>
+                                                                    ))}
+                                                            </select>
+                                                            {categories.filter(cat => cat.type === 'main').length === 0 && (
+                                                                <small className="form-text text-muted">
+                                                                    Henüz kategori yok. Önce kategori ekleyin.
+                                                                </small>
+                                                            )}
                                                         </div>
+                                                        {/* Alt Kategori Dropdown - Sadece ana kategori seçildiyse ve alt kategoriler varsa göster */}
+                                                        {newProduct.category && (() => {
+                                                            const selectedMainCategory = categories.find(cat => 
+                                                                cat.type === 'main' && (cat.slug === newProduct.category || cat.name === newProduct.category)
+                                                            );
+                                                            const subcategories = categories.filter(cat => 
+                                                                cat.type === 'sub' && 
+                                                                (cat.parentSlug === selectedMainCategory?.slug || cat.parent === selectedMainCategory?.name)
+                                                            );
+                                                            
+                                                            if (subcategories.length > 0) {
+                                                                return (
+                                                                    <div className="col-md-6 mb-3">
+                                                                        <label className="form-label">Alt Kategori (Opsiyonel)</label>
+                                                                        <select
+                                                                            className="form-select"
+                                                                            value={newProduct.subcategory}
+                                                                            onChange={(e) => setNewProduct({...newProduct, subcategory: e.target.value})}
+                                                                        >
+                                                                            <option value="">Alt Kategori Seçin (Opsiyonel)</option>
+                                                                            {subcategories.map((subcategory) => (
+                                                                                <option key={`subcategory-${subcategory.slug || subcategory.id}`} value={subcategory.slug || subcategory.name}>
+                                                                                    {subcategory.name}
+                                                                                </option>
+                                                                            ))}
+                                                                        </select>
+                                                                    </div>
+                                                                );
+                                                            }
+                                                            return null;
+                                                        })()}
                                                         <div className="col-md-6 mb-3">
                                                             <label className="form-label">Görsel URL</label>
                                                             <input

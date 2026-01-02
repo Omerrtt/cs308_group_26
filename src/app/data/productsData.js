@@ -48,6 +48,13 @@ export const generateProductCode = (productName) => {
 let cachedProducts = null;
 let isLoadingProducts = false;
 
+// Cache'i temizle (yeni ürün eklendiğinde kullanılır)
+export const clearProductsCache = () => {
+    cachedProducts = null;
+    isLoadingProducts = false;
+    console.log('🔄 Ürün cache temizlendi');
+};
+
 export const fetchProductsFromFirebase = async () => {
     // Cache varsa direkt dön
     if (cachedProducts) {

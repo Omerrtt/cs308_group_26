@@ -31,7 +31,7 @@ const LoginArea = () => {
         if (!forgotPasswordEmail) {
             Swal.fire({
                 icon: 'warning',
-                title: 'Eksik Bilgi',
+                title: 'Eksik Bilgi!',
                 text: 'Lütfen email adresinizi girin'
             })
             return

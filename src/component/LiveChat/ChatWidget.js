@@ -83,7 +83,7 @@ const ChatWidget = () => {
                         await createNewChat();
                     }
                 } catch (error) {
-                    console.error('Chat initialize hatası:', error);
+                    console.error('Chat initialize hatası!:', error);
                     // Hata durumunda chat widget'ı gizle
                     setChatId(null);
                     setMessages([]);

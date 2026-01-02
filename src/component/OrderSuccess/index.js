@@ -61,7 +61,7 @@ const OrderSuccess = () => {
                                         <tr>
                                             <td>
                                                 <img src={img2} alt="img"
-                                                    style={{ marginTop: "30px", marginBottom: "30px" }} />
+                                                    style={{ marginTop: "40px", marginBottom: "30px" }} />
                                             </td>
                                         </tr>
                                     </tbody>
@@ -79,7 +79,7 @@ const OrderSuccess = () => {
                                     <tbody>
                                         <tr align="left">
                                             <th>PRODUCT</th>
-                                            <th style={{ paddingLeft: " 15px" }}>DESCRIPTION</th>
+                                            <th style={{ paddingLeft: " 13px" }}>DESCRIPTION</th>
                                             <th>QUANTITY</th>
                                             <th>PRICE</th>
                                         </tr>
@@ -117,7 +117,7 @@ const OrderSuccess = () => {
                                         </tr>
                                         <tr>
                                             <td colSpan="2"
-                                                style={{ lineHeight: "49px", fontSize: "13px", color: "#000000", paddingLeft: "20px", textAlign: "left", borderRight: " unset" }}>
+                                                style={{ lineHeight: "49px", fontSize: "14px", color: "#000000", paddingLeft: "20px", textAlign: "left", borderRight: " unset" }}>
                                                 Products:</td>
                                             <td colSpan="3" className="price"
                                                 style={{ lineHeight: "49px", textAlign: "right", paddingRight: "28px", fontSize: "13px", color: "#000000", TextAlign: "right", borderLeft: "unset" }}>

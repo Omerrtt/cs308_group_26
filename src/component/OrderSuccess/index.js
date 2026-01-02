@@ -117,7 +117,7 @@ const OrderSuccess = () => {
                                         </tr>
                                         <tr>
                                             <td colSpan="2"
-                                                style={{ lineHeight: "49px", fontSize: "13px", color: "#000000", paddingLeft: "20px", textAlign: "left", borderRight: " unset" }}>
+                                                style={{ lineHeight: "49px", fontSize: "14px", color: "#000000", paddingLeft: "20px", textAlign: "left", borderRight: " unset" }}>
                                                 Products:</td>
                                             <td colSpan="3" className="price"
                                                 style={{ lineHeight: "49px", textAlign: "right", paddingRight: "28px", fontSize: "13px", color: "#000000", TextAlign: "right", borderLeft: "unset" }}>

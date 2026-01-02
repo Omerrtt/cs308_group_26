@@ -39,6 +39,8 @@ const ProductManagerPanel = () => {
     const [categories, setCategories] = useState([]);
     const [newCategory, setNewCategory] = useState({ name: '', slug: '' });
     const [migratingCategories, setMigratingCategories] = useState(false);
+    const [showAddCategoryForm, setShowAddCategoryForm] = useState(false);
+    const [addingCategory, setAddingCategory] = useState(false);
     
     // Stock Management
     const [stockUpdates, setStockUpdates] = useState({});
@@ -355,6 +357,105 @@ const ProductManagerPanel = () => {
         } finally {
             setMigratingCategories(false);
         }
+    };
+
+    // Slug oluştur (Türkçe karakterleri dönüştür)
+    const createSlug = (text) => {
+        if (!text) return '';
+        return text
+            .toLowerCase()
+            .trim()
+            .replace(/ğ/g, 'g')
+            .replace(/ü/g, 'u')
+            .replace(/ş/g, 's')
+            .replace(/ı/g, 'i')
+            .replace(/ö/g, 'o')
+            .replace(/ç/g, 'c')
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+            .replace(/^-|-$/g, '');
+    };
+
+    // Yeni kategori ekle
+    const handleAddCategory = async () => {
+        if (!newCategory.name || !newCategory.name.trim()) {
+            Swal.fire({
+                title: 'Hata',
+                text: 'Lütfen kategori adı girin.',
+                icon: 'warning'
+            });
+            return;
+        }
+
+        setAddingCategory(true);
+        try {
+            // Slug oluştur (eğer girilmediyse)
+            const categorySlug = newCategory.slug.trim() || createSlug(newCategory.name);
+            
+            if (!categorySlug) {
+                Swal.fire({
+                    title: 'Hata',
+                    text: 'Geçerli bir slug oluşturulamadı. Lütfen kategori adını kontrol edin.',
+                    icon: 'warning'
+                });
+                setAddingCategory(false);
+                return;
+            }
+
+            // Slug'ın benzersiz olup olmadığını kontrol et
+            const existingCategory = await db.collection('categories').doc(categorySlug).get();
+            if (existingCategory.exists) {
+                Swal.fire({
+                    title: 'Hata',
+                    text: 'Bu slug zaten kullanılıyor. Lütfen farklı bir slug girin.',
+                    icon: 'warning'
+                });
+                setAddingCategory(false);
+                return;
+            }
+
+            // Kategoriyi Firebase'e ekle
+            await db.collection('categories').doc(categorySlug).set({
+                name: newCategory.name.trim(),
+                slug: categorySlug,
+                type: 'main',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            Swal.fire({
+                title: 'Başarılı',
+                text: 'Kategori eklendi.',
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false
+            });
+
+            // Formu temizle ve kapat
+            setNewCategory({ name: '', slug: '' });
+            setShowAddCategoryForm(false);
+
+            // Kategorileri yeniden yükle
+            await loadCategories();
+        } catch (error) {
+            console.error('Kategori eklenirken hata:', error);
+            Swal.fire({
+                title: 'Hata',
+                text: 'Kategori eklenirken bir hata oluştu: ' + error.message,
+                icon: 'error'
+            });
+        } finally {
+            setAddingCategory(false);
+        }
+    };
+
+    // Kategori adı değiştiğinde slug'ı otomatik oluştur
+    const handleCategoryNameChange = (name) => {
+        setNewCategory({
+            name: name,
+            slug: createSlug(name)
+        });
     };
 
     // Ürün ekle
@@ -1175,24 +1276,98 @@ const ProductManagerPanel = () => {
                                     <div className="card-body">
                                         <div className="d-flex justify-content-between align-items-center mb-4">
                                             <h3 className="mb-0">Kategori Yönetimi</h3>
-                                            <button
-                                                className="btn btn-primary"
-                                                onClick={migrateCategoriesToFirebase}
-                                                disabled={migratingCategories}
-                                            >
-                                                {migratingCategories ? (
-                                                    <>
-                                                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                                        Taşınıyor...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <i className="fa fa-upload me-2"></i>
-                                                        Kategorileri Firebase'e Taşı
-                                                    </>
-                                                )}
-                                            </button>
+                                            <div className="d-flex gap-2">
+                                                <button
+                                                    className="btn btn-success"
+                                                    onClick={() => setShowAddCategoryForm(!showAddCategoryForm)}
+                                                >
+                                                    <i className="fa fa-plus me-2"></i>
+                                                    Yeni Kategori Ekle
+                                                </button>
+                                                <button
+                                                    className="btn btn-primary"
+                                                    onClick={migrateCategoriesToFirebase}
+                                                    disabled={migratingCategories}
+                                                >
+                                                    {migratingCategories ? (
+                                                        <>
+                                                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                                            Taşınıyor...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <i className="fa fa-upload me-2"></i>
+                                                            Kategorileri Firebase'e Taşı
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
                                         </div>
+                                        
+                                        {/* Yeni Kategori Ekleme Formu */}
+                                        {showAddCategoryForm && (
+                                            <div className="card mb-4" style={{ backgroundColor: '#f8f9fa' }}>
+                                                <div className="card-body">
+                                                    <h5 className="mb-3">Yeni Kategori Ekle</h5>
+                                                    <div className="row">
+                                                        <div className="col-md-6 mb-3">
+                                                            <label className="form-label">Kategori Adı *</label>
+                                                            <input
+                                                                type="text"
+                                                                className="form-control"
+                                                                value={newCategory.name}
+                                                                onChange={(e) => handleCategoryNameChange(e.target.value)}
+                                                                placeholder="Örn: Elektronik"
+                                                                required
+                                                            />
+                                                        </div>
+                                                        <div className="col-md-6 mb-3">
+                                                            <label className="form-label">Slug (URL) *</label>
+                                                            <input
+                                                                type="text"
+                                                                className="form-control"
+                                                                value={newCategory.slug}
+                                                                onChange={(e) => setNewCategory({...newCategory, slug: e.target.value})}
+                                                                placeholder="Otomatik oluşturulur veya manuel girin"
+                                                                required
+                                                            />
+                                                            <small className="form-text text-muted">
+                                                                Boş bırakılırsa kategori adından otomatik oluşturulur
+                                                            </small>
+                                                        </div>
+                                                    </div>
+                                                    <div className="d-flex justify-content-end gap-2">
+                                                        <button
+                                                            className="btn btn-secondary"
+                                                            onClick={() => {
+                                                                setShowAddCategoryForm(false);
+                                                                setNewCategory({ name: '', slug: '' });
+                                                            }}
+                                                            disabled={addingCategory}
+                                                        >
+                                                            İptal
+                                                        </button>
+                                                        <button
+                                                            className="btn btn-success"
+                                                            onClick={handleAddCategory}
+                                                            disabled={addingCategory}
+                                                        >
+                                                            {addingCategory ? (
+                                                                <>
+                                                                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                                                    Ekleniyor...
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <i className="fa fa-check me-2"></i>
+                                                                    Kategori Ekle
+                                                                </>
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                         <div className="alert alert-info">
                                             <p className="mb-0">Kategoriler Firebase'den yükleniyor. Sadece altında ürün olan kategoriler gösteriliyor. Kategorileri Firebase'e taşımak için yukarıdaki butona tıklayın.</p>
                                         </div>
@@ -1215,25 +1390,32 @@ const ProductManagerPanel = () => {
                                                             </td>
                                                         </tr>
                                                     ) : (
-                                                        categories.map((category, index) => (
-                                                            <tr key={category.id || index}>
-                                                                <td>{category.name}</td>
-                                                                <td>{category.slug}</td>
-                                                                <td>
-                                                                    <span className={`badge ${category.type === 'main' ? 'bg-primary' : 'bg-secondary'}`}>
-                                                                        {category.type === 'main' ? 'Ana' : 'Alt'}
-                                                                    </span>
-                                                                </td>
-                                                                <td>{category.parent || '-'}</td>
-                                                                <td>
-                                                                    {category.type === 'sub' && category.productCount !== undefined ? (
-                                                                        <span className="badge bg-success">{category.productCount}</span>
-                                                                    ) : (
-                                                                        '-'
-                                                                    )}
-                                                                </td>
-                                                            </tr>
-                                                        ))
+                                                        categories.map((category, index) => {
+                                                            // Unique key oluştur: type + slug + parent kombinasyonu
+                                                            const uniqueKey = category.type === 'main' 
+                                                                ? `main-${category.slug || category.id || index}`
+                                                                : `sub-${category.parentSlug || category.parent || 'unknown'}-${category.slug || category.id || index}`;
+                                                            
+                                                            return (
+                                                                <tr key={uniqueKey}>
+                                                                    <td>{category.name}</td>
+                                                                    <td>{category.slug}</td>
+                                                                    <td>
+                                                                        <span className={`badge ${category.type === 'main' ? 'bg-primary' : 'bg-secondary'}`}>
+                                                                            {category.type === 'main' ? 'Ana' : 'Alt'}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td>{category.parent || '-'}</td>
+                                                                    <td>
+                                                                        {category.type === 'sub' && category.productCount !== undefined ? (
+                                                                            <span className="badge bg-success">{category.productCount}</span>
+                                                                        ) : (
+                                                                            '-'
+                                                                        )}
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })
                                                     )}
                                                 </tbody>
                                             </table>

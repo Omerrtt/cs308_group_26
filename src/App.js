@@ -85,12 +85,14 @@ const App = () => {
         <Router>
           <ScrollToTop />
           <Switch>
+            {/* Main Pages */}
             <Route path='/' exact component={Fashion} />
             <Route path='/furniture' exact component={Furniture} />
             <Route path='/electronics' exact component={Electronics} />
             <Route path='/pharmacy' exact component={Pharmacy} />
             <Route path='/jewllary' exact component={Jewllary} />
             <Route path='/baby-toys' exact component={BabyToys} />
+            {/* Shop & Product Pages */}
             <Route path='/shop' exact component={ShopGrid} />
             <Route path='/shop/category/:categorySlug' exact component={CategoryPage} />
             <Route path='/category/:categorySlug' exact component={CategoryPageNew} />
@@ -100,6 +102,7 @@ const App = () => {
             <Route path='/shop-right-bar' exact component={ShopRightSideBar} />
             <Route path='/product-details-one/:id' exact component={ProductDetails} />
             <Route path='/product-details-two/:id' exact component={ProductDetailsTwos} />
+            {/* Cart & Checkout Flow */}
             <Route path='/cart' exact component={Cart} />
             <Route path='/cart-old' exact component={CartOld} />
             <Route path='/cartTwo' exact component={CartTwo} />
@@ -110,6 +113,7 @@ const App = () => {
             <Route path='/checkout-two' exact component={CheckoutTwos} />
             <Route path='/payment' exact component={Payment} />
             <Route path='/checkout-success' exact component={CheckoutSuccess} />
+            {/* User Profile & Account */}
             <Route path='/profile' exact component={Profile} />
             <Route path='/wishlist' exact component={WishLists} />
             <Route path='/compare' exact component={Compares} />
@@ -144,6 +148,7 @@ const App = () => {
             <Route path='/contact-one' exact component={ContactOne} />
             <Route path='/contact-two' exact component={ContactTwo} />
             <Route path='/contact' exact component={Contact} />
+            {/* Admin Panels: Role Based Access */}
             <Route path='/admin' exact component={AdminPanel} />
             <Route path='/admin/upload-products' exact component={UploadProducts} />
             <Route path='/sales-manager' exact component={SalesManagerPanel} />

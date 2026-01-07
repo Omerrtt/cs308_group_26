@@ -9,6 +9,7 @@ Malikane Electronics için geliştirilmiş modern React tabanlı e-ticaret web u
 - 👤 Firebase Authentication ile kullanıcı girişi/kaydı
 - 🛒 Sepet ve ödeme işlemleri
 - 📱 Responsive tasarım
+- Kullanıcı dostu arayüz
 
 ## 🔧 Kurulum
 

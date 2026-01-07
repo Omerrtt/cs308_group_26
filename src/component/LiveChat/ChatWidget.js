@@ -1,3 +1,15 @@
+/* LiveChat Widget Component
+ * 
+ * Provides real-time customer support chat functionality:
+ 
+ * Guest and logged-in user support
+ * Real-time messaging via Firebase
+ * File attachments (images, PDFs, videos up to 10MB)
+ * Support agent integration
+ * Chat history persistence
+ */
+import React, { useState, useEffect, useRef } from 'react';
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { auth, db } from '../../firebaseConfig';

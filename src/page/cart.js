@@ -28,7 +28,7 @@ const Cart = () => {
         dispatch(updateCart({ id, quantity: newQuantity }));
     };
 
-    // Remove item
+    // Remove selected item
     const handleRemoveItem = (id) => {
         dispatch(removeCart({ id }));
     };

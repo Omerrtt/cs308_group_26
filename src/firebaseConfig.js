@@ -3,7 +3,7 @@ import "firebase/auth";
 import "firebase/firestore";
 import "firebase/functions";
 
-// Firebase Conf iguration
+// Firebase Configuration Nesneleri
 const firebaseConfig = {
   apiKey: "AIzaSyDClfGg2ANXmXGM2L4vGtYwNYIjIH0kLo8",
   authDomain: "malikane-18a27.firebaseapp.com",
@@ -14,7 +14,7 @@ const firebaseConfig = {
   measurementId: "G-HGZSJLDLNV"
 };
 
-// Firebase'i başlat
+// Firebase'i başlatır
 if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
 }

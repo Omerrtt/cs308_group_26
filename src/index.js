@@ -214,7 +214,7 @@ auth.onAuthStateChanged(async (user) => {
         }
       } catch (cartError) {
         console.error('❌ Cart birleştirme hatası:', cartError);
-        // Hata olsa bile devam et
+        
       }
 
       // Wishlist merge işlemi: Redux favorites + Firebase wishlist

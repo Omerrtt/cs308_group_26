@@ -9,8 +9,6 @@
  * Chat history persistence
  */
 import React, { useState, useEffect, useRef } from 'react';
-
-import React, { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { auth, db } from '../../firebaseConfig';
 import Swal from 'sweetalert2';

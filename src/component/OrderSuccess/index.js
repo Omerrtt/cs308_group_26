@@ -192,7 +192,7 @@ const OrderSuccess = () => {
                         <tr>
                             <td style={{ padding: "30px" }}>
                                 <div>
-                                    <h4 className="title" style={{ margin: 0, textAlign: "center" }}>Follow us</h4>
+                                    <h4 className="title" style={{ margin: 0, textAlign: "center" }}>Bizi Takip Edin</h4>
                                 </div>
                                 <table border="0" cellPadding="0" cellSpacing="0" className="footer-social-icon text-center" align="center"
                                     style={{ marginTop: "20px" }}>
@@ -223,7 +223,7 @@ const OrderSuccess = () => {
                                     <tbody>
                                         <tr>
                                             <td>
-                                                <a href="#!" style={{ fontSize: "13px" }}>Want to change how you receive these emails?</a>
+                                                <a href="#!" style={{ fontSize: "13px" }}>Bu e-postaları nasıl aldığınızı değiştirmek ister misiniz?</a>
                                             </td>
                                         </tr>
                                         <tr>
@@ -233,7 +233,7 @@ const OrderSuccess = () => {
                                         </tr>
                                         <tr>
                                             <td>
-                                                <a href="#!" style={{ fontSize: "13px", margin: "0", textDecoration: "underline" }}>Unsubscribe</a>
+                                                <a href="#!" style={{ fontSize: "13px", margin: "0", textDecoration: "underline" }}>Abonelikten Çık</a>
                                             </td>
                                         </tr>
                                     </tbody>

@@ -7,7 +7,47 @@ import Swal from 'sweetalert2';
 import { getProductById } from '../../../app/data/productsData';
 import { incrementWhatsAppClick, getProductWhatsAppClicks } from '../../../utils/whatsappTracker';
 import { db } from '../../../firebaseConfig';
-
+/* Enhanced Rating & Review System
+ * 
+ * Real User Reviews (Priority Display):
+ *  Fetched from Firebase in real time
+ *  Shows "Doğrulanmış" (Verified) badge
+ *  Includes user avatar, name, rating, and timestamp
+ *  Only displays approved comments (approved by product manager)
+ * 
+ * Placeholder Comments (Supplementary):
+ *  Used when real comments < 10
+ *  Generic positive reviews to build trust
+ *  No verified badge (distinguishes from real reviews)
+ *  Max total comments = 10 (real + placeholder)
+ * 
+ * Comment Display Logic:
+ *  Initial view: Shows 3 comments (real prioritized)
+ *  "Show All" button: Expands to show up to 10 total
+ *  Real comments always appear first (sorted by date)
+ *  Placeholders fill remaining slots up to max 10
+ * 
+ * Rating Calculation:
+ *  Uses Firebase real time rating data
+ *  Falls back to product.rating if Firebase unavailable
+ *  Rating count from Firebase or product.reviewCount
+ * 
+ * State Management:
+ *  approvedComments: Real user reviews from Firebase
+ *  realRating: Current average rating from Firebase
+ *  realRatingCount: Total number of ratings submitted
+ *  showAllComments: Toggle for expanding comment section
+ * 
+ * Firebase Integration:
+ *  Realtime listener on products/{productId}
+ *  Fetches: approvedComments[], ratings[], rating, ratingCount
+ *  Auto updates when new reviews are approved
+ * 
+ * Comment Rendering:
+ *  Real comments
+ *  Placeholder comments
+ *  Max 10 total: Math.min(10, realComments.length + placeholders.length)
+ */
 const ProductDetailsOne = () => {
     let dispatch = useDispatch();
     let { id } = useParams();

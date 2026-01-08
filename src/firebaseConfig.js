@@ -3,7 +3,7 @@ import "firebase/auth";
 import "firebase/firestore";
 import "firebase/functions";
 
-// Firebase Conf iguration
+// Firebase Configuration
 const firebaseConfig = {
   apiKey: "AIzaSyDClfGg2ANXmXGM2L4vGtYwNYIjIH0kLo8",
   authDomain: "malikane-18a27.firebaseapp.com",

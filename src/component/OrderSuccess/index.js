@@ -25,7 +25,7 @@ const OrderSuccess = () => {
             <div className="tables_area">
                 <div className="back_btn_emial">
                     <button className="theme-btn-one btn-black-overlay btn_sm" onClick={routeChange}>
-                        <i className="fa fa-arrow-left mr-2"></i>Go Back
+                        <i className="fa fa-arrow-left mr-2"></i>Geri Dön
                     </button>
                 </div>
                 <table align="center" border="0" cellPadding="0" cellSpacing="0" className="box_table"
@@ -47,13 +47,13 @@ const OrderSuccess = () => {
                                         </tr>
                                         <tr>
                                             <td>
-                                                <h2 className="title">thank you</h2>
+                                                <h2 className="title">teşekkür ederiz</h2>
                                             </td>
                                         </tr>
                                         <tr>
                                             <td>
-                                                <p>Payment Is Successfully Processsed And Your Order Is On The Way</p>
-                                                <p>Transaction ID:267676GHERT105467</p>
+                                                <p>Ödemeniz Başarıyla İşlendi ve Siparişiniz Yolda</p>
+                                                <p>İşlem ID:267676GHERT105467</p>
                                             </td>
                                         </tr>
                                         <tr>
@@ -70,7 +70,7 @@ const OrderSuccess = () => {
                                     <tbody>
                                         <tr>
                                             <td>
-                                                <h2 className="title">YOUR ORDER DETAILS</h2>
+                                                <h2 className="title">SİPARİŞ DETAYLARINIZ</h2>
                                             </td>
                                         </tr>
                                     </tbody>

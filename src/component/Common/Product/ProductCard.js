@@ -84,7 +84,7 @@ const ProductCard = (props) => {
                             })}
                         </div>
                         <small className="text-muted">
-                            ({props.data.ratingCount !== undefined ? props.data.ratingCount : (props.data.reviewCount || 0)})
+                            ({props.data.ratingCount !== undefined ? props.data.ratingCount : 0})
                         </small>
                     </div>
                     <span className="price">

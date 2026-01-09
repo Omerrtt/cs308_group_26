@@ -25,6 +25,7 @@ const ProductManagerPanel = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 30;
     const [productLoading, setProductLoading] = useState(false);
+    const [productSearchQuery, setProductSearchQuery] = useState('');
     
     // Add Product Form
     const [showAddProductForm, setShowAddProductForm] = useState(false);
@@ -1238,16 +1239,37 @@ const ProductManagerPanel = () => {
         }).format(price || 0);
     };
 
-    // Pagination hesaplamaları
-    const totalPages = Math.ceil(products.length / itemsPerPage);
+    // Ürün filtreleme
+    const filteredProducts = products.filter(product => {
+        if (!productSearchQuery.trim()) return true;
+        const query = productSearchQuery.toLowerCase().trim();
+        const title = (product.title || product.name || '').toLowerCase();
+        const category = (product.category || '').toLowerCase();
+        const productId = (product.id || product.originalId || '').toString().toLowerCase();
+        const description = (product.description || '').toLowerCase();
+        
+        return title.includes(query) || 
+               category.includes(query) || 
+               productId.includes(query) ||
+               description.includes(query);
+    });
+
+    // Pagination hesaplamaları (filtrelenmiş ürünlere göre)
+    const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    const paginatedProducts = products.slice(startIndex, endIndex);
+    const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
 
     // Sayfa değiştirme
     const handlePageChange = (page) => {
         setCurrentPage(page);
         window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    // Arama değiştiğinde sayfayı sıfırla
+    const handleSearchChange = (e) => {
+        setProductSearchQuery(e.target.value);
+        setCurrentPage(1); // Arama yapıldığında ilk sayfaya dön
     };
 
     if (loading) {
@@ -1364,6 +1386,39 @@ const ProductManagerPanel = () => {
                                             >
                                                 {showAddProductForm ? 'Formu Kapat' : '+ Yeni Ürün Ekle'}
                                             </button>
+                                        </div>
+
+                                        {/* Arama Kutusu */}
+                                        <div className="mb-3">
+                                            <div className="input-group">
+                                                <span className="input-group-text">
+                                                    <i className="fa fa-search"></i>
+                                                </span>
+                                                <input
+                                                    type="text"
+                                                    className="form-control"
+                                                    placeholder="Ürün ara (isim, kategori, ID, açıklama)..."
+                                                    value={productSearchQuery}
+                                                    onChange={handleSearchChange}
+                                                />
+                                                {productSearchQuery && (
+                                                    <button
+                                                        className="btn btn-outline-secondary"
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setProductSearchQuery('');
+                                                            setCurrentPage(1);
+                                                        }}
+                                                    >
+                                                        <i className="fa fa-times"></i>
+                                                    </button>
+                                                )}
+                                            </div>
+                                            {productSearchQuery && (
+                                                <small className="text-muted mt-1 d-block">
+                                                    {filteredProducts.length} ürün bulundu
+                                                </small>
+                                            )}
                                         </div>
 
                                         {showAddProductForm && (
@@ -1527,9 +1582,17 @@ const ProductManagerPanel = () => {
                                             <div className="d-flex justify-content-between align-items-center mt-4">
                                                 <div>
                                                     <p className="mb-0 text-muted">
-                                                        Toplam {products.length} ürün - Sayfa {currentPage} / {totalPages}
+                                                        {productSearchQuery ? (
+                                                            <>
+                                                                {filteredProducts.length} ürün bulundu (Toplam: {products.length}) - Sayfa {currentPage} / {totalPages}
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                Toplam {products.length} ürün - Sayfa {currentPage} / {totalPages}
+                                                            </>
+                                                        )}
                                                         <br />
-                                                        <small>Gösterilen: {startIndex + 1} - {Math.min(endIndex, products.length)}</small>
+                                                        <small>Gösterilen: {startIndex + 1} - {Math.min(endIndex, filteredProducts.length)}</small>
                                                     </p>
                                                 </div>
                                                 <nav>

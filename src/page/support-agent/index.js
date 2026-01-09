@@ -21,6 +21,7 @@ const SupportAgentPanel = () => {
     const [newMessage, setNewMessage] = useState('');
     const [attachments, setAttachments] = useState([]);
     const [customerInfo, setCustomerInfo] = useState(null);
+    const [showFullCustomerInfo, setShowFullCustomerInfo] = useState(false);
     const fileInputRef = React.useRef(null);
     const chatsUnsubscribeRef = React.useRef(null);
     const messagesUnsubscribeRef = React.useRef(null);
@@ -74,12 +75,14 @@ const SupportAgentPanel = () => {
         if (selectedChatId) {
             setupMessagesListener(selectedChatId);
             loadCustomerDetails(selectedChatId);
+            setShowFullCustomerInfo(false); // Yeni chat seçildiğinde detayları gizle
         } else {
             if (messagesUnsubscribeRef.current) {
                 messagesUnsubscribeRef.current();
             }
             setMessages([]);
             setCustomerInfo(null);
+            setShowFullCustomerInfo(false);
         }
 
         return () => {
@@ -248,37 +251,118 @@ const SupportAgentPanel = () => {
                     cartItems: 0,
                     cartTotal: 0,
                     orders: [],
-                    totalOrders: 0
+                    totalOrders: 0,
+                    wishlist: [],
+                    deliveries: []
                 });
                 return;
             }
 
-            const userDoc = await db.collection('users').doc(customerId).get();
-            if (userDoc.exists) {
-                const userData = userDoc.data();
-                const orders = userData.orders || [];
-                const recentOrders = orders.slice(0, 5);
+            // Chat'ten gelen bilgileri kullan (chat oluşturulurken eklenmiş)
+            let customerProfile = chatData.customerProfile || null;
+            let customerCart = chatData.customerCart || [];
+            let customerOrders = chatData.customerOrders || [];
+            let customerWishlist = chatData.customerWishlist || [];
 
-                setCustomerInfo({
-                    name: userData.name || chatData.customerName || 'Bilinmeyen',
-                    email: chatData.customerEmail || userData.email || '',
-                    cartItems: (userData.cart || []).length,
-                    cartTotal: (userData.cart || []).reduce((sum, item) => 
-                        sum + (parseFloat(item.price || 0) * (item.quantity || 1)), 0
-                    ),
-                    orders: recentOrders,
-                    totalOrders: orders.length
-                });
-            } else {
-                setCustomerInfo({
-                    name: chatData.customerName || 'Bilinmeyen',
-                    email: chatData.customerEmail || '',
-                    cartItems: 0,
-                    cartTotal: 0,
-                    orders: [],
-                    totalOrders: 0
-                });
+            // Eğer chat'te yoksa, Firebase'den çek
+            if (!customerProfile || customerCart.length === 0 || customerOrders.length === 0) {
+                try {
+                    const userDoc = await db.collection('users').doc(customerId).get();
+                    if (userDoc.exists) {
+                        const userData = userDoc.data();
+                        if (!customerProfile) {
+                            customerProfile = {
+                                name: userData.name || chatData.customerName || 'Bilinmeyen',
+                                email: chatData.customerEmail || userData.email || '',
+                                phone: userData.phone || null,
+                                address: userData.address || null
+                            };
+                        }
+                        if (customerCart.length === 0) {
+                            customerCart = userData.cart || [];
+                        }
+                        if (customerWishlist.length === 0) {
+                            customerWishlist = userData.wishlist || [];
+                        }
+                    }
+                } catch (userError) {
+                    console.warn('User bilgileri çekilemedi:', userError);
+                }
             }
+
+            // Orders collection'dan siparişleri çek (daha detaylı bilgi için)
+            try {
+                const ordersSnapshot = await db.collection('orders')
+                    .where('userId', '==', customerId)
+                    .orderBy('orderDateTimestamp', 'desc')
+                    .limit(10)
+                    .get();
+                
+                const detailedOrders = ordersSnapshot.docs.map(doc => {
+                    const orderData = doc.data();
+                    return {
+                        orderId: orderData.orderId || doc.id,
+                        status: orderData.status || 'processing',
+                        total: orderData.total || 0,
+                        orderDate: orderData.orderDateString || orderData.orderDate || null,
+                        items: orderData.items || [],
+                        deliveryAddress: orderData.deliveryAddress || null,
+                        deliveryStatus: orderData.deliveryStatus || null
+                    };
+                });
+                
+                // Chat'ten gelen siparişlerle birleştir
+                if (detailedOrders.length > 0) {
+                    customerOrders = detailedOrders;
+                }
+            } catch (ordersError) {
+                console.warn('Orders collection\'dan siparişler çekilemedi:', ordersError);
+            }
+
+            // Delivery bilgilerini çek
+            let deliveries = [];
+            try {
+                const deliveriesSnapshot = await db.collection('orders')
+                    .where('userId', '==', customerId)
+                    .get();
+                
+                deliveries = [];
+                deliveriesSnapshot.forEach((doc) => {
+                    const order = doc.data();
+                    if (order.items && Array.isArray(order.items)) {
+                        order.items.forEach((item, index) => {
+                            deliveries.push({
+                                deliveryId: `${order.orderId}_${index}`,
+                                orderId: order.orderId,
+                                productName: item.title || item.name,
+                                quantity: item.quantity || 1,
+                                status: order.status || 'processing',
+                                deliveryAddress: order.deliveryAddress || null,
+                                orderDate: order.orderDateString || order.orderDate || null
+                            });
+                        });
+                    }
+                });
+            } catch (deliveryError) {
+                console.warn('Delivery bilgileri çekilemedi:', deliveryError);
+            }
+
+            setCustomerInfo({
+                name: customerProfile?.name || chatData.customerName || 'Bilinmeyen',
+                email: customerProfile?.email || chatData.customerEmail || '',
+                phone: customerProfile?.phone || null,
+                address: customerProfile?.address || null,
+                cartItems: customerCart.length,
+                cartTotal: customerCart.reduce((sum, item) => 
+                    sum + (parseFloat(item.price || 0) * (item.quantity || 1)), 0
+                ),
+                cart: customerCart,
+                orders: customerOrders,
+                totalOrders: customerOrders.length,
+                wishlist: customerWishlist,
+                wishlistCount: customerWishlist.length,
+                deliveries: deliveries
+            });
         } catch (error) {
             console.error('Müşteri bilgileri yüklenirken hata:', error);
             setCustomerInfo(null);
@@ -493,29 +577,124 @@ const SupportAgentPanel = () => {
                                                 {/* Customer Info */}
                                                 {customerInfo && (
                                                     <div className="card-body p-3" style={{ background: '#f8f9fa', borderBottom: '1px solid #dee2e6' }}>
-                                                        <div className="row">
-                                                            <div className="col-md-4">
-                                                                <strong>Sepet:</strong> {customerInfo.cartItems} ürün<br />
-                                                                <strong>Toplam:</strong> {formatPrice(customerInfo.cartTotal)}
-                                                            </div>
-                                                            <div className="col-md-4">
-                                                                <strong>Siparişler:</strong> {customerInfo.totalOrders} sipariş
-                                                            </div>
-                                                            <div className="col-md-4">
-                                                                <strong>Son Siparişler:</strong>
-                                                                {customerInfo.orders.length > 0 ? (
-                                                                    <ul style={{ margin: '5px 0', paddingLeft: '20px', fontSize: '12px' }}>
-                                                                        {customerInfo.orders.map((order, index) => (
-                                                                            <li key={index}>
-                                                                                {order.orderId} - {order.status || 'processing'}
-                                                                            </li>
-                                                                        ))}
-                                                                    </ul>
+                                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                                            <h6 className="mb-0"><i className="fa fa-user me-2"></i>Müşteri Bilgileri</h6>
+                                                            <button
+                                                                className="btn btn-sm btn-link p-0"
+                                                                onClick={() => setShowFullCustomerInfo(!showFullCustomerInfo)}
+                                                                style={{ fontSize: '12px' }}
+                                                            >
+                                                                {showFullCustomerInfo ? (
+                                                                    <>
+                                                                        <i className="fa fa-chevron-up me-1"></i>Daha Az Göster
+                                                                    </>
                                                                 ) : (
-                                                                    <span className="text-muted"> Sipariş yok</span>
+                                                                    <>
+                                                                        <i className="fa fa-chevron-down me-1"></i>Daha Fazla Göster
+                                                                    </>
+                                                                )}
+                                                            </button>
+                                                        </div>
+                                                        
+                                                        {/* Özet Bilgiler (Her Zaman Görünür) */}
+                                                        <div className="row">
+                                                            <div className="col-md-6">
+                                                                <strong>İsim:</strong> {customerInfo.name}<br />
+                                                                <strong>Email:</strong> {customerInfo.email || 'Email yok'}<br />
+                                                                {customerInfo.phone && (
+                                                                    <><strong>Telefon:</strong> {customerInfo.phone}<br /></>
                                                                 )}
                                                             </div>
+                                                            <div className="col-md-6">
+                                                                <strong>Sepet:</strong> {customerInfo.cartItems} ürün - {formatPrice(customerInfo.cartTotal)}<br />
+                                                                <strong>Wishlist:</strong> {customerInfo.wishlistCount || 0} ürün<br />
+                                                                <strong>Toplam Sipariş:</strong> {customerInfo.totalOrders} sipariş
+                                                            </div>
                                                         </div>
+                                                        
+                                                        {/* Detaylı Bilgiler (Sadece Genişletilmiş Durumda) */}
+                                                        {showFullCustomerInfo && (
+                                                            <div className="mt-3 pt-3" style={{ borderTop: '1px solid #dee2e6' }}>
+                                                                {/* Sepet Detayları */}
+                                                                {customerInfo.cart && customerInfo.cart.length > 0 && (
+                                                                    <div className="mb-3">
+                                                                        <strong>Sepet İçeriği:</strong>
+                                                                        <ul style={{ margin: '5px 0', paddingLeft: '20px', fontSize: '12px', maxHeight: '100px', overflowY: 'auto' }}>
+                                                                            {customerInfo.cart.map((item, index) => (
+                                                                                <li key={index}>
+                                                                                    {item.title || item.name} - {item.quantity}x - {formatPrice(item.price * (item.quantity || 1))}
+                                                                                </li>
+                                                                            ))}
+                                                                        </ul>
+                                                                    </div>
+                                                                )}
+                                                                
+                                                                {/* Wishlist */}
+                                                                {customerInfo.wishlist && customerInfo.wishlist.length > 0 && (
+                                                                    <div className="mb-3">
+                                                                        <strong>İstek Listesi:</strong>
+                                                                        <ul style={{ margin: '5px 0', paddingLeft: '20px', fontSize: '12px', maxHeight: '100px', overflowY: 'auto' }}>
+                                                                            {customerInfo.wishlist.slice(0, 5).map((item, index) => (
+                                                                                <li key={index}>
+                                                                                    {item.title || item.name} - {formatPrice(item.price)}
+                                                                                </li>
+                                                                            ))}
+                                                                            {customerInfo.wishlist.length > 5 && (
+                                                                                <li className="text-muted">... ve {customerInfo.wishlist.length - 5} ürün daha</li>
+                                                                            )}
+                                                                        </ul>
+                                                                    </div>
+                                                                )}
+                                                                
+                                                                {/* Siparişler */}
+                                                                {customerInfo.orders && customerInfo.orders.length > 0 && (
+                                                                    <div className="mb-3">
+                                                                        <strong>Son Siparişler:</strong>
+                                                                        <div style={{ maxHeight: '150px', overflowY: 'auto' }}>
+                                                                            {customerInfo.orders.map((order, index) => (
+                                                                                <div key={index} className="mb-2 p-2" style={{ background: 'white', borderRadius: '4px', fontSize: '12px' }}>
+                                                                                    <div className="d-flex justify-content-between">
+                                                                                        <span><strong>Sipariş No:</strong> {order.orderId}</span>
+                                                                                        <span className={`badge ${order.status === 'delivered' ? 'bg-success' : order.status === 'cancelled' ? 'bg-danger' : 'bg-warning'}`}>
+                                                                                            {order.status || 'processing'}
+                                                                                        </span>
+                                                                                    </div>
+                                                                                    <div><strong>Tutar:</strong> {formatPrice(order.total)}</div>
+                                                                                    {order.orderDate && (
+                                                                                        <div><strong>Tarih:</strong> {typeof order.orderDate === 'string' ? order.orderDate : formatDate(order.orderDate)}</div>
+                                                                                    )}
+                                                                                    {order.deliveryAddress && (
+                                                                                        <div className="text-muted" style={{ fontSize: '11px' }}>
+                                                                                            <strong>Teslimat:</strong> {order.deliveryAddress.city || ''} {order.deliveryAddress.zipCode || ''}
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                                
+                                                                {/* Teslimat Durumu */}
+                                                                {customerInfo.deliveries && customerInfo.deliveries.length > 0 && (
+                                                                    <div>
+                                                                        <strong>Teslimat Durumu:</strong>
+                                                                        <div style={{ maxHeight: '100px', overflowY: 'auto', fontSize: '12px' }}>
+                                                                            {customerInfo.deliveries.slice(0, 5).map((delivery, index) => (
+                                                                                <div key={index} className="mb-1">
+                                                                                    {delivery.productName} - {delivery.quantity}x - 
+                                                                                    <span className={`badge ms-2 ${delivery.status === 'delivered' ? 'bg-success' : delivery.status === 'cancelled' ? 'bg-danger' : 'bg-warning'}`}>
+                                                                                        {delivery.status || 'processing'}
+                                                                                    </span>
+                                                                                </div>
+                                                                            ))}
+                                                                            {customerInfo.deliveries.length > 5 && (
+                                                                                <div className="text-muted">... ve {customerInfo.deliveries.length - 5} teslimat daha</div>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )}
 

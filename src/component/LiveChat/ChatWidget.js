@@ -18,6 +18,7 @@ const ChatWidget = () => {
     const userStatus = useSelector((state) => state.user.status);
     const user = useSelector((state) => state.user.user);
     const carts = useSelector((state) => state.products.carts);
+    const favorites = useSelector((state) => state.products.favorites);
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
@@ -111,6 +112,10 @@ const ChatWidget = () => {
                     // User bilgisini Firebase'den al (Redux'tan gelmeyebilir)
                     let customerName = 'Misafir';
                     let customerEmail = null;
+                    let customerProfile = null;
+                    let customerCart = [];
+                    let customerOrders = [];
+                    let customerWishlist = [];
                     
                     if (currentUser) {
                         customerEmail = currentUser.email;
@@ -124,6 +129,15 @@ const ChatWidget = () => {
                                 if (userDoc.exists) {
                                     const userData = userDoc.data();
                                     customerName = userData.name || currentUser.displayName || 'Kullanıcı';
+                                    customerProfile = {
+                                        name: userData.name || customerName,
+                                        email: userData.email || customerEmail,
+                                        phone: userData.phone || null,
+                                        address: userData.address || null
+                                    };
+                                    customerCart = userData.cart || [];
+                                    customerOrders = userData.orders || [];
+                                    customerWishlist = userData.wishlist || [];
                                 } else {
                                     customerName = currentUser.displayName || currentUser.email?.split('@')[0] || 'Kullanıcı';
                                 }
@@ -132,6 +146,50 @@ const ChatWidget = () => {
                                 console.warn('User bilgisi çekilemedi, email kullanılıyor:', err);
                                 customerName = currentUser.displayName || currentUser.email?.split('@')[0] || 'Kullanıcı';
                             }
+                        }
+                        
+                        // Redux'tan sepet bilgilerini al
+                        if (carts && carts.length > 0) {
+                            customerCart = carts.map(item => ({
+                                id: item.id,
+                                title: item.title || item.name,
+                                price: item.price,
+                                quantity: item.quantity || 1,
+                                originalId: item.originalId || item.id
+                            }));
+                        }
+                        
+                        // Redux'tan wishlist bilgilerini al
+                        if (favorites && favorites.length > 0) {
+                            customerWishlist = favorites.map(item => ({
+                                id: item.id,
+                                title: item.title || item.name,
+                                price: item.price,
+                                originalId: item.originalId || item.id
+                            }));
+                        }
+                        
+                        // Orders collection'dan siparişleri çek
+                        try {
+                            const ordersSnapshot = await db.collection('orders')
+                                .where('userId', '==', currentUser.uid)
+                                .orderBy('orderDateTimestamp', 'desc')
+                                .limit(10)
+                                .get();
+                            
+                            customerOrders = ordersSnapshot.docs.map(doc => {
+                                const orderData = doc.data();
+                                return {
+                                    orderId: orderData.orderId || doc.id,
+                                    status: orderData.status || 'processing',
+                                    total: orderData.total || 0,
+                                    orderDate: orderData.orderDateString || orderData.orderDate || null,
+                                    items: orderData.items || []
+                                };
+                            });
+                        } catch (ordersError) {
+                            console.warn('Siparişler çekilemedi:', ordersError);
+                            // Hata durumunda boş array kullan
                         }
                     }
                     
@@ -142,6 +200,11 @@ const ChatWidget = () => {
                         status: 'open', // open, claimed, closed
                         claimedBy: null,
                         messages: [],
+                        // Giriş yapmış kullanıcılar için ek bilgiler
+                        customerProfile: currentUser ? customerProfile : null,
+                        customerCart: currentUser ? customerCart : [],
+                        customerOrders: currentUser ? customerOrders : [],
+                        customerWishlist: currentUser ? customerWishlist : [],
                         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                     };
@@ -183,7 +246,7 @@ const ChatWidget = () => {
                 unsubscribeRef.current();
             }
         };
-    }, [user]);
+    }, [user, carts, favorites]);
 
     // Real-time listener kur
     const setupRealtimeListener = (chatId) => {

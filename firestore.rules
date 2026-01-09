@@ -48,14 +48,19 @@ service cloud.firestore {
         return request.auth != null && request.auth.token.email == 'mbozyel2003@gmail.com';
       }
       
-      // Kullanıcılar kendi dokümanlarını okuyabilir, admin, sales manager ve product manager tüm kullanıcıları okuyabilir
-      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin() || isSalesManager() || isProductManager());
+      // Support Agent email kontrolü
+      function isSupportAgent() {
+        return request.auth != null && request.auth.token.email == 'mbzyl349@gmail.com';
+      }
+      
+      // Kullanıcılar kendi dokümanlarını okuyabilir, admin, sales manager, product manager ve support agent tüm kullanıcıları okuyabilir
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin() || isSalesManager() || isProductManager() || isSupportAgent());
       
       // Kullanıcılar kendi dokümanlarını oluşturabilir
       allow create: if request.auth != null && request.auth.uid == userId;
       
-      // Kullanıcılar kendi dokümanlarını güncelleyebilir, admin, sales manager ve product manager tüm kullanıcıları güncelleyebilir
-      allow update: if request.auth != null && (request.auth.uid == userId || isAdmin() || isSalesManager() || isProductManager());
+      // Kullanıcılar kendi dokümanlarını güncelleyebilir, admin, sales manager, product manager ve support agent tüm kullanıcıları güncelleyebilir
+      allow update: if request.auth != null && (request.auth.uid == userId || isAdmin() || isSalesManager() || isProductManager() || isSupportAgent());
     }
     
     // Orders koleksiyonu
@@ -75,15 +80,27 @@ service cloud.firestore {
         return request.auth != null && request.auth.token.email == 'mbozyel2003@gmail.com';
       }
       
-      // Kullanıcılar kendi order'larını okuyabilir, admin, sales manager ve product manager tüm order'ları okuyabilir
-      allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin() || isSalesManager() || isProductManager());
+      // Support Agent email kontrolü
+      function isSupportAgent() {
+        return request.auth != null && request.auth.token.email == 'mbzyl349@gmail.com';
+      }
+      
+      // Kullanıcılar kendi order'larını okuyabilir, admin, sales manager, product manager ve support agent tüm order'ları okuyabilir
+      // Support agent için: userId field'ına göre filtreleme yaparken resource.data yerine query ile kontrol ediyoruz
+      allow read: if request.auth != null && (
+        request.auth.uid == resource.data.userId || 
+        isAdmin() || 
+        isSalesManager() || 
+        isProductManager() || 
+        isSupportAgent()
+      );
       
       // Kullanıcılar kendi order'larını oluşturabilir (checkout sırasında)
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
       
-      // Admin, sales manager ve product manager order'ları güncelleyebilir
+      // Admin, sales manager, product manager ve support agent order'ları güncelleyebilir
       // Kullanıcılar sadece kendi order'larını cancelled durumuna güncelleyebilir (sadece processing'den cancelled'a)
-      allow update: if isAdmin() || isSalesManager() || isProductManager() ||
+      allow update: if isAdmin() || isSalesManager() || isProductManager() || isSupportAgent() ||
         (request.auth != null && 
          request.auth.uid == resource.data.userId && 
          request.resource.data.status == 'cancelled' &&

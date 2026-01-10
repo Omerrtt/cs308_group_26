@@ -127,7 +127,14 @@ const SalesManagerPanel = () => {
         const query = searchQuery.toLowerCase().trim();
         return products.filter(product => {
             const title = (product.title || product.name || '').toLowerCase();
-            return title.includes(query);
+            const productId = (product.id || '').toString().toLowerCase();
+            const originalId = (product.originalId || '').toString().toLowerCase();
+            const category = (product.category || '').toLowerCase();
+            
+            return title.includes(query) || 
+                   productId.includes(query) || 
+                   originalId.includes(query) ||
+                   category.includes(query);
         });
     }, [products, searchQuery]);
 
@@ -972,7 +979,7 @@ const SalesManagerPanel = () => {
                                                     <input
                                                         type="text"
                                                         className="form-control"
-                                                        placeholder="Ürün ara..."
+                                                        placeholder="Ürün ara (isim, Product ID, kategori)..."
                                                         value={searchQuery}
                                                         onChange={(e) => setSearchQuery(e.target.value)}
                                                     />

@@ -1943,7 +1943,7 @@ const ProductManagerPanel = () => {
                                                             <th>Sipariş No</th>
                                                             <th>Müşteri</th>
                                                             <th>Customer ID</th>
-                                                            <th>Ürün</th>
+                                                            <th>Product ID</th>
                                                             <th>Miktar</th>
                                                             <th>Toplam Fiyat</th>
                                                             <th>Teslimat Adresi</th>
@@ -1961,7 +1961,11 @@ const ProductManagerPanel = () => {
                                                                         {delivery.customerId || 'N/A'}
                                                                     </code>
                                                                 </td>
-                                                                <td>{delivery.productName}</td>
+                                                                <td>
+                                                                    <code style={{ fontSize: '0.85rem', backgroundColor: '#f5f5f5', padding: '2px 6px', borderRadius: '3px' }}>
+                                                                        {delivery.productId || 'N/A'}
+                                                                    </code>
+                                                                </td>
                                                                 <td>{delivery.quantity}</td>
                                                                 <td>{formatPrice(delivery.totalPrice)}</td>
                                                                 <td>

@@ -984,6 +984,23 @@ const Profile = () => {
                                             </div>
                                         ) : (
                                             <div className="profile-info mb-4">
+                                                {auth.currentUser && (
+                                                    <div className="info-item mb-3 pb-3" style={{borderBottom: '1px solid #eee'}}>
+                                                        <h5 className="mb-2">Customer ID</h5>
+                                                        <p className="mb-0">
+                                                            <code style={{ 
+                                                                fontSize: '0.9rem', 
+                                                                backgroundColor: '#f5f5f5', 
+                                                                padding: '4px 8px', 
+                                                                borderRadius: '4px',
+                                                                color: '#333'
+                                                            }}>
+                                                                {auth.currentUser.uid}
+                                                            </code>
+                                                        </p>
+                                                    </div>
+                                                )}
+                                                
                                                 <div className="info-item mb-3 pb-3" style={{borderBottom: '1px solid #eee'}}>
                                                     <h5 className="mb-2">Kullanıcı Adı</h5>
                                                     <p className="mb-0 text-muted">{profileData.name || user.name || 'N/A'}</p>

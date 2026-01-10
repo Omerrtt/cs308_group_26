@@ -246,6 +246,7 @@ const SupportAgentPanel = () => {
 
             if (customerId === 'guest') {
                 setCustomerInfo({
+                    customerId: 'guest',
                     name: chatData.customerName || 'Misafir',
                     email: chatData.customerEmail || '',
                     cartItems: 0,
@@ -348,6 +349,7 @@ const SupportAgentPanel = () => {
             }
 
             setCustomerInfo({
+                customerId: customerId,
                 name: customerProfile?.name || chatData.customerName || 'Bilinmeyen',
                 email: customerProfile?.email || chatData.customerEmail || '',
                 phone: customerProfile?.phone || null,
@@ -599,6 +601,18 @@ const SupportAgentPanel = () => {
                                                         {/* Özet Bilgiler (Her Zaman Görünür) */}
                                                         <div className="row">
                                                             <div className="col-md-6">
+                                                                <strong>Customer ID:</strong> 
+                                                                <code style={{ 
+                                                                    fontSize: '0.85rem', 
+                                                                    backgroundColor: '#fff', 
+                                                                    padding: '2px 6px', 
+                                                                    borderRadius: '3px',
+                                                                    marginLeft: '5px',
+                                                                    color: '#333'
+                                                                }}>
+                                                                    {customerInfo.customerId || 'N/A'}
+                                                                </code>
+                                                                <br />
                                                                 <strong>İsim:</strong> {customerInfo.name}<br />
                                                                 <strong>Email:</strong> {customerInfo.email || 'Email yok'}<br />
                                                                 {customerInfo.phone && (

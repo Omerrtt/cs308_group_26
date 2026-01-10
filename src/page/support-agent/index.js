@@ -107,6 +107,11 @@ const SupportAgentPanel = () => {
                                      (!lastMessage || !lastMessage.isAgent) &&
                                      chatData.status === 'open';
 
+                    // Boş mesajlı konuşmaları filtrele (mesaj sayısı 0 olanları)
+                    if (messages.length === 0) {
+                        return; // Boş konuşmaları atla
+                    }
+
                     chatsList.push({
                         id: doc.id,
                         customerId: chatData.customerId,
@@ -120,8 +125,44 @@ const SupportAgentPanel = () => {
                         hasUnread: hasUnread,
                         isClaimed: chatData.status === 'claimed',
                         createdAt: chatData.createdAt,
-                        updatedAt: chatData.updatedAt
+                        updatedAt: chatData.updatedAt,
+                        isGuest: chatData.customerId === 'guest',
+                        hasCustomerMessages: customerMessages.length > 0
                     });
+                });
+
+                // Sıralama: Önce mesajı olan kayıtlı kullanıcılar, sonra mesajı olan misafirler, en son diğerleri
+                chatsList.sort((a, b) => {
+                    // Öncelik 1: Mesajı olan kayıtlı kullanıcılar (guest değil)
+                    const aIsRegisteredWithMessages = !a.isGuest && a.hasCustomerMessages;
+                    const bIsRegisteredWithMessages = !b.isGuest && b.hasCustomerMessages;
+                    
+                    if (aIsRegisteredWithMessages && !bIsRegisteredWithMessages) return -1;
+                    if (!aIsRegisteredWithMessages && bIsRegisteredWithMessages) return 1;
+                    
+                    // Öncelik 2: Mesajı olan misafirler
+                    const aIsGuestWithMessages = a.isGuest && a.hasCustomerMessages;
+                    const bIsGuestWithMessages = b.isGuest && b.hasCustomerMessages;
+                    
+                    if (aIsGuestWithMessages && !bIsGuestWithMessages) return -1;
+                    if (!aIsGuestWithMessages && bIsGuestWithMessages) return 1;
+                    
+                    // Öncelik 3: Unread mesajları olanlar
+                    if (a.hasUnread && !b.hasUnread) return -1;
+                    if (!a.hasUnread && b.hasUnread) return 1;
+                    
+                    // Öncelik 4: Mesaj sayısı (daha fazla mesajı olan önce)
+                    if (a.messageCount !== b.messageCount) {
+                        return b.messageCount - a.messageCount;
+                    }
+                    
+                    // Öncelik 5: Son güncelleme tarihi (daha yeni olan önce)
+                    const aTime = a.lastMessageTime?.toDate ? a.lastMessageTime.toDate().getTime() : 
+                                 (a.updatedAt?.toDate ? a.updatedAt.toDate().getTime() : 0);
+                    const bTime = b.lastMessageTime?.toDate ? b.lastMessageTime.toDate().getTime() : 
+                                 (b.updatedAt?.toDate ? b.updatedAt.toDate().getTime() : 0);
+                    
+                    return bTime - aTime;
                 });
 
                 setChats(chatsList);

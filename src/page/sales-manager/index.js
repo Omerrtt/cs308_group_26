@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { auth, db, functions } from '../../firebaseConfig';
@@ -7,6 +7,28 @@ import Header from '../../component/Common/Header';
 import Footer from '../../component/Common/Footer';
 import Swal from 'sweetalert2';
 import { generateInvoicePDF } from '../../utils/invoiceGenerator';
+import { Line } from 'react-chartjs-2';
+import {
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    Title,
+    Tooltip,
+    Legend
+} from 'chart.js';
+
+// Chart.js'i kaydet
+ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    Title,
+    Tooltip,
+    Legend
+);
 
 // Sales Manager Email
 const SALES_MANAGER_EMAIL = 'mbozyel349@gmail.com';
@@ -422,14 +444,14 @@ const SalesManagerPanel = () => {
                 const revenue = parseFloat(order.total) || 0;
                 totalRevenue += revenue;
 
-                // Her ürün için cost hesapla (default: %75 of sale price)
+                // Her ürün için cost hesapla (default: %50 of sale price - %50 kar marjı için)
                 let orderCost = 0;
                 if (order.items && Array.isArray(order.items)) {
                     order.items.forEach(item => {
                         const itemPrice = parseFloat(item.price) || 0;
                         const quantity = item.quantity || 1;
-                        // Product cost varsa kullan, yoksa %75 varsay
-                        const productCost = item.cost || (itemPrice * 0.75);
+                        // Product cost varsa kullan, yoksa %50 varsay (%50 kar marjı için)
+                        const productCost = item.cost || (itemPrice * 0.50);
                         orderCost += productCost * quantity;
                     });
                 }
@@ -1322,32 +1344,88 @@ const SalesManagerPanel = () => {
                                                 <div className="card">
                                                     <div className="card-body">
                                                         <h5>Günlük Gelir ve Kar Grafiği</h5>
-                                                        <div style={{ height: '300px', position: 'relative' }}>
-                                                            <canvas id="financialChart"></canvas>
-                                                            <div className="mt-3">
-                                                                <table className="table table-sm">
-                                                                    <thead>
-                                                                        <tr>
-                                                                            <th>Tarih</th>
-                                                                            <th>Gelir</th>
-                                                                            <th>Maliyet</th>
-                                                                            <th>Kar</th>
+                                                        <div style={{ height: '400px', marginBottom: '20px' }}>
+                                                            {financialData.dailyData && financialData.dailyData.length > 0 && (
+                                                                <Line
+                                                                    data={{
+                                                                        labels: financialData.dailyData.map(day => 
+                                                                            new Date(day.date).toLocaleDateString('tr-TR', { 
+                                                                                day: '2-digit', 
+                                                                                month: '2-digit' 
+                                                                            })
+                                                                        ),
+                                                                        datasets: [
+                                                                            {
+                                                                                label: 'Gelir',
+                                                                                data: financialData.dailyData.map(day => day.revenue),
+                                                                                borderColor: 'rgb(75, 192, 192)',
+                                                                                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                                                                                tension: 0.1
+                                                                            },
+                                                                            {
+                                                                                label: 'Maliyet',
+                                                                                data: financialData.dailyData.map(day => day.cost),
+                                                                                borderColor: 'rgb(255, 99, 132)',
+                                                                                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                                                                tension: 0.1
+                                                                            },
+                                                                            {
+                                                                                label: 'Kar',
+                                                                                data: financialData.dailyData.map(day => day.profit),
+                                                                                borderColor: 'rgb(54, 162, 235)',
+                                                                                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                                                                                tension: 0.1
+                                                                            }
+                                                                        ]
+                                                                    }}
+                                                                    options={{
+                                                                        responsive: true,
+                                                                        maintainAspectRatio: false,
+                                                                        plugins: {
+                                                                            legend: {
+                                                                                position: 'top',
+                                                                            },
+                                                                            title: {
+                                                                                display: false
+                                                                            }
+                                                                        },
+                                                                        scales: {
+                                                                            y: {
+                                                                                beginAtZero: true,
+                                                                                ticks: {
+                                                                                    callback: function(value) {
+                                                                                        return value.toFixed(0) + ' ₺';
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }}
+                                                                />
+                                                            )}
+                                                        </div>
+                                                        <div className="mt-3">
+                                                            <table className="table table-sm">
+                                                                <thead>
+                                                                    <tr>
+                                                                        <th>Tarih</th>
+                                                                        <th>Gelir</th>
+                                                                        <th>Maliyet</th>
+                                                                        <th>Kar</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    {financialData.dailyData.map((day, index) => (
+                                                                        <tr key={index}>
+                                                                            <td>{new Date(day.date).toLocaleDateString('tr-TR')}</td>
+                                                                            <td>{day.revenue.toFixed(2)} ₺</td>
+                                                                            <td>{day.cost.toFixed(2)} ₺</td>
+                                                                            <td className={day.profit >= 0 ? 'text-success' : 'text-danger'}>
+                                                                                {day.profit.toFixed(2)} ₺
+                                                                            </td>
                                                                         </tr>
-                                                                    </thead>
-                                                                    <tbody>
-                                                                        {financialData.dailyData.map((day, index) => (
-                                                                            <tr key={index}>
-                                                                                <td>{new Date(day.date).toLocaleDateString('tr-TR')}</td>
-                                                                                <td>{day.revenue.toFixed(2)} ₺</td>
-                                                                                <td>{day.cost.toFixed(2)} ₺</td>
-                                                                                <td className={day.profit >= 0 ? 'text-success' : 'text-danger'}>
-                                                                                    {day.profit.toFixed(2)} ₺
-                                                                                </td>
-                                                                            </tr>
-                                                                        ))}
-                                                                    </tbody>
-                                                                </table>
-                                                            </div>
+                                                                    ))}
+                                                                </tbody>
+                                                            </table>
                                                         </div>
                                                     </div>
                                                 </div>

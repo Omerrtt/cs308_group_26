@@ -1,5 +1,9 @@
 import { createSlice } from '@reduxjs/toolkit';
 
+/**
+ * Load reviews from localStorage
+ * @returns {Object} Reviews object or empty object if error
+ */
 const loadReviewsFromStorage = () => {
     try {
         const reviews = localStorage.getItem('productReviews');
@@ -9,6 +13,10 @@ const loadReviewsFromStorage = () => {
     }
 };
 
+/**
+ * Save reviews to localStorage
+ * @param {Object} reviews - Reviews object to save
+ */
 const saveReviewsToStorage = (reviews) => {
     try {
         localStorage.setItem('productReviews', JSON.stringify(reviews));
@@ -20,16 +28,24 @@ const saveReviewsToStorage = (reviews) => {
 const reviewsSlice = createSlice({
     name: 'reviews',
     initialState: {
-        reviews: loadReviewsFromStorage(), // { productId: [{review}, {review}] }
+        // Reviews structure: { productId: [{review}, {review}] }
+        reviews: loadReviewsFromStorage(),
     },
     reducers: {
+        /**
+         * Add a new review for a product
+         * @param {Object} state - Current state
+         * @param {Object} action - Action payload containing productId, rating, comment, userName
+         */
         addReview: (state, action) => {
             const { productId, rating, comment, userName } = action.payload;
             
+            // Initialize product reviews array if it doesn't exist
             if (!state.reviews[productId]) {
                 state.reviews[productId] = [];
             }
             
+            // Create new review object
             const newReview = {
                 id: Date.now(),
                 rating,
@@ -39,12 +55,19 @@ const reviewsSlice = createSlice({
                 isUserReview: true
             };
             
-            // Add new review at the beginning
+            // Add new review at the beginning of the array
             state.reviews[productId].unshift(newReview);
             
+            // Persist to localStorage
             saveReviewsToStorage(state.reviews);
         },
         
+        /**
+         * Get reviews for a specific product
+         * @param {Object} state - Current state
+         * @param {Object} action - Action payload containing productId
+         * @returns {Array} Array of reviews for the product
+         */
         getProductReviews: (state, action) => {
             return state.reviews[action.payload] || [];
         }

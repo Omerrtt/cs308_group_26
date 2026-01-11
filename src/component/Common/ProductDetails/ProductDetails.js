@@ -7,34 +7,35 @@ import Swal from 'sweetalert2';
 import { getProductById } from '../../../app/data/productsData';
 import { incrementWhatsAppClick, getProductWhatsAppClicks } from '../../../utils/whatsappTracker';
 import { db } from '../../../firebaseConfig';
-/* Enhanced Rating & Review System
+/**
+ * Enhanced Rating & Review System
  * 
  * Real User Reviews:
- *  Fetched from Firebase in real time
- *  Shows "Doğrulanmış" (Verified) badge
- *  Includes user avatar, name, rating, and timestamp
- *  Only displays approved comments (approved by product manager)
+ *  - Fetched from Firebase in real time
+ *  - Shows "Doğrulanmış" (Verified) badge for verified purchases
+ *  - Includes user avatar, name, rating, and timestamp
+ *  - Only displays approved comments (approved by product manager)
  * 
  * Comment Display Logic:
- *  Initial view: Shows 3 comments
- *  "Show All" button: Expands to show all comments
- *  Comments sorted by date (newest first)
+ *  - Initial view: Shows 3 comments
+ *  - "Show All" button: Expands to show all comments
+ *  - Comments sorted by date (newest first)
  * 
  * Rating Calculation:
- *  Uses Firebase real time rating data
- *  Falls back to product.rating if Firebase unavailable
- *  Rating count from Firebase only (realRatingCount)
+ *  - Uses Firebase real-time rating data
+ *  - Falls back to product.rating if Firebase unavailable
+ *  - Rating count from Firebase only (realRatingCount)
  * 
  * State Management:
- *  approvedComments: Real user reviews from Firebase
- *  realRating: Current average rating from Firebase
- *  realRatingCount: Total number of ratings submitted
- *  showAllComments: Toggle for expanding comment section
+ *  - approvedComments: Real user reviews from Firebase
+ *  - realRating: Current average rating from Firebase
+ *  - realRatingCount: Total number of ratings submitted
+ *  - showAllComments: Toggle for expanding comment section
  * 
  * Firebase Integration:
- *  Realtime listener on products/{productId}
- *  Fetches: approvedComments[], ratings[], rating, ratingCount
- *  Auto updates when new reviews are approved
+ *  - Realtime listener on products/{productId}
+ *  - Fetches: approvedComments[], ratings[], rating, ratingCount
+ *  - Auto updates when new reviews are approved
  */
 const ProductDetailsOne = () => {
     let dispatch = useDispatch();

@@ -9,7 +9,10 @@ import { generateInvoicePDF } from '../utils/invoiceGenerator'
 import Swal from 'sweetalert2'
 import ReviewModal from '../component/MyAccountDashboard/ReviewModal'
 
-// Admin UID
+/**
+ * Admin kullanıcı UID'si
+ * Bu UID'ye sahip kullanıcılar admin yetkilerine sahiptir
+ */
 const ADMIN_UID = 'kcopWa6L3AZ5BbeHCokV7uKD6Pd2';
 
 const Profile = () => {
@@ -37,7 +40,10 @@ const Profile = () => {
     const [savingProfile, setSavingProfile] = useState(false)
     const [addresses, setAddresses] = useState([])
 
-    // Body scroll'u kontrol et ve düzelt
+    /**
+     * Body scroll davranışını kontrol eder
+     * Modal açıldığında scroll'u engellemek için kullanılır
+     */
     useEffect(() => {
         document.body.style.overflow = 'auto'
         return () => {
@@ -119,7 +125,7 @@ const Profile = () => {
                 return
             }
             
-            // Users collection'ından order'ları çek
+            // Firebase'den kullanıcının sipariş ve fatura bilgilerini çek
             const userDoc = await db.collection('users').doc(currentUser.uid).get()
             
             if (userDoc.exists) {
@@ -127,7 +133,7 @@ const Profile = () => {
                 const userOrders = userData.orders || []
                 const userInvoices = userData.invoices || []
                 
-                // Order'ları tarihe göre sırala (en yeni önce)
+                // Siparişleri tarihe göre sırala (en yeni siparişler önce)
                 const sortedOrders = [...userOrders].sort((a, b) => {
                     const dateA = a.orderDateTimestamp || a.createdAtTimestamp || 0
                     const dateB = b.orderDateTimestamp || b.createdAtTimestamp || 0
@@ -150,9 +156,11 @@ const Profile = () => {
         }
     }, [])
 
-    // Auth state'i bekle ve order'ları yükle
+    /**
+     * Firebase authentication state'ini dinler ve siparişleri yükler
+     * Kullanıcı giriş yapmamışsa login sayfasına yönlendirir
+     */
     useEffect(() => {
-        // Firebase auth state'i bekleyelim
         const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
             if (!currentUser) {
                 // Kullanıcı giriş yapmamış - login sayfasına yönlendir
@@ -161,7 +169,7 @@ const Profile = () => {
                 return
             }
 
-            // Admin kontrolü
+            // Admin yetkisi kontrolü
             setIsAdmin(currentUser.uid === ADMIN_UID)
 
             // Profil bilgilerini yükle (adresler de dahil)
@@ -171,11 +179,15 @@ const Profile = () => {
             await loadOrders(currentUser)
         })
 
-        // Cleanup
+        // Component unmount olduğunda listener'ı temizle
         return () => unsubscribe()
     }, [history, loadOrders, loadProfileData])
 
-    // Format date
+    /**
+     * Tarih string'ini Türkçe formatında formatlar
+     * @param {string} dateString - ISO formatında tarih string'i
+     * @returns {string} Formatlanmış tarih string'i
+     */
     const formatDate = useCallback((dateString) => {
         if (!dateString) return 'Tarih yok'
         try {
@@ -192,7 +204,11 @@ const Profile = () => {
         }
     }, [])
 
-    // Format price
+    /**
+     * Fiyatı Türk Lirası formatında formatlar
+     * @param {number} price - Formatlanacak fiyat
+     * @returns {string} Formatlanmış fiyat string'i (örn: "1.234,56 ₺")
+     */
     const formatPrice = useCallback((price) => {
         return new Intl.NumberFormat('tr-TR', {
             style: 'currency',
@@ -200,7 +216,10 @@ const Profile = () => {
         }).format(price || 0)
     }, [])
 
-    // Status map
+    /**
+     * Sipariş durumları için mapping objesi
+     * Her durumun görüntü metni ve CSS class'ı tanımlanır
+     */
     const statusMap = useMemo(() => ({
         text: {
             'processing': 'İşleniyor',
@@ -234,7 +253,10 @@ const Profile = () => {
         return <span className={`badge ${statusClass}`} style={{ color: '#000' }}>{statusText}</span>
     }, [getStatusText, getStatusClass])
 
-    // Invoice indir
+    /**
+     * Sipariş faturasını PDF olarak indirir
+     * @param {string} orderId - İndirilecek faturanın sipariş ID'si
+     */
     const downloadInvoice = useCallback((orderId) => {
         try {
             const invoice = invoices.find(inv => inv.orderId === orderId)
@@ -284,7 +306,10 @@ const Profile = () => {
         }
     }, [invoices])
 
-    // Order detaylarını göster
+    /**
+     * Sipariş detaylarını modal'da gösterir
+     * @param {Object} order - Detayları gösterilecek sipariş objesi
+     */
     const showOrderDetails = useCallback((order) => {
         const invoice = invoices.find(inv => inv.orderId === order.orderId)
         const orderStatus = order.status || 'processing'
@@ -337,29 +362,42 @@ const Profile = () => {
         })
     }, [invoices, formatDate, formatPrice, getStatusText, getStatusClass, downloadInvoice])
 
-    // Review modal'ı aç
+    /**
+     * Ürün değerlendirme modal'ını açar
+     * @param {Object} order - Değerlendirilecek sipariş objesi
+     */
     const openReviewModal = useCallback((order) => {
         setSelectedOrderForReview(order)
         document.body.style.overflow = 'hidden'
     }, [])
 
-    // Review modal'ı kapat
+    /**
+     * Ürün değerlendirme modal'ını kapatır
+     */
     const closeReviewModal = useCallback(() => {
         setSelectedOrderForReview(null)
         document.body.style.overflow = 'auto'
     }, [])
 
-    // Review başarılı olduğunda
+    /**
+     * Ürün değerlendirmesi başarıyla tamamlandığında çağrılır
+     * Modal'ı kapatır ve sipariş listesini yeniler
+     */
     const handleReviewSuccess = useCallback(() => {
         closeReviewModal()
-        // Order'ları yeniden yükle
+        // Sipariş listesini yeniden yükle
         const currentUser = auth.currentUser
         if (currentUser) {
             loadOrders(currentUser)
         }
     }, [closeReviewModal, loadOrders])
 
-    // Cancel order - only for processing status
+    /**
+     * Siparişi iptal eder
+     * Sadece "processing" (İşleniyor) durumundaki siparişler iptal edilebilir
+     * İptal edilen siparişin ürün stokları otomatik olarak geri eklenir
+     * @param {Object} order - İptal edilecek sipariş objesi
+     */
     const cancelOrder = useCallback(async (order) => {
         const orderStatus = order.status || 'processing'
         
@@ -424,7 +462,7 @@ const Profile = () => {
 
             await userRef.update({ orders: updatedOrders })
 
-            // Orders collection'ı da güncelle (eğer varsa)
+            // Orders collection'ındaki siparişi de güncelle (senkronizasyon için)
             try {
                 const orderRef = db.collection('orders').doc(order.orderId)
                 const orderDoc = await orderRef.get()
@@ -452,7 +490,7 @@ const Profile = () => {
                 // Hata durumunda kullanıcıya bilgi ver ama sipariş iptalini engelleme
             }
 
-            // Ürün stoklarını geri artır
+            // İptal edilen siparişin ürün stoklarını geri ekle (stok yönetimi)
             try {
                 console.log('İptal edilen sipariş için stoklar geri artırılıyor...')
                 const batch = db.batch()
@@ -460,7 +498,7 @@ const Profile = () => {
                 
                 if (order.items && order.items.length > 0) {
                     for (const item of order.items) {
-                        // Ürün ID'sini al (originalId varsa onu kullan, yoksa productId veya id)
+                        // Ürün ID'sini belirle (öncelik sırası: originalId > productId > id)
                         const productId = item.originalId || item.productId || item.id
                         if (!productId) {
                             console.warn('  ⚠️ Ürün ID bulunamadı:', item)
@@ -498,7 +536,7 @@ const Profile = () => {
                 }
             } catch (stockError) {
                 console.error('❌ Stok geri artırma hatası:', stockError)
-                // Stok hatası sipariş iptalini engellemez, sadece log'lar
+                // Not: Stok güncelleme hatası sipariş iptalini engellemez, sadece loglanır
             }
 
             Swal.fire({
@@ -528,6 +566,12 @@ const Profile = () => {
         }
     }, [loadOrders])
 
+    /**
+     * Siparişi iade eder ve ödeme iadesi talebi oluşturur
+     * Sadece "delivered" (Teslim Edildi) durumundaki siparişler iade edilebilir
+     * İade edilen siparişin ürün stokları otomatik olarak geri eklenir
+     * @param {Object} order - İade edilecek sipariş objesi
+     */
     // Return/Refund order - only for delivered status
     // Profil bilgilerini kaydet
     const saveProfileData = useCallback(async () => {
@@ -723,7 +767,7 @@ const Profile = () => {
             const userData = userDoc.data()
             const orders = userData.orders || []
             
-            // Order'ı bul ve güncelle
+            // Siparişi bul ve durumunu "returned" olarak güncelle, iade bilgilerini ekle
             const updatedOrders = orders.map((o) => {
                 if (o.orderId === order.orderId) {
                     return {
@@ -731,7 +775,7 @@ const Profile = () => {
                         status: 'returned',
                         returnedAt: new Date().toISOString(),
                         returnedAtTimestamp: Date.now(),
-                        refundStatus: 'pending',
+                        refundStatus: 'pending', // Ödeme iadesi beklemede
                         updatedAt: new Date().toISOString(),
                         updatedAtTimestamp: Date.now()
                     }
@@ -741,7 +785,7 @@ const Profile = () => {
 
             await userRef.update({ orders: updatedOrders })
 
-            // Orders collection'ı da güncelle (eğer varsa)
+            // Orders collection'ındaki siparişi de güncelle (senkronizasyon için)
             try {
                 const orderRef = db.collection('orders').doc(order.orderId)
                 await orderRef.update({
@@ -752,6 +796,55 @@ const Profile = () => {
                 })
             } catch (err) {
                 console.warn('Orders collection güncellenemedi:', err)
+            }
+
+            // İade edilen siparişin ürün stoklarını geri ekle (stok yönetimi)
+            try {
+                console.log('İade edilen sipariş için stoklar geri artırılıyor...')
+                const batch = db.batch()
+                let stockUpdateCount = 0
+                
+                if (order.items && order.items.length > 0) {
+                    for (const item of order.items) {
+                        // Ürün ID'sini belirle (öncelik sırası: originalId > productId > id)
+                        const productId = item.originalId || item.productId || item.id
+                        if (!productId) {
+                            console.warn('  ⚠️ Ürün ID bulunamadı:', item)
+                            continue
+                        }
+                        
+                        const productRef = db.collection('products').doc(productId.toString())
+                        const productDoc = await productRef.get()
+                        
+                        if (productDoc.exists) {
+                            const productData = productDoc.data()
+                            const currentStock = typeof productData.stock === 'number' 
+                                ? productData.stock 
+                                : parseInt(productData.stock, 10) || 0
+                            
+                            const quantityToRestore = item.quantity || 1
+                            const newStock = currentStock + quantityToRestore
+                            
+                            batch.update(productRef, {
+                                stock: newStock,
+                                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                            })
+                            
+                            stockUpdateCount++
+                            console.log(`  - Ürün ${productId}: ${currentStock} → ${newStock} (${quantityToRestore} adet eklendi)`)
+                        } else {
+                            console.warn(`  ⚠️ Ürün bulunamadı: ${productId}`)
+                        }
+                    }
+                    
+                    if (stockUpdateCount > 0) {
+                        await batch.commit()
+                        console.log(`✅ ${stockUpdateCount} ürünün stoku geri artırıldı`)
+                    }
+                }
+            } catch (stockError) {
+                console.error('❌ Stok geri artırma hatası:', stockError)
+                // Not: Stok güncelleme hatası sipariş iadesini engellemez, sadece loglanır
             }
 
             Swal.fire({
@@ -781,7 +874,10 @@ const Profile = () => {
         }
     }, [loadOrders, getReturnDaysRemaining])
 
-    // If user is not authenticated, don't render anything
+    /**
+     * Kullanıcı giriş yapmamışsa hiçbir şey render etme
+     * Bu durumda auth state listener zaten login sayfasına yönlendirecek
+     */
     if (!status) {
         return null;
     }
@@ -1073,7 +1169,7 @@ const Profile = () => {
                                                             const itemCount = order.items ? order.items.length : 0
                                                             const orderStatus = order.status || 'processing'
                                                             
-                                                            // Status kontrolü
+                                                            // Sipariş durumunu kontrol et (buton görünürlüğü için)
                                                             const isDelivered = orderStatus === 'delivered' || orderStatus === 'Teslim Edildi'
                                                             const isProcessing = orderStatus === 'processing' || orderStatus === 'İşleniyor'
                                                             const isCancelled = orderStatus === 'cancelled' || orderStatus === 'İptal Edildi'

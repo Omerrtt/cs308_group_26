@@ -15,19 +15,18 @@ const AboutTop = () => {
                         </div>
                         <div className="col-lg-6 col-md-12 col-sm-12 col-12">
                             <div className="about_top_left_content">
-                                <h2>ABOUT OUR Andshop STORE</h2>
-                                <h4>We believe that every project existing in digital world is a result of an idea and every
-                                    idea has a cause.</h4>
-                                <p><strong>"ANDSHOP</strong> is an multi-vendor B2C fast e-commerce company. The company mainly focuses on men,women and children wear, but it also offers
-                                    other apparel, clothes, accessories, shoes, bags and other fashion items. <strong>ANDSHOP</strong> mainly targets Europe, America, Australia, and the
-                                    Middle East along with other consumer markets."</p>
-                                <p>The brand was founded in October 2021, and since then it has upheld the
-                                    philosophy that "everyone can enjoy the beauty of fashion." Its business covers more than 220 countries and regions around the world</p>
-                                <p>The brand was founded in October 2021, and since then it has upheld the
-                                    philosophy that "everyone can <strong>ANDSHOP</strong> the beauty of fashion." Its business covers more than 220 countries and regions around the world</p>
-                                <p>The brand was founded in October 2021, and since then it has upheld the
-                                    philosophy that "everyone can enjoy the <strong>ANDSHOP</strong> of fashion." Its business covers more than 220 countries and regions around the world</p>
-                                <p>The brand was founded in October 2021, and since then it has upheld the </p>
+                                <h2>HAKKIMIZDA - Malikane Electronics Mağazası</h2>
+                                <h4>Dijital dünyada var olan her projenin bir fikrin sonucu olduğuna ve her fikrin bir nedeni olduğuna inanıyoruz.</h4>
+                                <p><strong>Malikane Electronics</strong> çok satıcılı B2C hızlı e-ticaret şirketidir. Şirket öncelikle elektronik ürünlere odaklanır, ancak aynı zamanda
+                                    diğer elektronik aksesuarlar, cihazlar ve teknoloji ürünleri de sunmaktadır. <strong>Malikane Electronics</strong> öncelikle Türkiye, Avrupa, Amerika, Avustralya ve
+                                    Orta Doğu ile birlikte diğer tüketici pazarlarını hedeflemektedir.</p>
+                                <p>Marka Ekim 2021'de kurulmuştur ve o zamandan beri
+                                    "herkes modanın güzelliğinin keyfini çıkarabilir" felsefesini sürdürmektedir. İşletmesi dünya çapında 220'den fazla ülke ve bölgeyi kapsamaktadır</p>
+                                <p>Marka Ekim 2021'de kurulmuştur ve o zamandan beri
+                                    "herkes <strong>Malikane Electronics</strong> ile modanın güzelliğinin keyfini çıkarabilir" felsefesini sürdürmektedir. İşletmesi dünya çapında 220'den fazla ülke ve bölgeyi kapsamaktadır</p>
+                                <p>Marka Ekim 2021'de kurulmuştur ve o zamandan beri
+                                    "herkes <strong>Malikane Electronics</strong> ile modanın güzelliğinin keyfini çıkarabilir" felsefesini sürdürmektedir. İşletmesi dünya çapında 220'den fazla ülke ve bölgeyi kapsamaktadır</p>
+                                <p>Marka Ekim 2021'de kurulmuştur ve o zamandan beri bu felsefeyi sürdürmektedir.</p>
                             </div>
                         </div>
                     </div>

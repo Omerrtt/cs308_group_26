@@ -25,6 +25,22 @@ if (typeof window !== 'undefined' && typeof window.process === 'undefined') {
     };
 }
 
+// Global SweetAlert cleanup - body overflow'un düzgün temizlenmesi için
+if (typeof window !== 'undefined') {
+    // Sayfa yüklendiğinde body overflow'u temizle
+    document.body.style.overflow = 'auto';
+    
+    // Sayfa kapatılırken veya yönlendirme yapılırken body overflow'u temizle
+    window.addEventListener('beforeunload', () => {
+        document.body.style.overflow = 'auto';
+    });
+    
+    // Popstate event (geri/ileri butonları) için
+    window.addEventListener('popstate', () => {
+        document.body.style.overflow = 'auto';
+    });
+}
+
 // Sayfa yüklenirken hemen auth state'i localStorage'dan yükle
 const initializeAuthFromStorage = () => {
   try {
@@ -198,15 +214,15 @@ auth.onAuthStateChanged(async (user) => {
         }
       } catch (cartError) {
         console.error('❌ Cart birleştirme hatası:', cartError);
-        // Hata olsa bile devam et
+        
       }
 
-      // Favorites merge işlemi: Redux favorites + Firebase favorites
+      // Wishlist merge işlemi: Redux favorites + Firebase wishlist
       try {
         const reduxFav = store.getState().products.favorites || [];
-        const firebaseFav = (userData && userData.favorites) ? userData.favorites : [];
+        const firebaseWishlist = (userData && userData.wishlist) ? userData.wishlist : [];
 
-        const mergedFav = firebaseFav.map(item => ({
+        const mergedFav = firebaseWishlist.map(item => ({
           id: item.id,
           originalId: item.originalId || item.id,
           title: item.title,
@@ -235,12 +251,12 @@ auth.onAuthStateChanged(async (user) => {
           }
         });
 
-        if (mergedFav.length > 0 || reduxFav.length > 0 || firebaseFav.length > 0) {
+        if (mergedFav.length > 0 || reduxFav.length > 0 || firebaseWishlist.length > 0) {
           store.dispatch(setFavorites(mergedFav));
-          console.log('✅ Favorites birleştirme tamamlandı ve kaydedildi');
+          console.log('✅ Wishlist birleştirme tamamlandı ve kaydedildi');
         }
       } catch (favError) {
-        console.error('❌ Favorites birleştirme hatası:', favError);
+        console.error('❌ Wishlist birleştirme hatası:', favError);
       }
     } catch (error) {
       console.error('Firebase auth state listener error:', error);

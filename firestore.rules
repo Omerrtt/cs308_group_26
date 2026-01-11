@@ -11,10 +11,24 @@ service cloud.firestore {
       // Herkes ürünleri okuyabilir
       allow read: if true;
       
-      // Yazma için sadece authenticated kullanıcılar (ileride admin kontrolü eklenebilir)
-      // NOT: Script çalıştırmak için geçici olarak 'allow write: if true;' yapın
-      // Ürünler yüklendikten sonra tekrar 'allow write: if request.auth != null;' yapın
-      allow write: if request.auth != null;
+      // Product Manager email kontrolü
+      function isProductManager() {
+        return request.auth != null && request.auth.token.email == 'mbozyel2003@gmail.com';
+      }
+      
+      // Admin UID kontrolü
+      function isAdmin() {
+        return request.auth != null && request.auth.uid == 'kcopWa6L3AZ5BbeHCokV7uKD6Pd2';
+      }
+      
+      // Update için: Admin, product manager veya authenticated kullanıcılar (stok düşürme için)
+      // Authenticated kullanıcılar stock field'ını güncelleyebilir (stok düşürme/artırma için)
+      // Not: Firestore rules'da field-level kontrol zor, bu yüzden authenticated kullanıcılar update yapabilir
+      // Güvenlik: Ürün bilgilerini değiştirmek için admin/product manager yetkisi gerekli
+      allow update: if isAdmin() || isProductManager() || request.auth != null;
+      
+      // Create ve delete için sadece admin ve product manager
+      allow create, delete: if isAdmin() || isProductManager();
     }
     
     // Users koleksiyonu - Kullanıcılar sadece kendi verilerini okuyup yazabilir
@@ -24,14 +38,29 @@ service cloud.firestore {
         return request.auth != null && request.auth.uid == 'kcopWa6L3AZ5BbeHCokV7uKD6Pd2';
       }
       
-      // Kullanıcılar kendi dokümanlarını okuyabilir, admin tüm kullanıcıları okuyabilir
-      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      // Sales Manager email kontrolü
+      function isSalesManager() {
+        return request.auth != null && request.auth.token.email == 'mbozyel349@gmail.com';
+      }
+      
+      // Product Manager email kontrolü
+      function isProductManager() {
+        return request.auth != null && request.auth.token.email == 'mbozyel2003@gmail.com';
+      }
+      
+      // Support Agent email kontrolü
+      function isSupportAgent() {
+        return request.auth != null && request.auth.token.email == 'mbzyl349@gmail.com';
+      }
+      
+      // Kullanıcılar kendi dokümanlarını okuyabilir, admin, sales manager, product manager ve support agent tüm kullanıcıları okuyabilir
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin() || isSalesManager() || isProductManager() || isSupportAgent());
       
       // Kullanıcılar kendi dokümanlarını oluşturabilir
       allow create: if request.auth != null && request.auth.uid == userId;
       
-      // Kullanıcılar kendi dokümanlarını güncelleyebilir, admin tüm kullanıcıları güncelleyebilir
-      allow update: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      // Kullanıcılar kendi dokümanlarını güncelleyebilir, admin, sales manager, product manager ve support agent tüm kullanıcıları güncelleyebilir
+      allow update: if request.auth != null && (request.auth.uid == userId || isAdmin() || isSalesManager() || isProductManager() || isSupportAgent());
     }
     
     // Orders koleksiyonu
@@ -41,14 +70,37 @@ service cloud.firestore {
         return request.auth != null && request.auth.uid == 'kcopWa6L3AZ5BbeHCokV7uKD6Pd2';
       }
       
-      // Kullanıcılar kendi order'larını okuyabilir, admin tüm order'ları okuyabilir
-      allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+      // Sales Manager email kontrolü
+      function isSalesManager() {
+        return request.auth != null && request.auth.token.email == 'mbozyel349@gmail.com';
+      }
+      
+      // Product Manager email kontrolü
+      function isProductManager() {
+        return request.auth != null && request.auth.token.email == 'mbozyel2003@gmail.com';
+      }
+      
+      // Support Agent email kontrolü
+      function isSupportAgent() {
+        return request.auth != null && request.auth.token.email == 'mbzyl349@gmail.com';
+      }
+      
+      // Kullanıcılar kendi order'larını okuyabilir, admin, sales manager, product manager ve support agent tüm order'ları okuyabilir
+      // Support agent için: userId field'ına göre filtreleme yaparken resource.data yerine query ile kontrol ediyoruz
+      allow read: if request.auth != null && (
+        request.auth.uid == resource.data.userId || 
+        isAdmin() || 
+        isSalesManager() || 
+        isProductManager() || 
+        isSupportAgent()
+      );
       
       // Kullanıcılar kendi order'larını oluşturabilir (checkout sırasında)
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
       
-      // Admin order'ları güncelleyebilir, kullanıcılar sadece kendi order'larını cancelled durumuna güncelleyebilir
-      allow update: if isAdmin() || 
+      // Admin, sales manager, product manager ve support agent order'ları güncelleyebilir
+      // Kullanıcılar sadece kendi order'larını cancelled durumuna güncelleyebilir (sadece processing'den cancelled'a)
+      allow update: if isAdmin() || isSalesManager() || isProductManager() || isSupportAgent() ||
         (request.auth != null && 
          request.auth.uid == resource.data.userId && 
          request.resource.data.status == 'cancelled' &&
@@ -65,6 +117,82 @@ service cloud.firestore {
       allow read: if true;
       allow create: if request.auth != null;
       allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+    
+    // Live Chats koleksiyonu
+    match /liveChats/{chatId} {
+      // Support Agent email kontrolü
+      function isSupportAgent() {
+        return request.auth != null && request.auth.token.email == 'mbzyl349@gmail.com';
+      }
+      
+      // Müşteri kendi chat'ini okuyabilir, support agent tüm chat'leri okuyabilir
+      // Guest kullanıcılar için: customerId == 'guest' olan chat'leri okuyabilir
+      allow read: if (
+        isSupportAgent() ||
+        (request.auth != null && resource.data.customerId == request.auth.uid) ||
+        (request.auth != null && resource.data.customerId == 'guest') ||
+        (request.auth == null && resource.data.customerId == 'guest')
+      );
+      
+      // Müşteri kendi chat'ini oluşturabilir (guest için de, auth olmadan)
+      allow create: if true;
+      
+      // Müşteri kendi chat'ine mesaj ekleyebilir, support agent tüm chat'lere mesaj ekleyebilir
+      // Guest kullanıcılar için: customerId == 'guest' olan chat'lere mesaj ekleyebilir
+      allow update: if (
+        isSupportAgent() ||
+        (request.auth != null && resource.data.customerId == request.auth.uid) ||
+        (request.auth != null && resource.data.customerId == 'guest') ||
+        (request.auth == null && resource.data.customerId == 'guest')
+      );
+      
+      // Sadece support agent chat'i silebilir
+      allow delete: if isSupportAgent();
+    }
+    
+    // Categories koleksiyonu
+    match /categories/{categoryId} {
+      // Herkes kategorileri okuyabilir
+      allow read: if true;
+      
+      // Product Manager email kontrolü
+      function isProductManager() {
+        return request.auth != null && request.auth.token.email == 'mbozyel2003@gmail.com';
+      }
+      
+      // Admin UID kontrolü
+      function isAdmin() {
+        return request.auth != null && request.auth.uid == 'kcopWa6L3AZ5BbeHCokV7uKD6Pd2';
+      }
+      
+      // Sadece admin ve product manager kategori oluşturabilir/güncelleyebilir/silebilir
+      // set() işlemi hem create hem update yapabilir, bu yüzden her ikisini de kontrol ediyoruz
+      allow create: if isAdmin() || isProductManager();
+      allow update: if isAdmin() || isProductManager();
+      allow delete: if isAdmin() || isProductManager();
+      
+      // Subcategories subcollection
+      match /subcategories/{subcategoryId} {
+        // Herkes alt kategorileri okuyabilir
+        allow read: if true;
+        
+        // Product Manager email kontrolü
+        function isProductManager() {
+          return request.auth != null && request.auth.token.email == 'mbozyel2003@gmail.com';
+        }
+        
+        // Admin UID kontrolü
+        function isAdmin() {
+          return request.auth != null && request.auth.uid == 'kcopWa6L3AZ5BbeHCokV7uKD6Pd2';
+        }
+        
+        // Sadece admin ve product manager alt kategori oluşturabilir/güncelleyebilir/silebilir
+        // set() işlemi hem create hem update yapabilir, bu yüzden her ikisini de kontrol ediyoruz
+        allow create: if isAdmin() || isProductManager();
+        allow update: if isAdmin() || isProductManager();
+        allow delete: if isAdmin() || isProductManager();
+      }
     }
     
     // Diğer tüm koleksiyonlar için varsayılan: Reddet

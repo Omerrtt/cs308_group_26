@@ -1,14 +1,15 @@
 # Malikane Electronics E-Ticaret Sitesi
 
-Malikane Electronics için geliştirilmiş modern React tabanlı e-ticaret web uygulaması.
+Malikane Electronics; modern, mobil uyumlu (responsive) ve kullanıcı deneyimini ön planda tutan kapsamlı bir e-ticaret platformudur. React 17 altyapısı üzerine inşa edilen bu proje, veri yönetimi ve kimlik doğrulama süreçlerinde Firebase ekosistemi ile tam entegre çalışmaktadır.
 
-## 🚀 Özellikler
+## 🚀 Temel Özellikler
 
 - 🛍️ Ürün kataloğu ve kategoriler
 - 🔍 Ürün arama ve filtreleme
 - 👤 Firebase Authentication ile kullanıcı girişi/kaydı
 - 🛒 Sepet ve ödeme işlemleri
 - 📱 Responsive tasarım
+- 🎨 Modern ve sade arayüz
 
 ## 🔧 Kurulum
 
@@ -97,3 +98,13 @@ Eğer `babel-jest` versiyon uyarısı alırsanız, `.env` dosyasında `SKIP_PREF
 - `firebaseConfig.js` dosyasındaki yapılandırmanın doğru olduğunu kontrol edin
 - Firestore ve Authentication servislerinin etkin olduğunu doğrulayın
 
+## 🔥 Firebase Yapılandırması
+Uygulamanın sorunsuz çalışabilmesi için:
+
+Firebase Console üzerinden:
+
+Authentication
+
+Firestore Database
+
+servislerinin aktif olması gerekir.

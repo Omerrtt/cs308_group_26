@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import BabyHeading from '../Heading'
 import { Link } from 'react-router-dom'
-import { getProductsByCategory, getProductsData, getMainCategories } from '../../../app/data/productsData'
+import { getProductsByCategory, getProductsData } from '../../../app/data/productsData'
+import { db } from '../../../firebaseConfig'
 
 const Category = () => {
     const [categories, setCategories] = useState([])
@@ -48,8 +49,24 @@ const Category = () => {
                 const allProducts = await getProductsData()
                 const totalCount = allProducts ? allProducts.length : 0
 
-                // Ana kategorileri al
-                const mainCategories = getMainCategories()
+                // Firebase'den ana kategorileri al
+                const categoriesList = [];
+                const categoriesSnapshot = await db.collection('categories').get();
+                
+                for (const mainCategoryDoc of categoriesSnapshot.docs) {
+                    const mainCategoryData = mainCategoryDoc.data();
+                    categoriesList.push({
+                        name: mainCategoryData.name,
+                        slug: mainCategoryData.slug
+                    });
+                }
+
+                // Eğer Firebase'de kategori yoksa, fallback olarak boş array kullan
+                let mainCategories = categoriesList;
+                if (mainCategories.length === 0) {
+                    console.warn('Firebase\'de kategori bulunamadı');
+                    mainCategories = [];
+                }
 
                 // Her kategori için ürün sayısını hesapla
                 const categoriesWithCount = await Promise.all(
@@ -105,6 +122,27 @@ const Category = () => {
         }
 
         loadCategories()
+        
+        // Storage event listener - yeni kategori eklendiğinde güncelle
+        const handleStorageChange = (e) => {
+            if (e.key === 'categories_updated') {
+                loadCategories();
+            }
+        };
+        
+        window.addEventListener('storage', handleStorageChange);
+        
+        // Custom event listener - aynı tab'da kategori eklendiğinde
+        const handleCategoriesUpdate = () => {
+            loadCategories();
+        };
+        
+        window.addEventListener('categoriesUpdated', handleCategoriesUpdate);
+        
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+            window.removeEventListener('categoriesUpdated', handleCategoriesUpdate);
+        };
     }, [])
     
     return (

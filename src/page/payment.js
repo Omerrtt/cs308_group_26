@@ -118,6 +118,62 @@ const Payment = () => {
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             }
 
+            // ÖNCE ürün stoklarını kontrol et ve düşür
+            try {
+                console.log('Ürün stokları kontrol ediliyor ve düşürülüyor...')
+                const stockBatch = db.batch()
+                let stockUpdateCount = 0
+                
+                for (const item of carts) {
+                    const productId = item.originalId || item.id
+                    const productRef = db.collection('products').doc(productId.toString())
+                    const productDoc = await productRef.get()
+                    
+                    if (productDoc.exists) {
+                        const productData = productDoc.data()
+                        const currentStock = typeof productData.stock === 'number' 
+                            ? productData.stock 
+                            : parseInt(productData.stock, 10) || 0
+                        
+                        const quantityToDeduct = item.quantity || 1
+                        
+                        // Stok kontrolü
+                        if (currentStock < quantityToDeduct) {
+                            throw new Error(`${item.title} için yeterli stok yok. Mevcut stok: ${currentStock}, İstenen: ${quantityToDeduct}`)
+                        }
+                        
+                        const newStock = currentStock - quantityToDeduct
+                        
+                        stockBatch.update(productRef, {
+                            stock: newStock,
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        })
+                        
+                        stockUpdateCount++
+                        console.log(`  ✓ Ürün ${productId} (${item.title}): ${currentStock} → ${newStock} (${quantityToDeduct} adet düşülecek)`)
+                    } else {
+                        throw new Error(`Ürün bulunamadı: ${item.title} (ID: ${productId})`)
+                    }
+                }
+                
+                if (stockUpdateCount > 0) {
+                    await stockBatch.commit()
+                    console.log(`✅ ${stockUpdateCount} ürünün stoku düşürüldü`)
+                } else {
+                    throw new Error('Güncellenecek ürün bulunamadı')
+                }
+            } catch (stockError) {
+                console.error('❌ Stok güncelleme hatası:', stockError)
+                setLoading(false)
+                Swal.fire({
+                    title: 'Stok Hatası',
+                    text: stockError.message || 'Ürün stokları güncellenirken bir hata oluştu. Lütfen tekrar deneyin.',
+                    icon: 'error',
+                    confirmButtonText: 'Tamam'
+                })
+                return // Siparişi engelle
+            }
+
             // Save order to Firebase
             const orderRef = await db.collection('users').doc(authUser.uid).collection('orders').add(orderData)
             const orderId = orderRef.id
@@ -127,23 +183,6 @@ const Payment = () => {
                 lastOrderId: orderId,
                 lastOrderDate: firebase.firestore.FieldValue.serverTimestamp()
             }, { merge: true })
-
-            // Update product stocks
-            const batch = db.batch()
-            for (const item of carts) {
-                const productRef = db.collection('products').doc(item.id.toString())
-                const productDoc = await productRef.get()
-                
-                if (productDoc.exists) {
-                    const currentStock = productDoc.data().stock || 0
-                    const newStock = Math.max(0, currentStock - (item.quantity || 1))
-                    batch.update(productRef, {
-                        stock: newStock,
-                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    })
-                }
-            }
-            await batch.commit()
 
             // Create invoice
             const invoiceNumber = `INV-${Date.now()}`

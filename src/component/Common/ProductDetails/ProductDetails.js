@@ -7,7 +7,35 @@ import Swal from 'sweetalert2';
 import { getProductById } from '../../../app/data/productsData';
 import { incrementWhatsAppClick, getProductWhatsAppClicks } from '../../../utils/whatsappTracker';
 import { db } from '../../../firebaseConfig';
-
+/* Enhanced Rating & Review System
+ * 
+ * Real User Reviews:
+ *  Fetched from Firebase in real time
+ *  Shows "Doğrulanmış" (Verified) badge
+ *  Includes user avatar, name, rating, and timestamp
+ *  Only displays approved comments (approved by product manager)
+ * 
+ * Comment Display Logic:
+ *  Initial view: Shows 3 comments
+ *  "Show All" button: Expands to show all comments
+ *  Comments sorted by date (newest first)
+ * 
+ * Rating Calculation:
+ *  Uses Firebase real time rating data
+ *  Falls back to product.rating if Firebase unavailable
+ *  Rating count from Firebase only (realRatingCount)
+ * 
+ * State Management:
+ *  approvedComments: Real user reviews from Firebase
+ *  realRating: Current average rating from Firebase
+ *  realRatingCount: Total number of ratings submitted
+ *  showAllComments: Toggle for expanding comment section
+ * 
+ * Firebase Integration:
+ *  Realtime listener on products/{productId}
+ *  Fetches: approvedComments[], ratings[], rating, ratingCount
+ *  Auto updates when new reviews are approved
+ */
 const ProductDetailsOne = () => {
     let dispatch = useDispatch();
     let { id } = useParams();
@@ -415,7 +443,7 @@ const ProductDetailsOne = () => {
                                         id="rating-star-common" 
                                     />
                                     <span>
-                                        ({realRatingCount > 0 ? realRatingCount : (product.reviewCount || 0)} Müşteri Değerlendirmesi)
+                                        ({realRatingCount} Müşteri Değerlendirmesi)
                                     </span>
                                 </div>
                                 
@@ -563,14 +591,14 @@ const ProductDetailsOne = () => {
                                     </div>
                                     
                                     {/* Müşteri Yorumları */}
-                                    {((approvedComments.length > 0) || (product.all_comments && product.all_comments.length > 0)) && (
+                                    {approvedComments.length > 0 && (
                                         <div className="product-comments-section mt-4">
                                             <h5 className="comments-title mb-3">
                                                 <i className="fa fa-comments" style={{marginRight: '8px', color: '#ff8a00'}}></i>
-                                                Müşteri Yorumları ({approvedComments.length + (product.all_comments ? Math.min(10 - approvedComments.length, product.all_comments.length) : 0)})
+                                                Müşteri Yorumları ({approvedComments.length})
                                             </h5>
                                             <div className="comments-list">
-                                                {/* Gerçek kullanıcı yorumları - EN ÜSTTE */}
+                                                {/* Gerçek kullanıcı yorumları */}
                                                 {(showAllComments ? approvedComments : approvedComments.slice(0, 3)).map((comment, index) => {
                                                     return (
                                                         <div key={comment.id || `real-${index}`} className="comment-item mb-3 p-3" style={{
@@ -633,54 +661,10 @@ const ProductDetailsOne = () => {
                                                         </div>
                                                     );
                                                 })}
-                                                
-                                                {/* Placeholder yorumlar - Max 10 total (user comments + placeholders) */}
-                                                {product.all_comments && product.all_comments.length > 0 && (
-                                                    (showAllComments 
-                                                        ? product.all_comments.slice(0, Math.max(0, 10 - approvedComments.length))
-                                                        : product.all_comments.slice(0, Math.max(0, 3 - approvedComments.length))
-                                                    ).map((comment, localIndex) => {
-                                                        return (
-                                                            <div key={`placeholder-${localIndex}`} className="comment-item mb-3 p-3" style={{
-                                                                border: '1px solid #e0e0e0',
-                                                                borderRadius: '8px',
-                                                                backgroundColor: '#f9f9f9'
-                                                            }}>
-                                                                <div className="comment-header mb-2">
-                                                                    <div className="d-flex align-items-center">
-                                                                        <div className="user-avatar me-2" style={{
-                                                                            width: '40px',
-                                                                            height: '40px',
-                                                                            borderRadius: '50%',
-                                                                            backgroundColor: '#6c757d',
-                                                                            display: 'flex',
-                                                                            alignItems: 'center',
-                                                                            justifyContent: 'center',
-                                                                            color: '#fff',
-                                                                            fontWeight: 'bold'
-                                                                        }}>
-                                                                            {String.fromCharCode(65 + (localIndex % 26))}
-                                                                        </div>
-                                                                        <div>
-                                                                            <strong className="comment-author">Müşteri {localIndex + 1}</strong>
-                                                                            <div className="comment-rating" style={{fontSize: '0.85rem', color: '#ff8a00', display: 'flex', alignItems: 'center', gap: '2px'}}>
-                                                                                {'★'.repeat([5, 5, 4, 5, 4, 5, 5, 4, 5, 5][localIndex % 10])}
-                                                                                {'☆'.repeat(5 - [5, 5, 4, 5, 4, 5, 5, 4, 5, 5][localIndex % 10])}
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="comment-text" style={{color: '#555', lineHeight: '1.6'}}>
-                                                                    {comment}
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })
-                                                )}
                                             </div>
                                             
                                             {/* Tüm Yorumları Gör butonu */}
-                                            {(approvedComments.length + (product.all_comments ? product.all_comments.length : 0)) > 3 && !showAllComments && (
+                                            {approvedComments.length > 3 && !showAllComments && (
                                                 <div className="text-center mt-3">
                                                     <button
                                                         className="btn btn-outline-primary"

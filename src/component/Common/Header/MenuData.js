@@ -1,4 +1,4 @@
-import { getCategoryTree } from '../../../app/data/productsData'
+import { db } from '../../../firebaseConfig'
 
 // Kategori ikonları mapping (Font Awesome 4 uyumlu)
 const getCategoryIcon = (categoryName) => {
@@ -18,78 +18,107 @@ const getCategoryIcon = (categoryName) => {
     return iconMap[categoryName] || 'fa-folder-open'
 }
 
-// Kategorileri MenuData formatına çevir (alt kategoriler dahil)
-const getCategoriesMenu = () => {
-    const categoryTree = getCategoryTree()
-    
-    // Öncelikli kategoriler (belirli sırada)
-    const priorityCategories = [
-        'TV, Ses ve Elektronik',
-        'Bilgisayarlar ve Bilgisayar Aksesuarları',
-        'Fotoğraf ve Video',
-        'Küçük Elektrikli Ev Aletleri'
-    ]
-    
-    const categories = []
-    const processedCategories = new Set()
-    
-    // Önce öncelikli kategorileri ekle
-    priorityCategories.forEach(categoryName => {
-        if (categoryTree[categoryName]) {
-            const value = categoryTree[categoryName]
-            const categoryItem = {
-                name: categoryName,
-                href: `/category/${value.slug}`,
-                icon: getCategoryIcon(categoryName)
-            }
-            
-            // Alt kategoriler varsa ekle
-            if (value.subcategories && Object.keys(value.subcategories).length > 0) {
-                categoryItem.children = []
-                for (const [subKey, subValue] of Object.entries(value.subcategories)) {
-                    categoryItem.children.push({
-                        name: subKey,
-                        href: `/category/${subValue.slug}`
-                    })
-                }
-            }
-            
-            categories.push(categoryItem)
-            processedCategories.add(categoryName)
-        }
-    })
-    
-    // Sonra diğer kategorileri ekle
-    for (const [key, value] of Object.entries(categoryTree)) {
-        if (!processedCategories.has(key)) {
-            const categoryItem = {
-                name: key,
-                href: `/category/${value.slug}`,
-                icon: getCategoryIcon(key)
-            }
-            
-            // Alt kategoriler varsa ekle
-            if (value.subcategories && Object.keys(value.subcategories).length > 0) {
-                categoryItem.children = []
-                for (const [subKey, subValue] of Object.entries(value.subcategories)) {
-                    categoryItem.children.push({
-                        name: subKey,
-                        href: `/category/${subValue.slug}`
-                    })
-                }
-            }
-            
-            categories.push(categoryItem)
-        }
+// Firebase'den kategorileri yükle ve MenuData formatına çevir
+let cachedMenuCategories = null;
+let isLoadingMenuCategories = false;
+
+export const getCategoriesMenuFromFirebase = async () => {
+    // Cache varsa direkt dön
+    if (cachedMenuCategories) {
+        return cachedMenuCategories;
     }
     
-    return categories
+    // Zaten yükleniyorsa bekle
+    if (isLoadingMenuCategories) {
+        return new Promise((resolve) => {
+            const checkInterval = setInterval(() => {
+                if (cachedMenuCategories) {
+                    clearInterval(checkInterval);
+                    resolve(cachedMenuCategories);
+                }
+            }, 100);
+        });
+    }
+    
+    isLoadingMenuCategories = true;
+    
+    try {
+        const categories = [];
+        const categoriesSnapshot = await db.collection('categories').get();
+        
+        for (const mainCategoryDoc of categoriesSnapshot.docs) {
+            const mainCategoryData = mainCategoryDoc.data();
+            
+            const categoryItem = {
+                name: mainCategoryData.name,
+                href: `/category/${mainCategoryData.slug}`,
+                icon: getCategoryIcon(mainCategoryData.name)
+            };
+            
+            // Alt kategorileri yükle
+            const subcategoriesSnapshot = await mainCategoryDoc.ref.collection('subcategories').get();
+            
+            if (!subcategoriesSnapshot.empty) {
+                categoryItem.children = [];
+                subcategoriesSnapshot.forEach((subCategoryDoc) => {
+                    const subCategoryData = subCategoryDoc.data();
+                    categoryItem.children.push({
+                        name: subCategoryData.name,
+                        href: `/category/${subCategoryData.slug}`
+                    });
+                });
+            }
+            
+            categories.push(categoryItem);
+        }
+        
+        cachedMenuCategories = categories;
+        isLoadingMenuCategories = false;
+        return categories;
+    } catch (error) {
+        console.error('Firebase\'den kategori yükleme hatası:', error);
+        isLoadingMenuCategories = false;
+        // Fallback: boş array dön
+        return [];
+    }
+};
+
+// Cache'i temizle (yeni kategori eklendiğinde kullanılır)
+export const clearMenuCategoriesCache = () => {
+    cachedMenuCategories = null;
+    isLoadingMenuCategories = false;
+};
+
+// Kategorileri MenuData formatına çevir (Firebase'den)
+export const getCategoriesMenu = async () => {
+    return await getCategoriesMenuFromFirebase();
 }
 
+// MenuData'yı dinamik olarak oluştur (React component için)
+export const getMenuData = async () => {
+    const categories = await getCategoriesMenu();
+    
+    return [
+        {
+            name: "KATEGORİLER",
+            children: categories
+        },
+        {
+            name: "TÜM ÜRÜNLER",
+            href: "/category/tum-urunler"
+        },
+        {
+            name: "İLETİŞİM",
+            href: "/contact"
+        }
+    ];
+}
+
+// Varsayılan MenuData (fallback için)
 export const MenuData = [
     {
         name: "KATEGORİLER",
-        children: getCategoriesMenu()
+        children: []
     },
     {
         name: "TÜM ÜRÜNLER",

@@ -94,27 +94,30 @@ const saveCartToFirebase = async (carts) => {
     }
 };
 
-// Firebase'e favorileri kaydet
+// Firebase'e wishlist'i kaydet
 const saveFavoritesToFirebase = async (favorites) => {
     const currentUser = auth.currentUser;
     if (currentUser) {
         try {
             const userRef = db.collection('users').doc(currentUser.uid);
-            const favData = favorites && favorites.length > 0 ? favorites.map(item => ({
+            const wishlistData = favorites && favorites.length > 0 ? favorites.map(item => ({
                 id: item.id,
                 title: item.title,
                 price: item.price,
                 img: item.img || item.image,
-                stock: item.stock,
-                originalId: item.originalId || item.id
+                stock: item.stock || 0,
+                originalId: item.originalId || item.id,
+                addedAt: new Date().toISOString(), // Wishlist'e eklenme tarihi
+                lastPrice: item.price, // Son fiyat (fiyat değişikliği için)
+                lastStock: item.stock || 0 // Son stok (stok değişikliği için)
             })) : [];
 
             await userRef.set({
-                favorites: favData
+                wishlist: wishlistData
             }, { merge: true }); // Merge true ile diğer alanları koruyoruz
-            console.log('Favoriler Firebase\'e kaydedildi');
+            console.log('Wishlist Firebase\'e kaydedildi');
         } catch (error) {
-            console.error('Firebase favori kaydetme hatası:', error);
+            console.error('Firebase wishlist kaydetme hatası:', error);
         }
     }
 };

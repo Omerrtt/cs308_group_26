@@ -67,8 +67,12 @@ const ScrollToTop = loadable(() => pMinDelay(import('./component/Common/ScrollTo
 const Fashion = loadable(() => pMinDelay(import('./page/index'), 250), { fallback: <Loading /> });
 const UploadProducts = loadable(() => pMinDelay(import('./page/admin/upload-products'), 250), { fallback: <Loading /> });
 const AdminPanel = loadable(() => pMinDelay(import('./page/admin'), 250), { fallback: <Loading /> });
+const SalesManagerPanel = loadable(() => pMinDelay(import('./page/sales-manager'), 250), { fallback: <Loading /> });
+const ProductManagerPanel = loadable(() => pMinDelay(import('./page/product-manager'), 250), { fallback: <Loading /> });
+const SupportAgentPanel = loadable(() => pMinDelay(import('./page/support-agent'), 250), { fallback: <Loading /> });
 const Payment = loadable(() => pMinDelay(import('./page/payment'), 250), { fallback: <Loading /> });
 const CheckoutSuccess = loadable(() => pMinDelay(import('./page/checkout-success'), 250), { fallback: <Loading /> });
+const ChatWidget = loadable(() => pMinDelay(import('./component/LiveChat/ChatWidget'), 250), { fallback: null });
 
 const App = () => {
   return (
@@ -81,12 +85,14 @@ const App = () => {
         <Router>
           <ScrollToTop />
           <Switch>
+            {/* Main Pages */}
             <Route path='/' exact component={Fashion} />
             <Route path='/furniture' exact component={Furniture} />
             <Route path='/electronics' exact component={Electronics} />
             <Route path='/pharmacy' exact component={Pharmacy} />
             <Route path='/jewllary' exact component={Jewllary} />
             <Route path='/baby-toys' exact component={BabyToys} />
+            {/* Shop & Product Pages */}
             <Route path='/shop' exact component={ShopGrid} />
             <Route path='/shop/category/:categorySlug' exact component={CategoryPage} />
             <Route path='/category/:categorySlug' exact component={CategoryPageNew} />
@@ -96,6 +102,7 @@ const App = () => {
             <Route path='/shop-right-bar' exact component={ShopRightSideBar} />
             <Route path='/product-details-one/:id' exact component={ProductDetails} />
             <Route path='/product-details-two/:id' exact component={ProductDetailsTwos} />
+            {/* Cart & Checkout Flow */}
             <Route path='/cart' exact component={Cart} />
             <Route path='/cart-old' exact component={CartOld} />
             <Route path='/cartTwo' exact component={CartTwo} />
@@ -106,6 +113,7 @@ const App = () => {
             <Route path='/checkout-two' exact component={CheckoutTwos} />
             <Route path='/payment' exact component={Payment} />
             <Route path='/checkout-success' exact component={CheckoutSuccess} />
+            {/* User Profile & Account */}
             <Route path='/profile' exact component={Profile} />
             <Route path='/wishlist' exact component={WishLists} />
             <Route path='/compare' exact component={Compares} />
@@ -140,10 +148,15 @@ const App = () => {
             <Route path='/contact-one' exact component={ContactOne} />
             <Route path='/contact-two' exact component={ContactTwo} />
             <Route path='/contact' exact component={Contact} />
+            {/* Admin Panels: Role Based Access */}
             <Route path='/admin' exact component={AdminPanel} />
             <Route path='/admin/upload-products' exact component={UploadProducts} />
+            <Route path='/sales-manager' exact component={SalesManagerPanel} />
+            <Route path='/product-manager' exact component={ProductManagerPanel} />
+            <Route path='/support-agent' exact component={SupportAgentPanel} />
             <Route exact component={Error} />
           </Switch>
+          <ChatWidget />
         </Router>
       </BrowserRouter>
 

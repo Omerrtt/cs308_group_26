@@ -15,9 +15,22 @@ try {
 
 // Ürün adından benzersiz 6 haneli kod oluştur
 export const generateProductCode = (productName) => {
+    // Null/undefined kontrolü
+    if (!productName || typeof productName !== 'string') {
+        // Fallback: rastgele kod oluştur
+        const randomCode = Math.floor(Math.random() * 900000) + 100000;
+        return randomCode.toString();
+    }
+    
     const cleanName = productName.toLowerCase()
         .replace(/[^a-z0-9\s]/g, '')
         .replace(/\s+/g, '');
+    
+    // Eğer cleanName boşsa (sadece özel karakterler varsa), rastgele kod oluştur
+    if (!cleanName || cleanName.length === 0) {
+        const randomCode = Math.floor(Math.random() * 900000) + 100000;
+        return randomCode.toString();
+    }
     
     let hash = 0;
     for (let i = 0; i < cleanName.length; i++) {
@@ -34,6 +47,13 @@ export const generateProductCode = (productName) => {
 // Firebase'den ürünleri çek
 let cachedProducts = null;
 let isLoadingProducts = false;
+
+// Cache'i temizle (yeni ürün eklendiğinde kullanılır)
+export const clearProductsCache = () => {
+    cachedProducts = null;
+    isLoadingProducts = false;
+    console.log('🔄 Ürün cache temizlendi');
+};
 
 export const fetchProductsFromFirebase = async () => {
     // Cache varsa direkt dön
@@ -69,12 +89,15 @@ export const fetchProductsFromFirebase = async () => {
         snapshot.forEach(doc => {
             const data = doc.data();
             // Firebase'deki document ID'sini kullan, ama eğer product içinde id varsa onu öncelikli kullan
+            const productId = data.id || doc.id;
             products.push({
                 ...data,
                 // Firebase document ID'sini originalId olarak sakla, product içindeki id'yi kullan
-                id: data.id || doc.id,
+                id: productId,
                 originalId: data.originalId || data.id || doc.id,
-                firebaseDocId: doc.id // Debug için
+                firebaseDocId: doc.id, // Debug için
+                // Eğer id string ise, numeric ID oluştur (eski sistemle uyumluluk için)
+                ...(typeof productId === 'string' && !productId.match(/^\d+$/) ? {} : {})
             });
         });
         
@@ -118,7 +141,12 @@ const formatProductsFromJSON = (productsData) => {
         
         // Eğer productCode yoksa oluştur
         if (!formattedProduct.productCode) {
-            formattedProduct.productCode = generateProductCode(formattedProduct.name || formattedProduct['Product Name']);
+            const productName = formattedProduct.name || 
+                               formattedProduct.title || 
+                               formattedProduct['Product Name'] || 
+                               formattedProduct['Ürün Adı'] ||
+                               'Ürün ' + (index + 1);
+            formattedProduct.productCode = generateProductCode(productName);
         }
 
         // EAN bilgisini ekle - öncelik allProducts.json'daki ean alanı
@@ -230,7 +258,12 @@ const formatProducts = (productsData) => {
         
         // Eğer productCode yoksa oluştur
         if (!formattedProduct.productCode) {
-            formattedProduct.productCode = generateProductCode(formattedProduct.name || formattedProduct['Product Name']);
+            const productName = formattedProduct.name || 
+                               formattedProduct.title || 
+                               formattedProduct['Product Name'] || 
+                               formattedProduct['Ürün Adı'] ||
+                               'Ürün ' + (index + 1);
+            formattedProduct.productCode = generateProductCode(productName);
         }
 
         // EAN bilgisini ekle - öncelik allProducts.json'daki ean alanı
@@ -555,13 +588,57 @@ export const getProductsByCategory = async (categorySlug) => {
         return products;
     }
     
-    // Ana kategori slug'ından kategori adını bul
-    const categoryName = getCategoryNameBySlug(categorySlug);
+    // Önce Firebase'den kategori bilgisini al
+    let categoryName = null;
+    let categorySlugFromFirebase = null;
+    let subcategorySlugs = [];
+    
+    try {
+        const categoriesSnapshot = await db.collection('categories').get();
+        for (const mainCategoryDoc of categoriesSnapshot.docs) {
+            const mainCategoryData = mainCategoryDoc.data();
+            
+            // Ana kategori eşleşmesi
+            if (mainCategoryData.slug === categorySlug) {
+                categoryName = mainCategoryData.name;
+                categorySlugFromFirebase = mainCategoryData.slug;
+                
+                // Alt kategorileri al
+                const subcategoriesSnapshot = await mainCategoryDoc.ref.collection('subcategories').get();
+                subcategoriesSnapshot.forEach((subCategoryDoc) => {
+                    const subCategoryData = subCategoryDoc.data();
+                    subcategorySlugs.push(subCategoryData.slug);
+                });
+                break;
+            }
+            
+            // Alt kategori kontrolü
+            const subcategoriesSnapshot = await mainCategoryDoc.ref.collection('subcategories').get();
+            for (const subCategoryDoc of subcategoriesSnapshot.docs) {
+                const subCategoryData = subCategoryDoc.data();
+                if (subCategoryData.slug === categorySlug) {
+                    categoryName = subCategoryData.name;
+                    categorySlugFromFirebase = subCategoryData.slug;
+                    break;
+                }
+            }
+            if (categoryName) break;
+        }
+    } catch (error) {
+        console.warn('Firebase\'den kategori yüklenirken hata:', error);
+    }
+    
+    // Fallback: JSON'dan kategori adını bul
     if (!categoryName) {
+        categoryName = getCategoryNameBySlug(categorySlug);
+    }
+    
+    if (!categoryName && !categorySlugFromFirebase) {
+        console.warn(`⚠️ Kategori bulunamadı: ${categorySlug}`);
         return [];
     }
     
-    // Kategori ağacından tam kategori yollarını bul
+    // Kategori ağacından tam kategori yollarını bul (fallback için)
     const matchingCategories = [];
     for (const [mainCat, data] of Object.entries(categoryTreeData)) {
         if (data.slug === categorySlug || mainCat === categoryName) {
@@ -586,19 +663,45 @@ export const getProductsByCategory = async (categorySlug) => {
     // Ürünleri filtrele
     return products.filter(product => {
         const productCategory = product.category || '';
-        // Tam kategori yolu eşleşmesi
-        if (matchingCategories.includes(productCategory)) {
-            return true;
-        }
-        // Ana kategori eşleşmesi (">" ile başlayan kategoriler için)
-        if (productCategory.includes('>')) {
-            const mainCat = productCategory.split('>')[0].trim();
-            if (mainCat === categoryName) {
+        const productCategoryPath = product.categoryPath || '';
+        const productSubcategory = product.subcategory || '';
+        
+        // 1. Firebase slug eşleşmesi (yeni ürünler için)
+        if (categorySlugFromFirebase) {
+            // Ana kategori slug eşleşmesi
+            if (productCategory === categorySlugFromFirebase || productCategory === categorySlug) {
                 return true;
             }
-        } else if (productCategory === categoryName) {
-            return true;
+            // Alt kategori slug eşleşmesi
+            if (productSubcategory === categorySlug || productSubcategory === categorySlugFromFirebase) {
+                return true;
+            }
+            // categoryPath içinde slug kontrolü
+            if (productCategoryPath && (
+                productCategoryPath.includes(categorySlug) || 
+                productCategoryPath.includes(categorySlugFromFirebase)
+            )) {
+                return true;
+            }
         }
+        
+        // 2. Kategori adı eşleşmesi (eski ürünler için)
+        if (categoryName) {
+            // Tam kategori yolu eşleşmesi
+            if (matchingCategories.includes(productCategory) || matchingCategories.includes(productCategoryPath)) {
+                return true;
+            }
+            // Ana kategori eşleşmesi (">" ile başlayan kategoriler için)
+            if (productCategoryPath && productCategoryPath.includes('>')) {
+                const mainCat = productCategoryPath.split('>')[0].trim();
+                if (mainCat === categoryName) {
+                    return true;
+                }
+            } else if (productCategory === categoryName) {
+                return true;
+            }
+        }
+        
         return false;
     });
 }

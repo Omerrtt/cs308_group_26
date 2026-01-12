@@ -9,7 +9,10 @@ import firebase from 'firebase/app';
 import { getCategoryTree, clearProductsCache, generateProductCode } from '../../app/data/productsData';
 import { loadProductsFromFirebase } from '../../app/slices/products';
 
-// Product Manager Email
+/**
+ * Product Manager Email
+ * Only users with this email can access product manager panel
+ */
 const PRODUCT_MANAGER_EMAIL = 'mbozyel2003@gmail.com';
 
 const ProductManagerPanel = () => {
@@ -20,14 +23,14 @@ const ProductManagerPanel = () => {
     const [isProductManager, setIsProductManager] = useState(false);
     const [activeTab, setActiveTab] = useState('products'); // 'products', 'categories', 'stock', 'delivery', 'orders', 'comments'
     
-    // Products Management
+    // Products Management State
     const [products, setProducts] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 30;
     const [productLoading, setProductLoading] = useState(false);
     const [productSearchQuery, setProductSearchQuery] = useState('');
     
-    // Add Product Form
+    // Add Product Form State
     const [showAddProductForm, setShowAddProductForm] = useState(false);
     const [newProduct, setNewProduct] = useState({
         title: '',
@@ -39,25 +42,25 @@ const ProductManagerPanel = () => {
         image: ''
     });
     
-    // Categories Management
+    // Categories Management State
     const [categories, setCategories] = useState([]);
     const [newCategory, setNewCategory] = useState({ name: '', slug: '' });
     const [migratingCategories, setMigratingCategories] = useState(false);
     const [showAddCategoryForm, setShowAddCategoryForm] = useState(false);
     const [addingCategory, setAddingCategory] = useState(false);
     
-    // Stock Management
+    // Stock Management State
     const [stockUpdates, setStockUpdates] = useState({});
     
-    // Delivery List
+    // Delivery List State
     const [deliveries, setDeliveries] = useState([]);
     const [deliveryLoading, setDeliveryLoading] = useState(false);
     
-    // Orders Management
+    // Orders Management State
     const [orders, setOrders] = useState([]);
     const [ordersLoading, setOrdersLoading] = useState(false);
     
-    // Comments Management
+    // Comments Management State
     const [pendingComments, setPendingComments] = useState([]);
     const [commentsLoading, setCommentsLoading] = useState(false);
 
@@ -101,7 +104,9 @@ const ProductManagerPanel = () => {
         return () => unsubscribe();
     }, [history]);
 
-    // Ürünleri yükle
+    /**
+     * Load all products from Firebase
+     */
     const loadProducts = async () => {
         try {
             const productsSnapshot = await db.collection('products').get();
@@ -118,18 +123,21 @@ const ProductManagerPanel = () => {
         }
     };
 
-    // Kategorileri yükle (Firebase'den)
+    /**
+     * Load categories from Firebase
+     * Falls back to JSON if Firebase has no categories
+     */
     const loadCategories = async () => {
         try {
             const categoriesList = [];
             
-            // Firebase'den kategorileri yükle
+            // Fetch categories from Firebase
             const categoriesSnapshot = await db.collection('categories').get();
             
             for (const mainCategoryDoc of categoriesSnapshot.docs) {
                 const mainCategoryData = mainCategoryDoc.data();
                 
-                // Ana kategoriyi ekle
+                // Add main category
                 categoriesList.push({
                     name: mainCategoryData.name,
                     slug: mainCategoryData.slug,
@@ -137,7 +145,7 @@ const ProductManagerPanel = () => {
                     id: mainCategoryDoc.id
                 });
                 
-                // Alt kategorileri yükle
+                // Load subcategories
                 const subcategoriesSnapshot = await mainCategoryDoc.ref.collection('subcategories').get();
                 
                 subcategoriesSnapshot.forEach((subCategoryDoc) => {
@@ -155,7 +163,7 @@ const ProductManagerPanel = () => {
                 });
             }
             
-            // Eğer Firebase'de kategori yoksa, fallback olarak JSON'dan yükle
+            // If no categories in Firebase, fallback to JSON
             if (categoriesList.length === 0) {
                 console.warn('Firebase\'de kategori bulunamadı, JSON\'dan yükleniyor...');
                 const categoryTree = getCategoryTree();
@@ -183,7 +191,7 @@ const ProductManagerPanel = () => {
             setCategories(categoriesList);
         } catch (error) {
             console.error('Kategoriler yüklenirken hata:', error);
-            // Hata durumunda fallback olarak JSON'dan yükle
+            // On error, fallback to JSON
             try {
                 const categoryTree = getCategoryTree();
                 const categoriesList = [];
@@ -1019,7 +1027,10 @@ const ProductManagerPanel = () => {
         }
     };
 
-    // Bekleyen comment'leri yükle
+    /**
+     * Load all pending comments from all users
+     * Fetches comments waiting for approval from product manager
+     */
     const loadPendingComments = async () => {
         setCommentsLoading(true);
         try {
@@ -1040,7 +1051,7 @@ const ProductManagerPanel = () => {
                 });
             });
 
-            // Tarihe göre sırala (en yeni önce)
+            // Sort by date (newest first)
             allPendingComments.sort((a, b) => {
                 const dateA = new Date(a.createdAt).getTime();
                 const dateB = new Date(b.createdAt).getTime();
@@ -1055,7 +1066,12 @@ const ProductManagerPanel = () => {
         }
     };
 
-    // Comment'i onayla
+    /**
+     * Approve a pending comment
+     * Adds comment to product and removes from user's pending comments
+     * @param {Object} comment - Comment object to approve
+     * @param {string} userId - User ID who submitted the comment
+     */
     const approveComment = async (comment, userId) => {
         try {
             Swal.fire({
@@ -1069,7 +1085,7 @@ const ProductManagerPanel = () => {
 
             const batch = db.batch();
             
-            // 1. Product'a comment ekle
+            // 1. Add comment to product
             const productRef = db.collection('products').doc(comment.productId);
             const productDoc = await productRef.get();
             const productData = productDoc.data() || {};
@@ -1092,7 +1108,7 @@ const ProductManagerPanel = () => {
                 updatedAt: new Date().toISOString()
             });
 
-            // 2. User'dan notApprovedComments'ten kaldır
+            // 2. Remove comment from user's notApprovedComments array
             const userRef = db.collection('users').doc(userId);
             const userDoc = await userRef.get();
             const userData = userDoc.data() || {};
@@ -1124,7 +1140,12 @@ const ProductManagerPanel = () => {
         }
     };
 
-    // Comment'i reddet
+    /**
+     * Reject a pending comment
+     * Removes comment from user's pending comments
+     * @param {Object} comment - Comment object to reject
+     * @param {string} userId - User ID who submitted the comment
+     */
     const rejectComment = async (comment, userId) => {
         try {
             const result = await Swal.fire({

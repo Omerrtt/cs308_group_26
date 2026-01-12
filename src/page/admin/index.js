@@ -6,7 +6,10 @@ import Header from '../../component/Common/Header';
 import Footer from '../../component/Common/Footer';
 import Swal from 'sweetalert2';
 
-// Admin UID - Sadece bu kullanıcı erişebilir
+/**
+ * Admin user UID
+ * Only users with this UID can access admin panel
+ */
 const ADMIN_UID = 'kcopWa6L3AZ5BbeHCokV7uKD6Pd2';
 
 const AdminPanel = () => {
@@ -19,8 +22,13 @@ const AdminPanel = () => {
     const [pendingComments, setPendingComments] = useState([]);
     const [activeTab, setActiveTab] = useState('orders'); // 'orders' veya 'comments'
 
+    /**
+     * Check admin status and load data on mount
+     * Redirects to login if not authenticated
+     * Redirects to home if not admin
+     */
     useEffect(() => {
-        // Admin kontrolü - Firebase auth state'i bekleyelim
+        // Wait for Firebase auth state
         const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
             console.log('🔐 Auth state değişti, admin kontrolü yapılıyor...');
             console.log('Current User UID:', currentUser?.uid);
@@ -61,16 +69,19 @@ const AdminPanel = () => {
             setLoading(false);
         });
 
-        // Cleanup
+        // Cleanup listener on unmount
         return () => unsubscribe();
     }, [history]);
 
-    // Tüm kullanıcıların order'larını çek
+    /**
+     * Load all orders from all users
+     * Fetches from orders collection and enriches with user info
+     */
     const loadAllOrders = async () => {
         try {
             console.log('📦 Tüm siparişler yükleniyor...');
             
-            // Önce orders collection'ından çek (ana kaynak)
+            // Fetch from orders collection (main source)
             const ordersSnapshot = await db.collection('orders').get();
             const ordersList = [];
             const userIds = new Set();
@@ -79,11 +90,11 @@ const AdminPanel = () => {
                 const orderData = doc.data();
                 ordersList.push({
                     ...orderData,
-                    // Document ID'yi de ekle (orderId ile aynı olmalı)
+                    // Add document ID (should match orderId)
                     documentId: doc.id
                 });
                 
-                // User ID'leri topla (kullanıcı bilgilerini çekmek için)
+                // Collect user IDs (to fetch user info)
                 if (orderData.userId) {
                     userIds.add(orderData.userId);
                 }
@@ -91,7 +102,7 @@ const AdminPanel = () => {
 
             console.log(`📦 Orders collection'dan ${ordersList.length} sipariş bulundu`);
 
-            // Kullanıcı bilgilerini çek
+            // Fetch user information
             const usersMap = {};
             if (userIds.size > 0) {
                 const userIdsArray = Array.from(userIds);
@@ -131,7 +142,7 @@ const AdminPanel = () => {
                 userEmail: order.userEmail || usersMap[order.userId]?.email || 'Email yok'
             }));
 
-            // Order'ları tarihe göre sırala (en yeni önce)
+            // Sort orders by date (newest first)
             ordersWithUserInfo.sort((a, b) => {
                 const dateA = a.orderDateTimestamp || a.createdAtTimestamp || 0;
                 const dateB = b.orderDateTimestamp || b.createdAtTimestamp || 0;
@@ -151,7 +162,12 @@ const AdminPanel = () => {
         }
     };
 
-    // Order status'unu güncelle
+    /**
+     * Update order status in both orders and users collections
+     * @param {string} userId - User ID who owns the order
+     * @param {string} orderId - Order ID to update
+     * @param {string} newStatus - New status value
+     */
     const updateOrderStatus = async (userId, orderId, newStatus) => {
         try {
             const updateTime = new Date();
@@ -161,7 +177,7 @@ const AdminPanel = () => {
                 updatedAtTimestamp: updateTime.getTime()
             };
 
-            // Orders collection'ındaki order'ı güncelle (ana kaynak)
+            // Update order in orders collection (main source)
             const orderRef = db.collection('orders').doc(orderId);
             await orderRef.update(updateData);
             console.log(`✅ Orders collection'daki order güncellendi: ${orderId}`);
@@ -185,7 +201,7 @@ const AdminPanel = () => {
                 
                 console.log(`   Mevcut orders sayısı: ${orders.length}`);
                 
-                // Order'ı bul
+                // Find order in user's orders array
                 let orderFound = false;
                 const updatedOrders = orders.map((order, index) => {
                     const orderIdMatch = order.orderId === orderId;
@@ -218,8 +234,8 @@ const AdminPanel = () => {
                     code: userUpdateError.code,
                     stack: userUpdateError.stack
                 });
-                // Users collection güncelleme hatası kritik değil, orders collection güncellendi
-                // Ancak kullanıcıya bilgi verelim
+                // Users collection update error is not critical, orders collection was updated
+                // But inform user about the issue
                 Swal.fire({
                     icon: 'warning',
                     title: 'Kısmi Güncelleme',
@@ -229,7 +245,7 @@ const AdminPanel = () => {
                 });
             }
             
-            // Local state'i güncelle
+            // Update local state
             setAllOrders(prevOrders => 
                 prevOrders.map(order => 
                     order.orderId === orderId
@@ -255,7 +271,11 @@ const AdminPanel = () => {
         }
     };
 
-    // Format date
+    /**
+     * Format date string to Turkish format
+     * @param {string} dateString - ISO format date string
+     * @returns {string} Formatted date string
+     */
     const formatDate = (dateString) => {
         if (!dateString) return 'Tarih yok';
         try {
@@ -272,7 +292,11 @@ const AdminPanel = () => {
         }
     };
 
-    // Format price
+    /**
+     * Format price to Turkish Lira format
+     * @param {number} price - Price to format
+     * @returns {string} Formatted price string
+     */
     const formatPrice = (price) => {
         return new Intl.NumberFormat('tr-TR', {
             style: 'currency',
@@ -280,7 +304,10 @@ const AdminPanel = () => {
         }).format(price || 0);
     };
 
-    // Bekleyen comment'leri yükle
+    /**
+     * Load all pending comments from all users
+     * Fetches comments waiting for approval from product manager
+     */
     const loadPendingComments = async () => {
         try {
             console.log('💬 Bekleyen yorumlar yükleniyor...');
@@ -301,7 +328,7 @@ const AdminPanel = () => {
                 });
             });
 
-            // Tarihe göre sırala (en yeni önce)
+            // Sort by date (newest first)
             allPendingComments.sort((a, b) => {
                 const dateA = new Date(a.createdAt).getTime();
                 const dateB = new Date(b.createdAt).getTime();
@@ -315,7 +342,12 @@ const AdminPanel = () => {
         }
     };
 
-    // Comment'i onayla
+    /**
+     * Approve a pending comment
+     * Adds comment to product and removes from user's pending comments
+     * @param {Object} comment - Comment object to approve
+     * @param {string} userId - User ID who submitted the comment
+     */
     const approveComment = async (comment, userId) => {
         try {
             Swal.fire({
@@ -329,7 +361,7 @@ const AdminPanel = () => {
 
             const batch = db.batch();
             
-            // 1. Product'a comment ekle
+            // 1. Add comment to product
             const productRef = db.collection('products').doc(comment.productId);
             const productDoc = await productRef.get();
             const productData = productDoc.data() || {};
@@ -352,7 +384,7 @@ const AdminPanel = () => {
                 updatedAt: new Date().toISOString()
             });
 
-            // 2. User'dan notApprovedComments'ten kaldır
+            // 2. Remove comment from user's notApprovedComments array
             const userRef = db.collection('users').doc(userId);
             const userDoc = await userRef.get();
             const userData = userDoc.data() || {};
@@ -365,7 +397,7 @@ const AdminPanel = () => {
 
             await batch.commit();
 
-            // Local state'i güncelle
+            // Update local state
             setPendingComments(prev => prev.filter(c => c.id !== comment.id));
 
             Swal.fire({
@@ -385,7 +417,12 @@ const AdminPanel = () => {
         }
     };
 
-    // Comment'i reddet
+    /**
+     * Reject a pending comment
+     * Removes comment from user's pending comments
+     * @param {Object} comment - Comment object to reject
+     * @param {string} userId - User ID who submitted the comment
+     */
     const rejectComment = async (comment, userId) => {
         try {
             const result = await Swal.fire({
@@ -399,7 +436,7 @@ const AdminPanel = () => {
 
             if (!result.isConfirmed) return;
 
-            // User'dan notApprovedComments'ten kaldır
+            // Remove comment from user's notApprovedComments array
             const userRef = db.collection('users').doc(userId);
             const userDoc = await userRef.get();
             const userData = userDoc.data() || {};
@@ -410,7 +447,7 @@ const AdminPanel = () => {
                 notApprovedComments: filteredComments
             });
 
-            // Local state'i güncelle
+            // Update local state
             setPendingComments(prev => prev.filter(c => c.id !== comment.id));
 
             Swal.fire({

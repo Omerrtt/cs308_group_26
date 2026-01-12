@@ -6,7 +6,10 @@ import { generateInvoicePDF } from '../../utils/invoiceGenerator'
 import Swal from 'sweetalert2'
 import ReviewModal from './ReviewModal'
 
-// Admin UID
+/**
+ * Admin user UID
+ * Users with this UID have admin privileges
+ */
 const ADMIN_UID = 'kcopWa6L3AZ5BbeHCokV7uKD6Pd2';
 
 const Order = () => {
@@ -18,13 +21,16 @@ const Order = () => {
     const [selectedOrderForReview, setSelectedOrderForReview] = useState(null)
     const [isAdmin, setIsAdmin] = useState(false)
 
-    // Body scroll'u kontrol et ve düzelt
+    /**
+     * Control body scroll behavior
+     * Used to enable/disable scroll when modal is open
+     */
     useEffect(() => {
-        // Component mount olduğunda body scroll'u aktif et
+        // Enable body scroll on component mount
         document.body.style.overflow = 'auto'
         
         return () => {
-            // Component unmount olduğunda da scroll'u aktif et
+            // Enable body scroll on component unmount
             document.body.style.overflow = 'auto'
         }
     }, [])
@@ -42,7 +48,7 @@ const Order = () => {
                 return
             }
             
-            // Users collection'ından order'ları çek
+            // Load orders and invoices from Firebase users collection
             const userDoc = await db.collection('users').doc(currentUser.uid).get()
             
             if (userDoc.exists) {
@@ -50,7 +56,7 @@ const Order = () => {
                 const userOrders = userData.orders || []
                 const userInvoices = userData.invoices || []
                 
-                // Order'ları tarihe göre sırala (en yeni önce)
+                // Sort orders by date (newest first)
                 const sortedOrders = [...userOrders].sort((a, b) => {
                     const dateA = a.orderDateTimestamp || a.createdAtTimestamp || 0
                     const dateB = b.orderDateTimestamp || b.createdAtTimestamp || 0
@@ -74,7 +80,7 @@ const Order = () => {
     }, [])
 
     useEffect(() => {
-        // Admin kontrolü
+        // Check admin status
         const unsubscribe = auth.onAuthStateChanged((currentUser) => {
             if (currentUser) {
                 setIsAdmin(currentUser.uid === ADMIN_UID)
@@ -94,7 +100,11 @@ const Order = () => {
         return () => unsubscribe()
     }, [status, loadOrders])
 
-    // Format date - memoized
+    /**
+     * Format date string to Turkish format
+     * @param {string} dateString - ISO format date string
+     * @returns {string} Formatted date string
+     */
     const formatDate = useCallback((dateString) => {
         if (!dateString) return 'Tarih yok'
         try {
@@ -111,7 +121,11 @@ const Order = () => {
         }
     }, [])
 
-    // Format price - memoized
+    /**
+     * Format price to Turkish Lira format
+     * @param {number} price - Price to format
+     * @returns {string} Formatted price string
+     */
     const formatPrice = useCallback((price) => {
         return new Intl.NumberFormat('tr-TR', {
             style: 'currency',
@@ -119,7 +133,10 @@ const Order = () => {
         }).format(price || 0)
     }, [])
 
-    // Status map - memoized
+    /**
+     * Order status mapping object
+     * Maps status values to display text and CSS classes
+     */
     const statusMap = useMemo(() => ({
         text: {
             'processing': 'İşleniyor',
@@ -139,30 +156,45 @@ const Order = () => {
         }
     }), [])
 
-    // Get status text
+    /**
+     * Get status display text
+     * @param {string} status - Status value
+     * @returns {string} Status display text
+     */
     const getStatusText = useCallback((status) => {
         return statusMap.text[status] || status || 'Bilinmiyor'
     }, [statusMap])
 
-    // Get status badge class
+    /**
+     * Get CSS class for status badge
+     * @param {string} status - Status value
+     * @returns {string} CSS class name
+     */
     const getStatusClass = useCallback((status) => {
         return statusMap.class[status] || 'badge-secondary'
     }, [statusMap])
 
-    // Get status badge (React component)
+    /**
+     * Get status badge React component
+     * @param {string} status - Status value
+     * @returns {JSX.Element} Status badge component
+     */
     const getStatusBadge = useCallback((status) => {
         const statusText = getStatusText(status)
         const statusClass = getStatusClass(status)
         return <span className={`badge ${statusClass}`}>{statusText}</span>
     }, [getStatusText, getStatusClass])
 
-    // Invoice indir - memoized
+    /**
+     * Download invoice as PDF
+     * @param {string} orderId - Order ID to download invoice for
+     */
     const downloadInvoice = useCallback((orderId) => {
         // #region agent log
         fetch('http://127.0.0.1:7242/ingest/67e2e45d-e2d0-4eec-88e2-0c404d5839a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'INV0',location:'MyAccountDashboard/Order.js:138',message:'downloadInvoice invoked',data:{orderId,totalInvoices:invoices.length},timestamp:Date.now()})}).catch(()=>{})
         // #endregion
         try {
-            // İlgili invoice'u bul
+            // Find invoice for this order
             const invoice = invoices.find(inv => inv.orderId === orderId)
             
             if (!invoice) {
@@ -174,16 +206,16 @@ const Order = () => {
                     text: 'Bu sipariş için fatura bulunamadı.',
                     icon: 'warning'
                 }).then(() => {
-                    // Modal kapandıktan sonra body scroll'u aktif et
+                    // Enable body scroll after modal closes
                     document.body.style.overflow = 'auto'
                 })
                 return
             }
             
-            // PDF oluştur
+            // Generate PDF from invoice data
             const invoicePDFBlob = generateInvoicePDF(invoice)
             
-            // PDF'i yeni sekmede aç
+            // Create blob URL to open PDF in new tab
             const pdfUrl = URL.createObjectURL(invoicePDFBlob)
 
             // #region agent log
@@ -196,7 +228,7 @@ const Order = () => {
             fetch('http://127.0.0.1:7242/ingest/67e2e45d-e2d0-4eec-88e2-0c404d5839a3',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'INV2',location:'MyAccountDashboard/Order.js:165',message:'window.open result',data:{orderId,opened:!!openedWindow},timestamp:Date.now()})}).catch(()=>{})
             // #endregion
             
-            // Clean up
+            // Clean up blob URL after 5 seconds
             setTimeout(() => {
                 URL.revokeObjectURL(pdfUrl)
             }, 5000)
@@ -208,7 +240,7 @@ const Order = () => {
                 timer: 2000,
                 showConfirmButton: false
             }).then(() => {
-                // Modal kapandıktan sonra body scroll'u aktif et
+                // Enable body scroll after modal closes
                 document.body.style.overflow = 'auto'
             })
         } catch (error) {
@@ -218,28 +250,37 @@ const Order = () => {
                 text: 'Fatura indirilirken bir hata oluştu.',
                 icon: 'error'
             }).then(() => {
-                // Modal kapandıktan sonra body scroll'u aktif et
+                // Enable body scroll after modal closes
                 document.body.style.overflow = 'auto'
             })
         }
     }, [invoices])
 
-    // Review modal'ı aç - memoized
+    /**
+     * Open review modal for an order
+     * @param {Object} order - Order object to review
+     */
     const openReviewModal = useCallback((order) => {
         setSelectedOrderForReview(order)
         document.body.style.overflow = 'hidden'
     }, [])
 
-    // Review modal'ı kapat
+    /**
+     * Close review modal
+     */
     const closeReviewModal = useCallback(() => {
         setSelectedOrderForReview(null)
         document.body.style.overflow = 'auto'
     }, [])
 
-    // Review başarılı olduğunda
+    /**
+     * Handle successful review submission
+     * Closes modal and reloads order list
+     */
     const handleReviewSuccess = useCallback(() => {
         closeReviewModal()
-        loadOrders() // Order'ları yeniden yükle
+        // Reload orders to show updated data
+        loadOrders()
     }, [closeReviewModal, loadOrders])
 
     // Cancel order - only for processing status

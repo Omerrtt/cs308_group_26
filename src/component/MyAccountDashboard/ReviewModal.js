@@ -2,11 +2,22 @@ import React, { useState } from 'react'
 import { auth, db } from '../../firebaseConfig'
 import Swal from 'sweetalert2'
 
+/**
+ * Review Modal Component
+ * Allows users to rate and comment on products from a delivered order
+ * @param {Object} order - The order object containing items to review
+ * @param {Function} onClose - Callback function when modal is closed
+ * @param {Function} onSuccess - Callback function when review is submitted successfully
+ */
 const ReviewModal = ({ order, onClose, onSuccess }) => {
-    const [reviews, setReviews] = useState({}) // { productId: { rating: 0, comment: '' } }
+    // State: { productId: { rating: 0, comment: '' } }
+    const [reviews, setReviews] = useState({})
     const [submitting, setSubmitting] = useState(false)
 
-    // Her ürün için rating ve comment state'i başlat
+    /**
+     * Initialize review state for each product in the order
+     * Sets default rating (0) and empty comment for each item
+     */
     React.useEffect(() => {
         if (order && order.items) {
             const initialReviews = {}
@@ -20,7 +31,11 @@ const ReviewModal = ({ order, onClose, onSuccess }) => {
         }
     }, [order])
 
-    // Rating değiştiğinde
+    /**
+     * Handle rating change for a product
+     * @param {string} productId - The product ID
+     * @param {number} rating - The rating value (1-5)
+     */
     const handleRatingChange = (productId, rating) => {
         setReviews(prev => ({
             ...prev,
@@ -31,7 +46,11 @@ const ReviewModal = ({ order, onClose, onSuccess }) => {
         }))
     }
 
-    // Comment değiştiğinde
+    /**
+     * Handle comment change for a product
+     * @param {string} productId - The product ID
+     * @param {string} comment - The comment text
+     */
     const handleCommentChange = (productId, comment) => {
         setReviews(prev => ({
             ...prev,
@@ -42,7 +61,12 @@ const ReviewModal = ({ order, onClose, onSuccess }) => {
         }))
     }
 
-    // Review'ları gönder
+    /**
+     * Submit all reviews to Firebase
+     * - Updates product ratings and calculates average
+     * - Saves comments to pending approval queue
+     * - Uses batch operations for better performance
+     */
     const handleSubmit = async () => {
         try {
             setSubmitting(true)
@@ -56,35 +80,35 @@ const ReviewModal = ({ order, onClose, onSuccess }) => {
                 return
             }
 
-            // Tüm review'ları işle
+            // Process all reviews using batch operations
             const batch = db.batch()
             const userRef = db.collection('users').doc(currentUser.uid)
             
-            // Önce user document'ini bir kez al (tüm comment'ler için)
+            // Get user document once (for all comments)
             const userDoc = await userRef.get()
             const userData = userDoc.data() || {}
-            let notApprovedComments = [...(userData.notApprovedComments || [])] // Kopyasını al
+            let notApprovedComments = [...(userData.notApprovedComments || [])]
 
             for (const [productId, review] of Object.entries(reviews)) {
-                // Rating veya comment varsa işle (ikisi de opsiyonel ama en az biri olmalı)
+                // Process if rating or comment exists (at least one required)
                 if (review.rating > 0 || (review.comment && review.comment.trim())) {
-                    // Product ID'yi string'e çevir ve başındaki sıfırları koru
+                    // Convert product ID to string
                     const productIdStr = productId.toString()
                     
-                    // Firebase document ID'sini bul - önce direkt, sonra başına 0 ekle, sonra başındaki 0'ı kaldır
+                    // Find Firebase document ID - try different formats
                     let productRef = db.collection('products').doc(productIdStr)
                     let productDoc = await productRef.get()
                     
-                    // Eğer document bulunamazsa, farklı formatları dene
+                    // Try different ID formats if document not found
                     if (!productDoc.exists) {
-                        // Başına 0 ekle (örneğin 9142465 -> 09142465)
+                        // Add leading zero (e.g., 9142465 -> 09142465)
                         if (!productIdStr.startsWith('0') && productIdStr.length < 9) {
                             const paddedId = '0' + productIdStr
                             productRef = db.collection('products').doc(paddedId)
                             productDoc = await productRef.get()
                         }
                         
-                        // Hala bulunamazsa, başındaki 0'ı kaldır (örneğin 09142465 -> 9142465)
+                        // Remove leading zeros if still not found (e.g., 09142465 -> 9142465)
                         if (!productDoc.exists && productIdStr.startsWith('0')) {
                             const unpaddedId = productIdStr.replace(/^0+/, '')
                             productRef = db.collection('products').doc(unpaddedId)
@@ -92,7 +116,7 @@ const ReviewModal = ({ order, onClose, onSuccess }) => {
                         }
                     }
                     
-                    // Eğer hala document bulunamazsa hata ver
+                    // Show error if product document still not found
                     if (!productDoc.exists) {
                         console.error(`❌ Product document bulunamadı: ${productIdStr}`)
                         Swal.fire({
@@ -105,9 +129,9 @@ const ReviewModal = ({ order, onClose, onSuccess }) => {
                     
                     const productData = productDoc.data() || {}
                     
-                    // Rating > 0 ise rating işlemlerini yap
+                    // Update rating if rating > 0
                     if (review.rating > 0) {
-                    // Rating array'ini güncelle
+                    // Update ratings array
                     const ratings = productData.ratings || []
                     const newRating = {
                         userId: currentUser.uid,
@@ -116,16 +140,16 @@ const ReviewModal = ({ order, onClose, onSuccess }) => {
                         createdAt: new Date().toISOString()
                     }
                     
-                    // Aynı kullanıcı ve order için eski rating'i kaldır
+                    // Remove old rating from same user and order
                     const filteredRatings = ratings.filter(r => 
                         !(r.userId === currentUser.uid && r.orderId === order.orderId)
                     )
                     filteredRatings.push(newRating)
                     
-                    // Ortalama rating hesapla
+                    // Calculate average rating
                     const avgRating = filteredRatings.reduce((sum, r) => sum + r.rating, 0) / filteredRatings.length
                     
-                    // Product'ı güncelle
+                    // Update product with new ratings
                     batch.update(productRef, {
                         ratings: filteredRatings,
                         rating: avgRating,
@@ -134,7 +158,7 @@ const ReviewModal = ({ order, onClose, onSuccess }) => {
                     })
                     }
 
-                    // Comment varsa notApprovedComments array'ine ekle (döngü sonunda tek seferde kaydedilecek)
+                    // Add comment to pending approval queue (will be saved once at the end)
                     if (review.comment && review.comment.trim()) {
                         const newComment = {
                             id: `comment_${Date.now()}_${productId}_${Math.random().toString(36).substr(2, 9)}`,
@@ -150,7 +174,7 @@ const ReviewModal = ({ order, onClose, onSuccess }) => {
                         console.log(`💬 Comment eklendi (memory): ${newComment.id} - ${productIdStr}`)
                     }
                 } else if (review.comment && review.comment.trim()) {
-                    // Sadece comment varsa (rating yoksa) - sadece comment'i kaydet
+                    // Only comment exists (no rating) - save only comment
                     const productIdStr = productId.toString()
                     
                     const newComment = {
@@ -168,7 +192,7 @@ const ReviewModal = ({ order, onClose, onSuccess }) => {
                 }
             }
             
-            // Tüm comment'leri tek seferde kaydet (eğer yeni comment varsa)
+            // Save all comments at once (if there are new comments)
             if (notApprovedComments.length > (userData.notApprovedComments || []).length) {
                 batch.update(userRef, {
                     notApprovedComments: notApprovedComments
@@ -176,7 +200,7 @@ const ReviewModal = ({ order, onClose, onSuccess }) => {
                 console.log(`✅ ${notApprovedComments.length - (userData.notApprovedComments || []).length} yeni comment kaydedilecek`)
             }
 
-            // Batch commit
+            // Commit all batch operations
             await batch.commit()
 
             Swal.fire({
@@ -270,7 +294,7 @@ const ReviewModal = ({ order, onClose, onSuccess }) => {
             </p>
             
             {order.items.map((item, index) => {
-                // Product ID'yi bul - önce originalId, sonra id, sonra productId
+                // Find product ID (priority: originalId > id > productId)
                 const productId = item.originalId || item.id || item.productId
                 const review = reviews[productId] || { rating: 0, comment: '' }
                 
@@ -303,7 +327,7 @@ const ReviewModal = ({ order, onClose, onSuccess }) => {
                                             key={star}
                                             onClick={() => handleRatingChange(productId, star)}
                                             onMouseEnter={(e) => {
-                                                // Hover efekti için
+                                                // Hover effect - scale up star
                                                 e.currentTarget.style.transform = 'scale(1.2)'
                                             }}
                                             onMouseLeave={(e) => {

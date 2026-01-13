@@ -3,6 +3,11 @@ import { useDispatch, useSelector } from 'react-redux'
 import { addReview } from '../../../app/slices/reviews'
 import Swal from 'sweetalert2'
 
+/**
+ * Review Form Component
+ * Allows users to submit product reviews with rating and comment
+ * @param {string} productId - The product ID to review
+ */
 const ReviewForm = ({ productId }) => {
     const [rating, setRating] = useState(5)
     const [comment, setComment] = useState('')
@@ -12,6 +17,11 @@ const ReviewForm = ({ productId }) => {
     const user = useSelector((state) => state.user.user)
     const userStatus = useSelector((state) => state.user.status)
 
+    /**
+     * Handle form submission
+     * Validates user authentication and comment length
+     * Dispatches review to Redux store
+     */
     const handleSubmit = (e) => {
         e.preventDefault()
 
